@@ -1,0 +1,14 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+# Native modules / postinstalls we allow to run build scripts.
+# esbuild fetches its platform binary; better-sqlite3 and node-pty compile
+# (or fetch prebuilds). ssh2/cpu-features are optional dockerode SSH extras.
+allowBuilds:
+  better-sqlite3: true
+  esbuild: true
+  node-pty: true
+  protobufjs: true
+  cpu-features: false
+  ssh2: false

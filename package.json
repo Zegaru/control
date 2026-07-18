@@ -1,0 +1,23 @@
+{
+  "name": "control",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CONTROL — Local Dev Command Center. One UI to see and manage every dev server across your projects.",
+  "type": "module",
+  "packageManager": "pnpm@11.5.3",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "concurrently -n daemon,ui -c cyan,magenta \"pnpm dev:daemon\" \"pnpm dev:ui\"",
+    "dev:daemon": "pnpm --filter @control/daemon dev",
+    "dev:ui": "pnpm --filter @control/ui dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "start": "pnpm --filter @control/daemon start"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "typescript": "^5.6.3"
+  }
+}

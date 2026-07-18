@@ -1,0 +1,16 @@
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+.DS_Store
+*.log
+
+# CONTROL local daemon data (SQLite db, run logs)
+.control-data/
+data/
+*.sqlite
+*.sqlite-*
+
+# env
+.env
+.env.local
