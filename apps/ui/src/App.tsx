@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from './api.js'
 import { SocketProvider } from './socket.js'
-import { Led } from './components/kit.js'
+import { AgentStatus, NavItem } from './components/kit.js'
 import { Dashboard } from './views/Dashboard.js'
 import { ProjectDetail } from './views/ProjectDetail.js'
 import { PortsView } from './views/PortsView.js'
@@ -53,14 +53,15 @@ export function App() {
   return (
     <SocketProvider>
       <div className="flex h-screen w-screen overflow-hidden text-[var(--color-ink)]">
-        {/* Sidebar */}
         <aside className="flex w-56 shrink-0 flex-col border-r border-[var(--color-panel-edge)] bg-[var(--color-panel)] p-3">
           <div className="mb-6 px-2 pt-2">
-            <div className="text-2xl font-bold tracking-[0.15em] text-glow" style={{ color: 'var(--color-phosphor)' }}>
+            <div
+              className="font-ui text-2xl font-bold tracking-[0.15em] text-glow"
+              style={{ color: 'var(--color-phosphor)' }}
+            >
               CONTROL
             </div>
-            <div className="mt-1 flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-[var(--color-ink-faint)]">
-              <Led status={daemonUp ? 'healthy' : 'failed'} />
+            <div className="font-ui mt-1 text-[10px] uppercase tracking-widest text-[var(--color-ink-faint)]">
               Local Dev Command Center
             </div>
           </div>
@@ -70,31 +71,25 @@ export function App() {
               const active =
                 view.kind === item.key || (item.key === 'projects' && view.kind === 'project')
               return (
-                <button
+                <NavItem
                   key={item.key}
+                  icon={item.icon}
+                  label={item.label}
+                  active={active}
                   onClick={() => setView({ kind: item.key } as View)}
-                  className={`flex items-center gap-3 rounded-md px-3 py-2 text-left text-sm transition-colors ${
-                    active
-                      ? 'bg-[var(--color-panel-raised)] text-[var(--color-phosphor)]'
-                      : 'text-[var(--color-ink-dim)] hover:bg-[var(--color-panel-raised)]'
-                  }`}
-                >
-                  <span className="w-4 text-center">{item.icon}</span>
-                  {item.label}
-                </button>
+                />
               )
             })}
           </nav>
 
-          <div className="mt-auto rounded-md border border-[var(--color-panel-edge)] p-3 text-[10px] text-[var(--color-ink-faint)]">
-            <div className="flex items-center gap-1.5">
-              <Led status={daemonUp ? 'running' : 'idle'} pulse={daemonUp} />
-              Daemon {daemonUp ? `v${health.data?.version}` : 'offline'}
-            </div>
+          <div className="mt-auto">
+            <AgentStatus
+              online={daemonUp}
+              label={daemonUp ? `Agent v${health.data?.version}` : 'Agent Offline'}
+            />
           </div>
         </aside>
 
-        {/* Main */}
         <main className="flex-1 overflow-y-auto p-6">
           {!daemonUp && (
             <div className="mb-4 rounded-md border border-[var(--color-danger)] bg-[var(--color-danger)]/10 px-4 py-3 text-sm text-[var(--color-danger)]">

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 import type { RunStatus } from '@control/shared'
 
 export function statusColor(status: RunStatus | 'idle'): string {
@@ -66,8 +66,8 @@ export function Panel({
           {right}
         </header>
       )}
-      <div className={`p-4 ${crt ? 'crt bezel-recessed rounded-b-md border-0 border-t border-[var(--color-panel-edge)]' : ''}`}>
-        {children}
+      <div className={crt ? 'crt-frame' : 'p-4'}>
+        <div className={crt ? 'crt bezel-recessed rounded-md p-4' : ''}>{children}</div>
       </div>
     </section>
   )
@@ -90,27 +90,22 @@ export function RockerToggle({
   const glow = busy ? 'var(--color-amber)' : on ? 'var(--color-phosphor)' : 'transparent'
   return (
     <button
-      onClick={onToggle}
+      onClick={(e) => {
+        e.stopPropagation()
+        onToggle()
+      }}
       disabled={disabled}
       aria-pressed={on}
-      className="font-ui relative flex h-14 w-16 flex-col overflow-hidden rounded-md border border-[var(--color-panel-edge)] bg-[var(--color-bezel)] text-[10px] font-bold shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] disabled:opacity-40"
-      style={{ boxShadow: `inset 0 2px 4px rgba(0,0,0,0.5), 0 0 14px -2px ${glow}` }}
+      className="rocker-housing font-ui relative flex h-14 w-16 flex-col overflow-hidden rounded-md p-0.5 text-[10px] font-bold disabled:opacity-40"
+      style={{ boxShadow: `inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -2px 4px rgba(0,0,0,0.5), 0 0 14px -2px ${glow}` }}
     >
       <span
-        className={`flex flex-1 items-center justify-center transition-colors ${on ? 'text-black' : 'text-[var(--color-ink-faint)]'}`}
-        style={{
-          backgroundColor: on ? (busy ? 'var(--color-amber)' : 'var(--color-phosphor)') : 'transparent',
-          boxShadow: on ? 'inset 0 -1px 2px rgba(0,0,0,0.3)' : undefined,
-        }}
+        className={`flex flex-1 items-center justify-center rounded-sm transition-colors ${on ? `rocker-segment-on text-black ${busy ? 'busy' : ''}` : 'text-[var(--color-ink-faint)]'}`}
       >
         {labels[0]}
       </span>
       <span
-        className={`flex flex-1 items-center justify-center border-t border-[var(--color-panel-edge)] transition-colors ${!on ? 'text-[var(--color-ink)]' : 'text-[var(--color-ink-faint)]'}`}
-        style={{
-          backgroundColor: !on ? '#1a1a1a' : 'transparent',
-          boxShadow: !on ? 'inset 0 1px 3px rgba(0,0,0,0.4)' : undefined,
-        }}
+        className={`mt-0.5 flex flex-1 items-center justify-center rounded-sm transition-colors ${!on ? 'rocker-segment-off text-[var(--color-ink)]' : 'text-[var(--color-ink-faint)]'}`}
       >
         {labels[1]}
       </span>
@@ -203,6 +198,7 @@ function DialArc({
   strokeWidth: number
   color: string
 }) {
+  const gradId = useId().replace(/:/g, '')
   const clamped = Math.max(0, Math.min(100, value))
   const cx = size / 2
   const cy = size / 2
@@ -210,8 +206,31 @@ function DialArc({
   const start = Math.PI * 0.75
   const sweep = Math.PI * 1.5
   const end = start + (sweep * clamped) / 100
+  const ticks = Array.from({ length: 12 }, (_, i) => {
+    const a = start + (sweep * i) / 11
+    const inner = r - strokeWidth
+    const outer = r + 1
+    return {
+      x1: cx + inner * Math.cos(a),
+      y1: cy + inner * Math.sin(a),
+      x2: cx + outer * Math.cos(a),
+      y2: cy + outer * Math.sin(a),
+    }
+  })
+
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden>
+      {ticks.map((t, i) => (
+        <line key={i} x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2} stroke="#444" strokeWidth={0.75} />
+      ))}
+      <circle cx={cx} cy={cy} r={r * 0.35} fill={`url(#${gradId})`} />
+      <defs>
+        <radialGradient id={gradId} cx="35%" cy="30%">
+          <stop offset="0%" stopColor="#444" />
+          <stop offset="60%" stopColor="#1a1a1a" />
+          <stop offset="100%" stopColor="#0a0a0a" />
+        </radialGradient>
+      </defs>
       <path
         d={arcPath(cx, cy, r, start, start + sweep)}
         fill="none"
@@ -257,7 +276,7 @@ export function RotaryKnob({
     value >= 85 ? 'var(--color-danger)' : value >= 60 ? 'var(--color-amber)' : 'var(--color-phosphor)'
   return (
     <div className="flex flex-col items-center gap-1">
-      <div className="bezel-recessed relative rounded-full p-1">
+      <div className="knob-face bezel-recessed relative rounded-full p-1">
         <DialArc value={value} size={px} strokeWidth={stroke} color={tone} />
         <span
           className="absolute inset-0 flex items-center justify-center text-[9px] font-bold"
@@ -287,7 +306,7 @@ export function CircularGauge({
     value >= 85 ? 'var(--color-danger)' : value >= 60 ? 'var(--color-amber)' : 'var(--color-info)'
   return (
     <div className="flex flex-col items-center gap-1">
-      <div className="bezel-recessed relative rounded-full p-1.5">
+      <div className="knob-face bezel-recessed relative rounded-full p-1.5">
         <DialArc value={value} size={px} strokeWidth={5} color={tone} />
         <span className="absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-sm font-bold" style={{ color: tone }}>
@@ -345,7 +364,7 @@ export function BacklitButton({
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`font-ui bezel-recessed rounded uppercase tracking-widest font-semibold transition-opacity hover:opacity-90 disabled:opacity-40 ${pad} ${glow}`}
+      className={`backlit-btn font-ui rounded uppercase tracking-widest font-semibold disabled:opacity-40 ${pad} ${glow}`}
       style={{ borderColor: border, color: text }}
     >
       {children}
@@ -366,25 +385,21 @@ export function MasterPower({
   const glow = on ? 'var(--color-danger-glow)' : 'transparent'
   return (
     <button
-      onClick={onToggle}
+      onClick={(e) => {
+        e.stopPropagation()
+        onToggle()
+      }}
       disabled={disabled}
       aria-pressed={on}
-      className="font-ui relative flex h-16 w-20 flex-col overflow-hidden rounded-md border border-[var(--color-danger)] bg-[var(--color-bezel)] text-[9px] font-bold shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] disabled:opacity-40"
-      style={{ boxShadow: `inset 0 2px 4px rgba(0,0,0,0.5), 0 0 16px -2px ${glow}` }}
+      className="rocker-housing rocker-danger font-ui relative flex h-16 w-20 flex-col overflow-hidden rounded-md p-0.5 text-[9px] font-bold disabled:opacity-40"
+      style={{ boxShadow: `inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -2px 4px rgba(0,0,0,0.5), 0 0 16px -2px ${glow}` }}
     >
       <span
-        className={`flex flex-[2] items-center justify-center transition-colors ${on ? 'text-black' : 'text-[var(--color-ink-faint)]'}`}
-        style={{
-          backgroundColor: on ? 'var(--color-danger)' : 'transparent',
-          boxShadow: on ? 'inset 0 -1px 2px rgba(0,0,0,0.3)' : undefined,
-        }}
+        className={`flex flex-[2] items-center justify-center rounded-sm transition-colors ${on ? 'rocker-segment-on danger text-black' : 'text-[var(--color-ink-faint)]'}`}
       >
         ON
       </span>
-      <span
-        className="font-ui flex flex-1 items-center justify-center border-t border-[var(--color-panel-edge)] bg-[#1a1a1a] text-[8px] uppercase tracking-wider text-[var(--color-ink-faint)]"
-        style={{ boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.4)' }}
-      >
+      <span className="font-ui rocker-segment-off mt-0.5 flex flex-1 items-center justify-center rounded-sm text-[8px] uppercase tracking-wider text-[var(--color-ink-faint)]">
         All Systems
       </span>
     </button>
@@ -496,15 +511,17 @@ export function AgentStatus({
         <span className="font-ui uppercase tracking-wider">{label ?? (online ? 'Agent Running' : 'Agent Offline')}</span>
       </div>
       {online && (
-        <svg viewBox="0 0 80 20" className="mt-2 h-5 w-full" aria-hidden>
-          <polyline
-            points="0,12 8,8 16,14 24,6 32,10 40,4 48,12 56,7 64,11 72,5 80,9"
-            fill="none"
-            stroke="var(--color-phosphor)"
-            strokeWidth={1.5}
-            style={{ filter: 'drop-shadow(0 0 3px var(--color-phosphor))' }}
-          />
-        </svg>
+        <div className="mt-2 overflow-hidden">
+          <svg viewBox="0 0 100 20" className="waveform-track h-5 w-[120%]" aria-hidden>
+            <polyline
+              points="0,12 8,8 16,14 24,6 32,10 40,4 48,12 56,7 64,11 72,5 80,9 88,13 96,6"
+              fill="none"
+              stroke="var(--color-phosphor)"
+              strokeWidth={1.5}
+              style={{ filter: 'drop-shadow(0 0 3px var(--color-phosphor))' }}
+            />
+          </svg>
+        </div>
       )}
     </div>
   )
@@ -555,7 +572,7 @@ export function ProjectModule({
   }
 
   return (
-    <div className="bezel-raised flex flex-col rounded-lg">
+    <div className="module-face bezel-raised flex flex-col rounded-lg">
       <div className="flex items-start justify-between gap-2 border-b border-[var(--color-panel-edge)] px-4 py-3">
         <button onClick={onClick} className="min-w-0 flex-1 text-left">
           <div className="flex items-center gap-2">

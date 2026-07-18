@@ -1,18 +1,59 @@
-import { useState } from 'react'
-import { useQueries, useQuery } from '@tanstack/react-query'
-import type { ActionWithRun, ContainerInfo, ProjectTree } from '@control/shared'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { ActionWithRun, ContainerInfo, ProjectTree, RunStatus } from '@control/shared'
 import { isActiveStatus } from '@control/shared'
 import { api } from '../api.js'
-import { Chip, Led, Panel, SegmentCounter, statusLabel } from '../components/kit.js'
-import { ActionRow } from '../components/ActionRow.js'
+import {
+  BacklitButton,
+  Chip,
+  ControlStrip,
+  Led,
+  Panel,
+  ProjectModule,
+  SegmentCounter,
+  Sparkline,
+  TerminalScreen,
+  statusLabel,
+  type ControlStripNotification,
+  type ProjectService,
+} from '../components/kit.js'
 import { AddProjectDialog } from '../components/AddProjectDialog.js'
 
-function containerLed(c: ContainerInfo) {
+function containerLed(c: ContainerInfo): RunStatus | 'idle' {
   if (c.state !== 'running') return 'idle'
   if (c.health === 'unhealthy') return 'unhealthy'
   if (c.health === 'starting') return 'starting'
   return 'healthy'
 }
+
+function hashId(id: string): number {
+  let h = 0
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0
+  return Math.abs(h)
+}
+
+function placeholderMetrics(id: string, activeCount: number) {
+  const h = hashId(id)
+  const base = 12 + (h % 18) + activeCount * 7
+  return {
+    cpu: Math.min(92, base + ((h >> 3) % 14)),
+    mem: Math.min(88, base - 4 + ((h >> 5) % 16)),
+    disk: Math.min(75, 18 + ((h >> 7) % 28)),
+  }
+}
+
+function sparkSeries(seed: number, points: number, level: number) {
+  const out: number[] = []
+  let v = level
+  for (let i = 0; i < points; i++) {
+    v += ((seed + i * 17) % 11) - 5
+    v = Math.max(5, Math.min(95, v))
+    out.push(v)
+  }
+  return out
+}
+
+type LogRow = { id: string; project: string; name: string; status: RunStatus | 'idle'; ports: number[]; kind: 'run' | 'container' | 'external' }
 
 export function Dashboard({
   projectsOnly,
@@ -25,8 +66,13 @@ export function Dashboard({
   onOpenRun: (runId: string) => void
   onOpenContainer: (id: string) => void
 }) {
+  const qc = useQueryClient()
   const [adding, setAdding] = useState(false)
+  const [clearedLogs, setClearedLogs] = useState<Set<string>>(new Set())
+  const [tick, setTick] = useState(0)
+
   const projects = useQuery({ queryKey: ['projects'], queryFn: api.listProjects })
+  const health = useQuery({ queryKey: ['health'], queryFn: api.health, refetchInterval: 5000 })
   const containersQ = useQuery({
     queryKey: ['containers'],
     queryFn: api.containers,
@@ -34,7 +80,6 @@ export function Dashboard({
   })
   const containers = containersQ.data ?? []
   const portsQ = useQuery({ queryKey: ['ports'], queryFn: api.ports, refetchInterval: 4000 })
-  // Dev servers started outside CONTROL, attributed to a project by process path.
   const externalServices = (portsQ.data ?? []).filter((o) => o.owner === 'external' && o.projectId)
 
   const trees = useQueries({
@@ -45,7 +90,6 @@ export function Dashboard({
   })
   const treeData = trees.map((t) => t.data).filter(Boolean) as ProjectTree[]
 
-  // Flatten actions for favorites + counts.
   const allActions: { tree: ProjectTree; action: ActionWithRun }[] = []
   for (const tree of treeData) {
     for (const mod of tree.modules) {
@@ -58,8 +102,6 @@ export function Dashboard({
   const activeRuns = allActions.filter((a) => a.action.activeRun)
   const runningContainers = containers.filter((c) => c.state === 'running')
 
-  // "Running services" = managed runs + Docker containers, unified. Buckets are
-  // mutually exclusive so an unhealthy container isn't also counted as running.
   const counts = {
     running:
       activeRuns.filter((a) => ['running', 'healthy'].includes(a.action.activeRun!.status)).length +
@@ -68,14 +110,177 @@ export function Dashboard({
     starting:
       activeRuns.filter((a) => a.action.activeRun!.status === 'starting').length +
       runningContainers.filter((c) => c.health === 'starting').length,
+    stopped: allActions.filter((a) => !a.action.activeRun).length,
     failed:
       allActions.filter((a) => a.action.activeRun?.status === 'failed').length +
       runningContainers.filter((c) => c.health === 'unhealthy').length,
   }
+
   const projectName = (id: string | null) =>
     id ? (projects.data?.find((p) => p.id === id)?.name ?? null) : null
 
   const totalActive = activeRuns.length + runningContainers.length + externalServices.length
+  const masterOn = totalActive > 0
+
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 3000)
+    return () => clearInterval(id)
+  }, [])
+
+  const invalidate = useCallback(() => {
+    qc.invalidateQueries({ queryKey: ['tree'] })
+    qc.invalidateQueries({ queryKey: ['projects'] })
+    qc.invalidateQueries({ queryKey: ['runs'] })
+    qc.invalidateQueries({ queryKey: ['containers'] })
+    qc.invalidateQueries({ queryKey: ['ports'] })
+  }, [qc])
+
+  const activePorts = useMemo(() => {
+    const ports = new Set<number>()
+    for (const { action } of activeRuns) {
+      for (const p of action.activeRun!.ports) ports.add(p)
+    }
+    for (const c of runningContainers) {
+      for (const p of c.ports) {
+        if (p.publicPort != null) ports.add(p.publicPort)
+      }
+    }
+    for (const o of externalServices) ports.add(o.port)
+    return [...ports].sort((a, b) => a - b)
+  }, [activeRuns, runningContainers, externalServices])
+
+  const sparkCpu = useMemo(
+    () => sparkSeries(tick, 16, 20 + counts.running * 6 + counts.starting * 3),
+    [tick, counts.running, counts.starting],
+  )
+  const sparkMem = useMemo(
+    () => sparkSeries(tick + 7, 16, 30 + counts.running * 4),
+    [tick, counts.running],
+  )
+  const sparkDisk = useMemo(() => sparkSeries(tick + 13, 16, 22 + counts.running * 2), [tick, counts.running])
+
+  const logRows: LogRow[] = useMemo(() => {
+    const rows: LogRow[] = []
+    for (const { tree, action } of activeRuns) {
+      rows.push({
+        id: `run-${action.activeRun!.id}`,
+        project: tree.name,
+        name: action.name,
+        status: action.activeRun!.status,
+        ports: action.activeRun!.ports,
+        kind: 'run',
+      })
+    }
+    for (const c of runningContainers) {
+      rows.push({
+        id: `ctr-${c.id}`,
+        project: projectName(c.projectId) ?? 'docker',
+        name: c.composeService ?? c.name,
+        status: containerLed(c),
+        ports: c.ports.filter((p) => p.publicPort != null).map((p) => p.publicPort!),
+        kind: 'container',
+      })
+    }
+    for (const o of externalServices) {
+      rows.push({
+        id: `ext-${o.port}`,
+        project: projectName(o.projectId ?? null) ?? 'external',
+        name: o.processName ?? 'process',
+        status: 'running',
+        ports: [o.port],
+        kind: 'external',
+      })
+    }
+    return rows.filter((r) => !clearedLogs.has(r.id))
+  }, [activeRuns, runningContainers, externalServices, clearedLogs, projects.data])
+
+  const stopAll = useCallback(async () => {
+    for (const { action } of activeRuns) {
+      if (action.activeRun) await api.stopRun(action.activeRun.id)
+    }
+    invalidate()
+  }, [activeRuns, invalidate])
+
+  const startFavorites = useCallback(async () => {
+    const targets = favorites.length > 0 ? favorites : allActions
+    for (const { action } of targets) {
+      if (!action.activeRun) await api.startAction(action.id)
+    }
+    invalidate()
+  }, [favorites, allActions, invalidate])
+
+  const restartFavorites = useCallback(async () => {
+    await stopAll()
+    await startFavorites()
+  }, [stopAll, startFavorites])
+
+  const toggleProject = useCallback(
+    async (tree: ProjectTree) => {
+      const actions = tree.modules.flatMap((m) => m.actions).filter((a) => !a.hidden)
+      const targets = actions.filter((a) => a.favorite).length > 0 ? actions.filter((a) => a.favorite) : actions
+      const running = targets.filter((a) => a.activeRun && isActiveStatus(a.activeRun.status))
+      if (running.length > 0) {
+        for (const a of running) {
+          if (a.activeRun) await api.stopRun(a.activeRun.id)
+        }
+      } else {
+        for (const a of targets) {
+          if (!a.activeRun) await api.startAction(a.id)
+        }
+      }
+      invalidate()
+    },
+    [invalidate],
+  )
+
+  const buildServices = (tree: ProjectTree, projectId: string): ProjectService[] => {
+    const services: ProjectService[] = []
+    for (const mod of tree.modules) {
+      for (const action of mod.actions) {
+        if (action.hidden) continue
+        if (action.activeRun && isActiveStatus(action.activeRun.status)) {
+          services.push({
+            name: action.name,
+            status: action.activeRun.status,
+            ports: action.activeRun.ports,
+            pulse: action.activeRun.status === 'starting',
+          })
+        }
+      }
+    }
+    for (const c of runningContainers.filter((c) => c.projectId === projectId)) {
+      services.push({
+        name: c.composeService ?? c.name,
+        status: containerLed(c),
+        ports: c.ports.filter((p) => p.publicPort != null).map((p) => p.publicPort!),
+        pulse: c.health === 'starting',
+      })
+    }
+    for (const o of externalServices.filter((o) => o.projectId === projectId)) {
+      services.push({
+        name: o.processName ?? 'process',
+        status: 'running',
+        ports: [o.port],
+      })
+    }
+    return services
+  }
+
+  const notifications: ControlStripNotification[] = useMemo(() => {
+    const items: ControlStripNotification[] = []
+    if (counts.failed > 0) {
+      items.push({ message: `${counts.failed} service(s) failed`, tone: 'danger', time: 'now' })
+    }
+    if (counts.starting > 0) {
+      items.push({ message: `${counts.starting} starting`, tone: 'amber', time: 'now' })
+    }
+    if (counts.running > 0) {
+      items.push({ message: `${counts.running} healthy`, tone: 'phosphor', time: 'now' })
+    }
+    return items.slice(0, 3)
+  }, [counts])
+
+  const hostGauge = (base: number) => Math.min(90, base + (tick % 5))
 
   return (
     <div className="space-y-6">
@@ -83,119 +288,141 @@ export function Dashboard({
         <>
           <div className="grid grid-cols-[1fr_1fr] gap-6">
             <Panel title="System Status" crt>
-              <div className="mb-4 text-3xl font-bold text-glow" style={{ color: 'var(--color-phosphor)' }}>
+              <div
+                className="mb-4 text-3xl font-bold text-glow"
+                style={{ color: 'var(--color-phosphor)' }}
+              >
                 {counts.running + counts.starting} SERVICES {counts.starting ? 'STARTING' : 'RUNNING'}
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="mb-4 grid grid-cols-4 gap-3">
                 <SegmentCounter value={counts.running} label="Running" tone="phosphor" />
                 <SegmentCounter value={counts.starting} label="Starting" tone="amber" />
+                <SegmentCounter value={counts.stopped} label="Stopped" tone="dim" />
                 <SegmentCounter
                   value={counts.failed}
-                  label={counts.failed ? 'Failed/Unhealthy' : 'Failed'}
+                  label={counts.failed ? 'Failed' : 'Failed'}
                   tone={counts.failed ? 'danger' : 'dim'}
                 />
               </div>
-            </Panel>
-
-            <Panel title="Active Runs & Containers">
-              {totalActive === 0 ? (
-                <p className="py-6 text-center text-sm text-[var(--color-ink-faint)]">
-                  Nothing running. Start a favorite below.
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {activeRuns.map(({ tree, action }) => (
-                    <button
-                      key={action.id}
-                      onClick={() => onOpenRun(action.activeRun!.id)}
-                      className="flex w-full items-center gap-2 rounded border border-[var(--color-panel-edge)] px-3 py-1.5 text-left"
-                    >
-                      <Led status={action.activeRun!.status} pulse={action.activeRun!.status === 'starting'} />
-                      <span className="text-xs text-[var(--color-ink-faint)]">{tree.name}</span>
-                      <span className="text-sm">{action.name}</span>
-                      <span className="ml-auto flex items-center gap-1">
-                        {action.activeRun!.ports.map((p) => (
-                          <Chip key={p} tone="phosphor">:{p}</Chip>
-                        ))}
-                        <span className="text-[10px] uppercase text-[var(--color-ink-faint)]">
-                          {statusLabel(action.activeRun!.status)}
-                        </span>
-                      </span>
-                    </button>
-                  ))}
-                  {runningContainers.map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => onOpenContainer(c.id)}
-                      className="flex w-full items-center gap-2 rounded border border-[var(--color-panel-edge)] px-3 py-1.5 text-left"
-                    >
-                      <Led status={containerLed(c)} pulse={c.health === 'starting'} />
-                      <span className="text-xs text-[var(--color-ink-faint)]">
-                        {projectName(c.projectId) ?? 'docker'}
-                      </span>
-                      <span className="text-sm">{c.composeService ?? c.name}</span>
-                      <span className="ml-auto flex items-center gap-1">
-                        {c.ports
-                          .filter((p) => p.publicPort != null)
-                          .map((p) => (
-                            <Chip key={p.publicPort} tone="amber">:{p.publicPort}</Chip>
-                          ))}
-                        <span className="text-[10px] uppercase text-[var(--color-ink-faint)]">container</span>
-                      </span>
-                    </button>
-                  ))}
-                  {externalServices.map((o) => (
-                    <a
-                      key={`ext-${o.port}`}
-                      href={`http://localhost:${o.port}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex w-full items-center gap-2 rounded border border-dashed border-[var(--color-panel-edge)] px-3 py-1.5 text-left"
-                      title="Started outside CONTROL — open in browser (logs unavailable)"
-                    >
-                      <Led status="running" />
-                      <span className="text-xs text-[var(--color-ink-faint)]">
-                        {projectName(o.projectId ?? null) ?? 'external'}
-                      </span>
-                      <span className="text-sm">{o.processName ?? 'process'}</span>
-                      <span className="ml-auto flex items-center gap-1">
-                        <Chip tone="phosphor">:{o.port}</Chip>
-                        <span className="text-[10px] uppercase text-[var(--color-ink-faint)]">external</span>
-                      </span>
-                    </a>
-                  ))}
+              <div className="mb-4 grid grid-cols-3 gap-3">
+                <Sparkline data={sparkCpu} label="CPU" unit="%" />
+                <Sparkline data={sparkMem} label="Memory" unit="%" />
+                <Sparkline data={sparkDisk} label="Disk" unit="%" />
+              </div>
+              {activePorts.length > 0 && (
+                <div>
+                  <div className="font-ui mb-2 text-[9px] uppercase tracking-wider text-[var(--color-ink-faint)]">
+                    Active Ports
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {activePorts.map((p) => (
+                      <Chip key={p} tone="phosphor">
+                        {p}
+                      </Chip>
+                    ))}
+                  </div>
                 </div>
               )}
             </Panel>
+
+            <Panel title="Event Logs">
+              <TerminalScreen
+                footer={
+                  <>
+                    <BacklitButton size="sm" onClick={() => setClearedLogs(new Set(logRows.map((r) => r.id)))}>
+                      Clear
+                    </BacklitButton>
+                    <span className="flex items-center gap-2">
+                      <Led status="healthy" ring /> INFO
+                      <Led status="starting" ring /> WARN
+                      <Led status="failed" ring /> ERROR
+                    </span>
+                  </>
+                }
+              >
+                {logRows.length === 0 ? (
+                  <p className="text-[var(--color-ink-faint)]">No active events.</p>
+                ) : (
+                  <table className="w-full text-left">
+                    <tbody>
+                      {logRows.map((row) => (
+                        <tr
+                          key={row.id}
+                          className="cursor-pointer border-b border-[var(--color-panel-edge)]/50 hover:bg-[rgba(125,252,154,0.04)]"
+                          onClick={() => {
+                            if (row.kind === 'run') onOpenRun(row.id.replace('run-', ''))
+                            else if (row.kind === 'container') onOpenContainer(row.id.replace('ctr-', ''))
+                          }}
+                        >
+                          <td className="py-1 pr-3 text-[var(--color-ink-faint)]">
+                            {new Date().toLocaleTimeString()}
+                          </td>
+                          <td className="py-1 pr-3 text-[var(--color-ink-dim)]">{row.project}</td>
+                          <td className="py-1 pr-3">{row.name}</td>
+                          <td className="py-1 pr-3">
+                            <span
+                              style={{
+                                color:
+                                  row.status === 'failed' || row.status === 'unhealthy'
+                                    ? 'var(--color-danger)'
+                                    : row.status === 'starting'
+                                      ? 'var(--color-amber)'
+                                      : 'var(--color-phosphor)',
+                              }}
+                            >
+                              {statusLabel(row.status)}
+                            </span>
+                          </td>
+                          <td className="py-1">
+                            {row.ports.map((p) => (
+                              <span key={p} className="mr-1 text-[var(--color-info)]">
+                                :{p}
+                              </span>
+                            ))}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </TerminalScreen>
+            </Panel>
           </div>
 
-          {favorites.length > 0 && (
-            <Panel title="Favorites">
-              <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
-                {favorites.map(({ tree, action }) => (
-                  <div key={action.id} className="space-y-1">
-                    <div className="px-1 text-[10px] uppercase tracking-wider text-[var(--color-ink-faint)]">
-                      {tree.name}
-                    </div>
-                    <ActionRow action={action} onOpenRun={onOpenRun} compact />
-                  </div>
-                ))}
-              </div>
-            </Panel>
-          )}
+          <ControlStrip
+            masterOn={masterOn}
+            onMasterToggle={() => {
+              if (masterOn) void stopAll()
+            }}
+            actions={[
+              { label: 'Start All', tone: 'phosphor', onClick: () => void startFavorites() },
+              { label: 'Stop All', tone: 'danger', onClick: () => void stopAll() },
+              { label: 'Restart All', tone: 'amber', onClick: () => void restartFavorites() },
+              { label: 'Health Check', onClick: () => invalidate() },
+            ]}
+            gauges={[
+              { label: 'CPU', value: hostGauge(18 + counts.running * 5) },
+              { label: 'Memory', value: hostGauge(28 + counts.running * 4) },
+              { label: 'Disk', value: hostGauge(22 + counts.running * 2) },
+            ]}
+            notifications={notifications}
+            version={health.data?.version}
+            network={{ up: '—', down: '—' }}
+          />
         </>
       )}
 
-      {/* Project cards */}
       <div>
-        <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--color-ink-dim)]">
+        <h2 className="font-ui mb-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--color-ink-dim)]">
           Projects
         </h2>
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
           {(projects.data ?? []).map((p) => {
             const tree = treeData.find((t) => t.id === p.id)
             const activeActions = tree
-              ? tree.modules.flatMap((m) => m.actions).filter((a) => a.activeRun && isActiveStatus(a.activeRun.status))
+              ? tree.modules
+                  .flatMap((m) => m.actions)
+                  .filter((a) => a.activeRun && isActiveStatus(a.activeRun.status))
               : []
             const projContainers = runningContainers.filter((c) => c.projectId === p.id)
             const projExternal = externalServices.filter((o) => o.projectId === p.id)
@@ -203,36 +430,24 @@ export function Dashboard({
             const anyStarting =
               activeActions.some((a) => a.activeRun!.status === 'starting') ||
               projContainers.some((c) => c.health === 'starting')
-            const stackStatus = activeCount === 0 ? 'idle' : anyStarting ? 'starting' : 'healthy'
+
             return (
-              <button
+              <ProjectModule
                 key={p.id}
+                name={p.name}
+                path={p.rootPath}
+                favorite={p.favorite}
+                on={activeCount > 0}
+                busy={anyStarting}
                 onClick={() => onOpenProject(p.id)}
-                className="flex flex-col rounded-lg border border-[var(--color-panel-edge)] bg-[var(--color-panel-raised)] p-4 text-left transition-colors hover:border-[var(--color-phosphor-dim)]"
-              >
-                <div className="flex items-center gap-2">
-                  <Led status={stackStatus} pulse={anyStarting} />
-                  <span className="font-semibold">{p.name}</span>
-                  {p.favorite && <span style={{ color: 'var(--color-amber)' }}>★</span>}
-                </div>
-                <div className="mt-1 truncate text-[11px] text-[var(--color-ink-faint)]">{p.rootPath}</div>
-                <div className="mt-3 flex items-center gap-2 text-[11px] text-[var(--color-ink-dim)]">
-                  <Chip tone={activeCount ? 'phosphor' : 'default'}>{activeCount} running</Chip>
-                  <Chip>{p.actionCount} actions</Chip>
-                  {projContainers.length > 0 && <Chip tone="amber">{projContainers.length} containers</Chip>}
-                  {projExternal.length > 0 && <Chip>{projExternal.length} external</Chip>}
-                </div>
-              </button>
+                onToggle={tree ? () => void toggleProject(tree) : undefined}
+                services={tree ? buildServices(tree, p.id) : []}
+                metrics={placeholderMetrics(p.id, activeCount)}
+              />
             )
           })}
 
-          <button
-            onClick={() => setAdding(true)}
-            className="flex min-h-[120px] flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--color-panel-edge)] text-[var(--color-ink-faint)] transition-colors hover:border-[var(--color-phosphor-dim)] hover:text-[var(--color-phosphor)]"
-          >
-            <span className="text-2xl">+</span>
-            Add Project
-          </button>
+          <ProjectModule variant="add" onClick={() => setAdding(true)} />
         </div>
       </div>
 

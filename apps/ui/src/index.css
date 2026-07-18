@@ -47,22 +47,31 @@ body {
 
 /* Recessed bezel — CRT screens, terminal interiors, counter wells */
 .bezel-recessed {
-  background: var(--color-panel);
-  border: 1px solid var(--color-panel-edge);
+  background: linear-gradient(180deg, #080808 0%, var(--color-panel) 40%, #111 100%);
+  border: 1px solid #1a1a1a;
   box-shadow:
-    inset 0 2px 6px rgba(0, 0, 0, 0.65),
-    inset 0 1px 0 rgba(255, 255, 255, 0.02),
-    0 1px 0 rgba(255, 255, 255, 0.03);
+    inset 0 3px 10px rgba(0, 0, 0, 0.75),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 /* Raised bezel — module frames, outer housing */
 .bezel-raised {
-  background: var(--color-panel-raised);
+  background: linear-gradient(180deg, #1c1c1c 0%, var(--color-panel-raised) 30%, #121212 100%);
   border: 1px solid var(--color-panel-edge);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 2px 8px rgba(0, 0, 0, 0.45),
-    0 1px 0 rgba(0, 0, 0, 0.3);
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4),
+    0 3px 12px rgba(0, 0, 0, 0.5),
+    0 1px 0 rgba(0, 0, 0, 0.35);
+}
+
+/* CRT monitor housing */
+.crt-frame {
+  padding: 10px;
+  background: linear-gradient(180deg, #222 0%, #111 50%, #0a0a0a 100%);
+  border-bottom: 1px solid var(--color-panel-edge);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 /* Subtle scanline texture on CRT-style panels */
@@ -75,18 +84,121 @@ body {
       transparent 1px,
       transparent 3px
     ),
-    var(--color-panel);
+    radial-gradient(ellipse at center, #0a120a 0%, var(--color-panel) 70%);
+}
+
+/* Plastic rocker switch housing */
+.rocker-housing {
+  background: linear-gradient(180deg, #2a2a2a 0%, #141414 50%, #0a0a0a 100%);
+  border: 1px solid #3a3a3a;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.5),
+    0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.rocker-housing:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.rocker-danger {
+  border-color: var(--color-danger);
+}
+
+.rocker-segment-on {
+  background: linear-gradient(180deg, #9affb8 0%, var(--color-phosphor) 40%, #4a9a62 100%);
+  box-shadow: inset 0 -1px 2px rgba(0, 0, 0, 0.3), 0 0 8px var(--color-phosphor);
+}
+
+.rocker-segment-on.busy {
+  background: linear-gradient(180deg, #ffd080 0%, var(--color-amber) 40%, #a07020 100%);
+  box-shadow: inset 0 -1px 2px rgba(0, 0, 0, 0.3), 0 0 8px var(--color-amber);
+}
+
+.rocker-segment-on.danger {
+  background: linear-gradient(180deg, #ff9a94 0%, var(--color-danger) 40%, #a03028 100%);
+  box-shadow: inset 0 -1px 2px rgba(0, 0, 0, 0.3), 0 0 10px var(--color-danger-glow);
+}
+
+.rocker-segment-off {
+  background: linear-gradient(180deg, #222 0%, #141414 60%, #0a0a0a 100%);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+/* Backlit mechanical button */
+.backlit-btn {
+  background: linear-gradient(180deg, #1a1a1a 0%, #0e0e0e 100%);
+  border: 1px solid var(--color-panel-edge);
+  box-shadow:
+    inset 0 2px 5px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+.backlit-btn:hover:not(:disabled) {
+  box-shadow:
+    inset 0 2px 5px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 10px -2px currentColor;
+}
+
+.backlit-btn:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.7);
+}
+
+/* Knob metal face */
+.knob-face {
+  background: radial-gradient(circle at 35% 30%, #3a3a3a 0%, #1a1a1a 50%, #0a0a0a 100%);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.5),
+    0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* Project module rivets */
+.module-face {
+  position: relative;
+}
+
+.module-face::before,
+.module-face::after {
+  content: '';
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #555 0%, #222 60%, #111 100%);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
+  top: 8px;
+}
+
+.module-face::before {
+  left: 8px;
+}
+
+.module-face::after {
+  right: 8px;
 }
 
 .led {
+  position: relative;
   box-shadow:
     0 0 4px 1px currentColor,
     0 0 10px 2px currentColor;
 }
 
+.led::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.55) 0%, transparent 55%);
+  pointer-events: none;
+}
+
 .led-ring {
   box-shadow:
-    0 0 0 2px rgba(0, 0, 0, 0.5),
+    0 0 0 2px rgba(0, 0, 0, 0.55),
     0 0 6px 2px currentColor,
     0 0 14px 3px currentColor;
 }
@@ -117,6 +229,19 @@ body {
 
 .text-glow-danger {
   text-shadow: 0 0 8px var(--color-danger-glow);
+}
+
+@keyframes waveform-drift {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-20px);
+  }
+}
+
+.waveform-track {
+  animation: waveform-drift 2s linear infinite;
 }
 
 ::-webkit-scrollbar {

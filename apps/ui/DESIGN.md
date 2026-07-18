@@ -137,9 +137,9 @@ import {
 
 ## Next UI pass checklist
 
-- [ ] Replace sidebar buttons in `App.tsx` with `NavItem` + `AgentStatus`
-- [ ] Add `Sparkline` + stopped counter to System Status panel
-- [ ] Migrate active runs list to `TerminalScreen` row format
-- [ ] Replace project card buttons with `ProjectModule`
-- [ ] Mount `ControlStrip` at bottom of overview
+- [x] Replace sidebar buttons in `App.tsx` with `NavItem` + `AgentStatus`
+- [x] Add `Sparkline` + stopped counter to System Status panel
+- [x] Migrate active runs list to `TerminalScreen` row format
+- [x] Replace project card buttons with `ProjectModule`
+- [x] Mount `ControlStrip` at bottom of overview
 - [ ] Wire real CPU/mem/disk metrics into knobs and gauges
