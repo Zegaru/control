@@ -1,0 +1,19 @@
+{
+  "name": "@control/shell",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "stage-runtime": "node ../../scripts/stage-runtime.mjs",
+    "dev": "node ../../scripts/tauri-with-msvc.mjs dev",
+    "build": "node ../../scripts/tauri-with-msvc.mjs build",
+    "tauri": "node ../../scripts/tauri-with-msvc.mjs"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.1.1"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.1.0",
+    "esbuild": "^0.25.0"
+  }
+}

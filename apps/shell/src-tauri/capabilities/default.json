@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "CONTROL shell capabilities. The main window navigates to the daemon-served UI, which talks to the daemon over its own HTTP/WS — it does not use Tauri IPC. Tray + autostart are driven from Rust, so no JS permissions are required here.",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

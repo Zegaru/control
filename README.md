@@ -28,7 +28,10 @@ Milestones **M0–M5** are implemented (M2/M3 as complete working slices):
 - ✅ Orchestration (M5): launch groups (ordered steps with wait-for-healthy/exit),
   group builder UI, action editor (portHint / healthUrl / env + run history),
   per-project multi-compose-project claiming, and a Ctrl/Cmd-K command palette
-- ⏳ Next: Tauri tray + autostart (M6)
+- ✅ Native app (M6): Tauri desktop shell (`apps/shell`) — spawns/supervises the
+  daemon, renders the UI in a native window, tray icon (Open / Restart / Start on
+  login / Quit), autostart on login. The NSIS installer embeds a self-contained
+  daemon + UI runtime (Node ≥22 still required on PATH).
 
 ## Quick start
 
@@ -55,6 +58,7 @@ Production single-origin mode: `pnpm --filter @control/ui build` then
 ```
 apps/daemon/     Node supervision daemon (Hono + WS, node-pty, dockerode, SQLite)
 apps/ui/         Vite + React + Tailwind + TanStack Query + xterm.js
+apps/shell/      Tauri desktop shell + NSIS installer (staged runtime under runtime/)
 packages/shared/ Zod schemas + types shared across the API boundary
 ```
 
