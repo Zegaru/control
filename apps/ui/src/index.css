@@ -6,20 +6,23 @@
  * Phosphor green = healthy/running, amber = starting/transitional, red = failed.
  */
 @theme {
-  --color-panel: #0e100d;
-  --color-panel-raised: #161a14;
-  --color-panel-edge: #2a2f26;
+  --color-panel: #0e0e0e;
+  --color-panel-raised: #161616;
+  --color-panel-edge: #2e2e2e;
   --color-bezel: #05060a;
 
   --color-phosphor: #7dfc9a;
   --color-phosphor-dim: #3f7a52;
   --color-amber: #f5b34a;
   --color-danger: #ff5f56;
-  --color-ink: #d7e0d2;
-  --color-ink-dim: #8a9384;
-  --color-ink-faint: #5c6458;
+  --color-danger-glow: rgba(255, 95, 86, 0.55);
+  --color-info: #5eb8ff;
+  --color-ink: #d4d4d4;
+  --color-ink-dim: #8a8a8a;
+  --color-ink-faint: #5c5c5c;
 
   --font-mono: 'JetBrains Mono', 'SF Mono', 'Consolas', ui-monospace, monospace;
+  --font-ui: 'Chakra Petch', 'Segoe UI', sans-serif;
 }
 
 html,
@@ -31,11 +34,35 @@ body,
 body {
   margin: 0;
   background:
-    radial-gradient(circle at 30% -10%, #1a1f17 0%, transparent 55%),
+    radial-gradient(circle at 30% -10%, #1a1a1a 0%, transparent 55%),
     var(--color-bezel);
   color: var(--color-ink);
   font-family: var(--font-mono);
   -webkit-font-smoothing: antialiased;
+}
+
+.font-ui {
+  font-family: var(--font-ui);
+}
+
+/* Recessed bezel — CRT screens, terminal interiors, counter wells */
+.bezel-recessed {
+  background: var(--color-panel);
+  border: 1px solid var(--color-panel-edge);
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.02),
+    0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+/* Raised bezel — module frames, outer housing */
+.bezel-raised {
+  background: var(--color-panel-raised);
+  border: 1px solid var(--color-panel-edge);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 2px 8px rgba(0, 0, 0, 0.45),
+    0 1px 0 rgba(0, 0, 0, 0.3);
 }
 
 /* Subtle scanline texture on CRT-style panels */
@@ -52,11 +79,44 @@ body {
 }
 
 .led {
-  box-shadow: 0 0 6px 1px currentColor;
+  box-shadow:
+    0 0 4px 1px currentColor,
+    0 0 10px 2px currentColor;
+}
+
+.led-ring {
+  box-shadow:
+    0 0 0 2px rgba(0, 0, 0, 0.5),
+    0 0 6px 2px currentColor,
+    0 0 14px 3px currentColor;
 }
 
 .text-glow {
   text-shadow: 0 0 8px rgba(125, 252, 154, 0.5);
+}
+
+.glow-phosphor {
+  box-shadow: 0 0 12px -2px var(--color-phosphor);
+}
+
+.glow-amber {
+  box-shadow: 0 0 12px -2px var(--color-amber);
+}
+
+.glow-danger {
+  box-shadow: 0 0 14px -2px var(--color-danger-glow);
+}
+
+.glow-info {
+  box-shadow: 0 0 12px -2px var(--color-info);
+}
+
+.text-glow-amber {
+  text-shadow: 0 0 8px rgba(245, 179, 74, 0.5);
+}
+
+.text-glow-danger {
+  text-shadow: 0 0 8px var(--color-danger-glow);
 }
 
 ::-webkit-scrollbar {
