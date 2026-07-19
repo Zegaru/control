@@ -8,7 +8,7 @@ const POLL_MS = 500
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 /** Start a group's steps in order, honoring each step's waitFor condition. */
-export async function startGroup(groupId: string): Promise<void> {
+export async function startGroup(groupId: string, runtimeEnv?: Record<string, string>): Promise<void> {
   const group = getGroup(groupId)
   if (!group) throw new Error('Group not found')
 
@@ -18,7 +18,7 @@ export async function startGroup(groupId: string): Promise<void> {
 
     // Don't double-start an action that already has an active run.
     const existing = getActiveRun(action.id)
-    const run = existing ?? supervisor.start(action)
+    const run = existing ?? supervisor.start(action, runtimeEnv)
 
     if (step.waitFor === 'none') continue
     await waitForStep(run.id, action.id, step.waitFor)

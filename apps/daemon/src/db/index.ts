@@ -21,6 +21,8 @@ function ensureColumn(table: string, column: string, ddl: string): void {
 
 // Migrations for databases created before a column existed.
 ensureColumn('projects', 'compose_projects', "compose_projects TEXT NOT NULL DEFAULT '[]'")
+ensureColumn('projects', 'selected_environment_id', 'selected_environment_id TEXT')
+ensureColumn('projects', 'default_environment_id', 'default_environment_id TEXT')
 
 export const db = drizzle(sqlite, { schema })
 export { schema }

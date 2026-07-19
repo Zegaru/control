@@ -1,11 +1,24 @@
 import {useEffect, useId, useRef, useState, type ReactNode} from 'react';
 import {Switch} from '@base-ui/react/switch';
-import type {RunStatus} from '@control/shared';
+import {isActiveStatus, type RunStatus} from '@control/shared';
 import {cn} from '../lib/cn.js';
 import {Button} from './ui.js';
 
-export {Button, TextInput} from './ui.js';
-export type {ButtonProps, ButtonVariant, ButtonTone, ButtonSize, TextInputProps} from './ui.js';
+export {Button, TextInput, Select, Combobox, fieldBase} from './ui.js';
+export type {
+  ButtonProps,
+  ButtonVariant,
+  ButtonTone,
+  ButtonSize,
+  TextInputProps,
+  SelectProps,
+  SelectOption,
+  SelectOptionGroup,
+  SelectSize,
+  ComboboxProps,
+  ComboboxOption,
+  ComboboxOptionGroup,
+} from './ui.js';
 
 export function statusColor(status: RunStatus | 'idle'): string {
   switch (status) {
@@ -159,6 +172,50 @@ export function RockerToggle({
         <span className={cn('rocker-face-off', bottomCls)}>{labels[1]}</span>
       </span>
     </Switch.Root>
+  );
+}
+
+/** Environment picker — stepped rotary knob, one position per env. */
+export function EnvironmentToggleBank({
+  environments,
+  activeId,
+  showFavorites,
+  favoritesActive,
+  onSelect,
+}: {
+  environments: {id: string; name: string}[];
+  activeId: string | null;
+  showFavorites?: boolean;
+  favoritesActive?: boolean;
+  onSelect: (id: string | null) => void;
+}) {
+  if (environments.length <= 1) return null;
+
+  const options = showFavorites
+    ? [{id: null as string | null, name: 'Favorites'}, ...environments]
+    : environments.map((e) => ({id: e.id as string | null, name: e.name}));
+
+  const resolvedId = favoritesActive && showFavorites ? null : activeId;
+  const value = Math.max(
+    0,
+    options.findIndex((o) => o.id === resolvedId),
+  );
+
+  if (options.length === 0) return null;
+
+  return (
+    <div
+      className="flex justify-center border-b border-panel-edge px-4 py-2.5"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <RotaryKnob
+        value={value}
+        steps={options.length}
+        onChange={(i) => onSelect(options[i]?.id ?? null)}
+        label={options[value]?.name}
+        size="sm"
+      />
+    </div>
   );
 }
 
@@ -455,12 +512,14 @@ export function RotaryKnob({
   onChange,
   label,
   size = 'sm',
+  disabled,
 }: {
   value: number;
   steps: number;
   onChange: (value: number) => void;
   label?: string;
   size?: 'sm' | 'md';
+  disabled?: boolean;
 }) {
   const clamped = Math.max(0, Math.min(steps - 1, value));
   const px = size === 'sm' ? 28 : 36;
@@ -472,6 +531,7 @@ export function RotaryKnob({
   const movedRef = useRef(false);
 
   const setFromDelta = (deltaY: number) => {
+    if (disabled) return;
     const next = Math.max(
       0,
       Math.min(steps - 1, dragRef.current!.startValue + Math.round(deltaY / -18))
@@ -480,7 +540,7 @@ export function RotaryKnob({
   };
 
   return (
-    <div className="flex flex-col items-center">
+    <div className={cn('flex flex-col items-center', disabled && 'opacity-40')}>
       <div className="knob-wrap relative shrink-0" style={{width: ring, height: ring}}>
         <div className="knob-marks pointer-events-none absolute inset-0" aria-hidden>
           {Array.from({length: steps}, (_, i) => (
@@ -493,19 +553,24 @@ export function RotaryKnob({
         </div>
         <button
           type="button"
+          disabled={disabled}
           aria-label={label ?? 'Filter'}
           aria-valuemin={0}
           aria-valuemax={steps - 1}
           aria-valuenow={clamped}
-          className="knob absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 cursor-grab rounded-full active:cursor-grabbing"
+          className={cn(
+            'knob absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full',
+            disabled ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'
+          )}
           style={{width: px, height: px}}
           onPointerDown={(e) => {
+            if (disabled) return;
             e.currentTarget.setPointerCapture(e.pointerId);
             dragRef.current = {startY: e.clientY, startValue: clamped};
             movedRef.current = false;
           }}
           onPointerMove={(e) => {
-            if (!dragRef.current) return;
+            if (!dragRef.current || disabled) return;
             const dy = e.clientY - dragRef.current.startY;
             if (Math.abs(dy) > 4) movedRef.current = true;
             setFromDelta(dy);
@@ -517,6 +582,7 @@ export function RotaryKnob({
             dragRef.current = null;
           }}
           onClick={() => {
+            if (disabled) return;
             if (movedRef.current) {
               movedRef.current = false;
               return;
@@ -791,10 +857,15 @@ export function AgentStatus({online, label}: {online: boolean; label?: string}) 
 }
 
 export type ProjectService = {
+  key: string;
   name: string;
   status: RunStatus | 'idle';
   ports?: number[];
   pulse?: boolean;
+  kind?: 'action' | 'group' | 'container';
+  actionId?: string;
+  groupId?: string;
+  runId?: string | null;
 };
 
 export function ProjectModule({
@@ -808,6 +879,12 @@ export function ProjectModule({
   favorite,
   services = [],
   metrics,
+  environments = [],
+  selectedEnvironmentId = null,
+  defaultEnvironmentId = null,
+  onSelectEnvironment,
+  onOpenRun,
+  onToggleService,
   children,
 }: {
   variant?: 'default' | 'add';
@@ -820,6 +897,12 @@ export function ProjectModule({
   favorite?: boolean;
   services?: ProjectService[];
   metrics?: {cpu?: number; mem?: number; disk?: number};
+  environments?: { id: string; name: string }[];
+  selectedEnvironmentId?: string | null;
+  defaultEnvironmentId?: string | null;
+  onSelectEnvironment?: (id: string | null) => void;
+  onOpenRun?: (runId: string) => void;
+  onToggleService?: (service: ProjectService) => void;
   children?: ReactNode;
 }) {
   if (variant === 'add') {
@@ -836,6 +919,8 @@ export function ProjectModule({
   }
 
   const projectStatus: RunStatus | 'idle' = busy ? 'starting' : on ? 'healthy' : 'idle';
+  const activeEnvironmentId = selectedEnvironmentId ?? defaultEnvironmentId ?? null;
+  const favoritesActive = activeEnvironmentId === null;
 
   return (
     <div className="bezel-raised flex h-full flex-col rounded-lg p-1.5">
@@ -869,30 +954,73 @@ export function ProjectModule({
         </div>
 
         <div className="flex flex-1 flex-col">
+          {environments.length > 0 && onSelectEnvironment && (
+            <EnvironmentToggleBank
+              environments={environments}
+              activeId={activeEnvironmentId}
+              showFavorites={!defaultEnvironmentId}
+              favoritesActive={favoritesActive}
+              onSelect={onSelectEnvironment}
+            />
+          )}
           {services.length > 0 && (
             <ul className="space-y-2 px-4 py-3">
-              {services.map((svc) => (
-                <li key={svc.name} className="flex items-center gap-2.5 text-[12px] text-ink-dim">
-                  <Led status={svc.status} pulse={svc.pulse} ring />
-                  <span className="min-w-0 flex-1 truncate">{svc.name}</span>
-                  {svc.ports && svc.ports.length > 0 && (
-                    <span className="flex shrink-0 gap-1">
-                      {svc.ports.map((p) => (
-                        <a
-                          key={p}
-                          href={`http://localhost:${p}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="rounded outline-none hover:brightness-125 focus-visible:ring-1 focus-visible:ring-phosphor"
-                        >
-                          <Chip tone="phosphor">:{p}</Chip>
-                        </a>
-                      ))}
-                    </span>
-                  )}
-                </li>
-              ))}
+              {services.map((svc) => {
+                const active =
+                  svc.status !== 'idle' && isActiveStatus(svc.status);
+                const canToggle = !!(svc.actionId || svc.groupId) && onToggleService;
+                return (
+                  <li key={svc.key} className="flex items-center gap-2 text-[12px] text-ink-dim">
+                    <Led status={svc.status} pulse={svc.pulse} ring={active} />
+                    <Button
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (svc.runId) onOpenRun?.(svc.runId);
+                      }}
+                      disabled={!svc.runId}
+                      className="min-w-0 flex-1 justify-start truncate px-0 py-0 text-left hover:not-data-disabled:text-ink"
+                      title={svc.kind === 'group' ? 'Open logs (first active step)' : undefined}
+                    >
+                      {svc.name}
+                      {svc.kind === 'group' && (
+                        <span className="ml-1.5 text-[9px] uppercase tracking-wider text-ink-faint">
+                          group
+                        </span>
+                      )}
+                    </Button>
+                    {svc.ports && svc.ports.length > 0 && (
+                      <span className="flex shrink-0 gap-1">
+                        {svc.ports.map((p) => (
+                          <a
+                            key={p}
+                            href={`http://localhost:${p}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="rounded outline-none hover:brightness-125 focus-visible:ring-1 focus-visible:ring-phosphor"
+                          >
+                            <Chip tone="phosphor">:{p}</Chip>
+                          </a>
+                        ))}
+                      </span>
+                    )}
+                    {canToggle && (
+                      <Button
+                        variant={active ? 'danger' : 'primary'}
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleService(svc);
+                        }}
+                        className="shrink-0 px-2 py-0.5 text-[9px]"
+                      >
+                        {active ? 'STOP' : 'START'}
+                      </Button>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
 
@@ -992,7 +1120,7 @@ export function ControlStrip({
 
   return (
     <div className="bezel-raised rounded-lg p-2">
-      <div className="bezel-recessed rounded-md bg-bezel px-4 py-1">
+      <div className="bezel-recessed rounded-md bg-bezel pl-4 pr-1 py-1">
         <div className="flex flex-wrap items-stretch gap-6">
           <div className="flex items-center gap-3 self-center">
             <MasterPower on={masterOn} onToggle={onMasterToggle} />

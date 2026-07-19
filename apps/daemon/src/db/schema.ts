@@ -23,6 +23,8 @@ export const projects = sqliteTable('projects', {
     .notNull()
     .$type<string[]>()
     .default(sql`'[]'`),
+  selectedEnvironmentId: text('selected_environment_id'),
+  defaultEnvironmentId: text('default_environment_id'),
 })
 
 export const modules = sqliteTable('modules', {
@@ -73,6 +75,15 @@ export const groups = sqliteTable('groups', {
   projectId: text('project_id'),
   name: text('name').notNull(),
   steps: text('steps', { mode: 'json' }).notNull().$type<GroupStep[]>().default(sql`'[]'`),
+})
+
+export const environments = sqliteTable('environments', {
+  id: text('id').primaryKey(),
+  projectId: text('project_id').notNull(),
+  name: text('name').notNull(),
+  env: text('env', { mode: 'json' }).notNull().$type<Record<string, string>>().default(sql`'{}'`),
+  targetType: text('target_type').notNull(),
+  targetId: text('target_id').notNull(),
 })
 
 /** Idempotent DDL run at boot (M0 uses this in place of drizzle-kit migrations). */
@@ -137,4 +148,14 @@ CREATE TABLE IF NOT EXISTS groups (
   name TEXT NOT NULL,
   steps TEXT NOT NULL DEFAULT '[]'
 );
+
+CREATE TABLE IF NOT EXISTS environments (
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  env TEXT NOT NULL DEFAULT '{}',
+  target_type TEXT NOT NULL,
+  target_id TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_environments_project ON environments(project_id);
 `

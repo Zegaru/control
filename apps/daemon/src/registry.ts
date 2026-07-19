@@ -6,10 +6,13 @@ import {
   type Action,
   type ActionWithRun,
   type CreateActionBody,
+  type CreateEnvironmentBody,
+  type Environment,
   type Group,
   type Module,
   type ModuleWithActions,
   type PatchActionBody,
+  type PatchEnvironmentBody,
   type PatchGroupBody,
   type PatchModuleBody,
   type PatchProjectBody,
@@ -28,6 +31,34 @@ import { bus } from './events.js'
 
 type ActionRow = typeof schema.actions.$inferSelect
 type RunRow = typeof schema.runs.$inferSelect
+type ProjectRow = typeof schema.projects.$inferSelect
+type EnvironmentRow = typeof schema.environments.$inferSelect
+
+function toProject(r: ProjectRow): Project {
+  return {
+    id: r.id,
+    name: r.name,
+    rootPath: r.rootPath,
+    favorite: r.favorite,
+    icon: r.icon,
+    createdAt: r.createdAt,
+    lastScanAt: r.lastScanAt,
+    composeProjects: r.composeProjects ?? [],
+    selectedEnvironmentId: r.selectedEnvironmentId ?? null,
+    defaultEnvironmentId: r.defaultEnvironmentId ?? null,
+  }
+}
+
+function toEnvironment(r: EnvironmentRow): Environment {
+  return {
+    id: r.id,
+    projectId: r.projectId,
+    name: r.name,
+    env: r.env ?? {},
+    targetType: r.targetType as Environment['targetType'],
+    targetId: r.targetId,
+  }
+}
 
 function toAction(r: ActionRow): Action {
   return {
@@ -78,14 +109,7 @@ export function listProjects(): ProjectSummary[] {
       : []
     const activeRunCount = actionRows.filter((a) => getActiveRun(a.id)).length
     return {
-      id: p.id,
-      name: p.name,
-      rootPath: p.rootPath,
-      favorite: p.favorite,
-      icon: p.icon,
-      createdAt: p.createdAt,
-      lastScanAt: p.lastScanAt,
-      composeProjects: p.composeProjects ?? [],
+      ...toProject(p),
       actionCount: actionRows.length,
       activeRunCount,
     }
@@ -112,25 +136,42 @@ export function createProject(rootPath: string, name?: string): Project {
     createdAt: Date.now(),
     lastScanAt: null,
     composeProjects: [],
+    selectedEnvironmentId: null,
+    defaultEnvironmentId: null,
   }
   db.insert(schema.projects).values(project).run()
   rescanProject(project.id)
-  return db.select().from(schema.projects).where(eq(schema.projects.id, project.id)).get()!
+  return toProject(db.select().from(schema.projects).where(eq(schema.projects.id, project.id)).get()!)
 }
 
 export function patchProject(id: string, body: PatchProjectBody): Project {
   const project = db.select().from(schema.projects).where(eq(schema.projects.id, id)).get()
   if (!project) throw new HttpError(404, 'Project not found')
+  for (const envId of [body.selectedEnvironmentId, body.defaultEnvironmentId]) {
+    if (!envId) continue
+    const env = db
+      .select()
+      .from(schema.environments)
+      .where(and(eq(schema.environments.id, envId), eq(schema.environments.projectId, id)))
+      .get()
+    if (!env) throw new HttpError(400, 'Environment not found for this project')
+  }
   db.update(schema.projects)
     .set({
       ...(body.name !== undefined ? { name: body.name } : {}),
       ...(body.favorite !== undefined ? { favorite: body.favorite } : {}),
       ...(body.icon !== undefined ? { icon: body.icon } : {}),
       ...(body.composeProjects !== undefined ? { composeProjects: body.composeProjects } : {}),
+      ...(body.selectedEnvironmentId !== undefined
+        ? { selectedEnvironmentId: body.selectedEnvironmentId }
+        : {}),
+      ...(body.defaultEnvironmentId !== undefined
+        ? { defaultEnvironmentId: body.defaultEnvironmentId }
+        : {}),
     })
     .where(eq(schema.projects.id, id))
     .run()
-  return db.select().from(schema.projects).where(eq(schema.projects.id, id)).get()!
+  return toProject(db.select().from(schema.projects).where(eq(schema.projects.id, id)).get()!)
 }
 
 export function deleteProject(id: string): void {
@@ -145,6 +186,7 @@ export function deleteProject(id: string): void {
   }
   db.delete(schema.modules).where(eq(schema.modules.projectId, id)).run()
   db.delete(schema.groups).where(eq(schema.groups.projectId, id)).run()
+  db.delete(schema.environments).where(eq(schema.environments.projectId, id)).run()
   db.delete(schema.projects).where(eq(schema.projects.id, id)).run()
 }
 
@@ -285,16 +327,16 @@ export function getProjectTree(projectId: string): ProjectTree {
     return { ...mod, actions }
   })
 
+  const environmentRows = db
+    .select()
+    .from(schema.environments)
+    .where(eq(schema.environments.projectId, projectId))
+    .all()
+
   return {
-    id: project.id,
-    name: project.name,
-    rootPath: project.rootPath,
-    favorite: project.favorite,
-    icon: project.icon,
-    createdAt: project.createdAt,
-    lastScanAt: project.lastScanAt,
-    composeProjects: project.composeProjects ?? [],
+    ...toProject(project),
     modules,
+    environments: environmentRows.map(toEnvironment),
   }
 }
 
@@ -530,7 +572,8 @@ export function listGroups(): Group[] {
 
 export function createGroup(name: string, steps: Group['steps'], projectId?: string | null): Group {
   const id = newId('grp')
-  db.insert(schema.groups).values({ id, projectId: projectId ?? null, name, steps }).run()
+  const resolvedProjectId = projectId ?? deriveGroupProjectId(steps)
+  db.insert(schema.groups).values({ id, projectId: resolvedProjectId, name, steps }).run()
   const g = db.select().from(schema.groups).where(eq(schema.groups.id, id)).get()!
   return { id: g.id, projectId: g.projectId, name: g.name, steps: g.steps ?? [] }
 }
@@ -538,10 +581,13 @@ export function createGroup(name: string, steps: Group['steps'], projectId?: str
 export function updateGroup(id: string, body: PatchGroupBody): Group {
   const g = db.select().from(schema.groups).where(eq(schema.groups.id, id)).get()
   if (!g) throw new HttpError(404, 'Group not found')
+  const steps = body.steps ?? g.steps ?? []
+  const projectId = deriveGroupProjectId(steps)
   db.update(schema.groups)
     .set({
       ...(body.name !== undefined ? { name: body.name } : {}),
       ...(body.steps !== undefined ? { steps: body.steps } : {}),
+      projectId,
     })
     .where(eq(schema.groups.id, id))
     .run()
@@ -556,6 +602,129 @@ export function deleteGroup(id: string): void {
 export function getGroup(id: string): Group | null {
   const g = db.select().from(schema.groups).where(eq(schema.groups.id, id)).get()
   return g ? { id: g.id, projectId: g.projectId, name: g.name, steps: g.steps ?? [] } : null
+}
+
+function deriveGroupProjectId(steps: Group['steps']): string | null {
+  let projectId: string | null = null
+  for (const step of steps) {
+    const action = getAction(step.actionId)
+    if (!action) return null
+    const mod = db.select().from(schema.modules).where(eq(schema.modules.id, action.moduleId)).get()
+    if (!mod) return null
+    if (projectId == null) projectId = mod.projectId
+    else if (projectId !== mod.projectId) return null
+  }
+  return projectId
+}
+
+export function groupBelongsToProject(group: Group, projectId: string): boolean {
+  if (group.projectId === projectId) return true
+  if (group.steps.length === 0) return false
+  return deriveGroupProjectId(group.steps) === projectId
+}
+
+// --- environments ----------------------------------------------------------
+
+function validateEnvironmentTarget(
+  projectId: string,
+  targetType: Environment['targetType'],
+  targetId: string,
+): void {
+  if (targetType === 'action') {
+    const action = getAction(targetId)
+    if (!action) throw new HttpError(400, 'Action not found')
+    const mod = db.select().from(schema.modules).where(eq(schema.modules.id, action.moduleId)).get()
+    if (!mod || mod.projectId !== projectId) {
+      throw new HttpError(400, 'Action does not belong to this project')
+    }
+    return
+  }
+  const group = getGroup(targetId)
+  if (!group || !groupBelongsToProject(group, projectId)) {
+    throw new HttpError(400, 'Group not found for this project')
+  }
+}
+
+export function listEnvironments(projectId: string): Environment[] {
+  return db
+    .select()
+    .from(schema.environments)
+    .where(eq(schema.environments.projectId, projectId))
+    .all()
+    .map(toEnvironment)
+}
+
+export function getEnvironment(id: string): Environment | null {
+  const row = db.select().from(schema.environments).where(eq(schema.environments.id, id)).get()
+  return row ? toEnvironment(row) : null
+}
+
+export function createEnvironment(projectId: string, body: CreateEnvironmentBody): Environment {
+  const project = db.select().from(schema.projects).where(eq(schema.projects.id, projectId)).get()
+  if (!project) throw new HttpError(404, 'Project not found')
+  validateEnvironmentTarget(projectId, body.targetType, body.targetId)
+  const id = newId('env')
+  const isFirstEnvironment =
+    db
+      .select()
+      .from(schema.environments)
+      .where(eq(schema.environments.projectId, projectId))
+      .all().length === 0
+  db.insert(schema.environments)
+    .values({
+      id,
+      projectId,
+      name: body.name,
+      env: body.env ?? {},
+      targetType: body.targetType,
+      targetId: body.targetId,
+    })
+    .run()
+  if (isFirstEnvironment) {
+    db.update(schema.projects)
+      .set({ defaultEnvironmentId: id })
+      .where(eq(schema.projects.id, projectId))
+      .run()
+  }
+  return toEnvironment(db.select().from(schema.environments).where(eq(schema.environments.id, id)).get()!)
+}
+
+export function patchEnvironment(id: string, body: PatchEnvironmentBody): Environment {
+  const row = db.select().from(schema.environments).where(eq(schema.environments.id, id)).get()
+  if (!row) throw new HttpError(404, 'Environment not found')
+  const targetType = body.targetType ?? (row.targetType as Environment['targetType'])
+  const targetId = body.targetId ?? row.targetId
+  if (body.targetType !== undefined || body.targetId !== undefined) {
+    validateEnvironmentTarget(row.projectId, targetType, targetId)
+  }
+  db.update(schema.environments)
+    .set({
+      ...(body.name !== undefined ? { name: body.name } : {}),
+      ...(body.env !== undefined ? { env: body.env } : {}),
+      ...(body.targetType !== undefined ? { targetType: body.targetType } : {}),
+      ...(body.targetId !== undefined ? { targetId: body.targetId } : {}),
+    })
+    .where(eq(schema.environments.id, id))
+    .run()
+  return toEnvironment(db.select().from(schema.environments).where(eq(schema.environments.id, id)).get()!)
+}
+
+export function deleteEnvironment(id: string): void {
+  const row = db.select().from(schema.environments).where(eq(schema.environments.id, id)).get()
+  if (!row) throw new HttpError(404, 'Environment not found')
+  db.delete(schema.environments).where(eq(schema.environments.id, id)).run()
+  for (const column of ['selectedEnvironmentId', 'defaultEnvironmentId'] as const) {
+    db.update(schema.projects)
+      .set({ [column]: null })
+      .where(and(eq(schema.projects.id, row.projectId), eq(schema.projects[column], id)))
+      .run()
+  }
+}
+
+/** Starred actions used when no environment is selected for project power. */
+export function projectPowerTargets(tree: ProjectTree): ActionWithRun[] {
+  const actions = tree.modules.flatMap((m) => m.actions).filter((a) => !a.hidden)
+  return actions.filter((a) => a.favorite)
 }
 
 // --- docker <-> project mapping --------------------------------------------

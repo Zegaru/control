@@ -3,12 +3,15 @@ import type {
   ActionWithRun,
   ContainerInfo,
   CreateActionBody,
+  CreateEnvironmentBody,
   CreateGroupBody,
   DockerStatus,
+  Environment,
   Group,
   HostMetrics,
   ProjectMetricsSnapshot,
   PatchActionBody,
+  PatchEnvironmentBody,
   PatchGroupBody,
   PatchProjectBody,
   PortOwner,
@@ -82,16 +85,31 @@ export const api = {
   deleteProject: (id: string) => req<void>(`/projects/${id}`, { method: 'DELETE' }),
   scanProject: (id: string) => req<ProjectTree>(`/projects/${id}/scan`, { method: 'POST' }),
   projectTree: (id: string) => req<ProjectTree>(`/projects/${id}/tree`),
+  startProjectPower: (id: string) =>
+    req<{ ok: boolean }>(`/projects/${id}/power/start`, { method: 'POST' }),
+  stopProjectPower: (id: string) =>
+    req<{ ok: boolean }>(`/projects/${id}/power/stop`, { method: 'POST' }),
+
+  listEnvironments: (projectId: string) =>
+    req<Environment[]>(`/projects/${projectId}/environments`),
+  createEnvironment: (projectId: string, body: CreateEnvironmentBody) =>
+    req<Environment>(`/projects/${projectId}/environments`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  patchEnvironment: (id: string, body: PatchEnvironmentBody) =>
+    req<Environment>(`/environments/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  deleteEnvironment: (id: string) => req<void>(`/environments/${id}`, { method: 'DELETE' }),
 
   createAction: (body: CreateActionBody) =>
     req<Action>('/actions', { method: 'POST', body: JSON.stringify(body) }),
   patchAction: (id: string, body: PatchActionBody) =>
     req<Action>(`/actions/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   actionRuns: (id: string) => req<Run[]>(`/actions/${id}/runs`),
-  startAction: (id: string, force = false) =>
+  startAction: (id: string, force = false, env?: Record<string, string>) =>
     req<Run | { error: string; port: number }>(
       `/actions/${id}/start${force ? '?force=true' : ''}`,
-      { method: 'POST' },
+      { method: 'POST', body: JSON.stringify(env ? { env } : {}) },
     ),
 
   activeRuns: () => req<Run[]>('/runs'),
@@ -106,7 +124,11 @@ export const api = {
   updateGroup: (id: string, body: PatchGroupBody) =>
     req<Group>(`/groups/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteGroup: (id: string) => req<void>(`/groups/${id}`, { method: 'DELETE' }),
-  startGroup: (id: string) => req<{ ok: boolean }>(`/groups/${id}/start`, { method: 'POST' }),
+  startGroup: (id: string, env?: Record<string, string>) =>
+    req<{ ok: boolean }>(`/groups/${id}/start`, {
+      method: 'POST',
+      body: JSON.stringify(env ? { env } : {}),
+    }),
   stopGroup: (id: string) => req<{ ok: boolean }>(`/groups/${id}/stop`, { method: 'POST' }),
 
   ports: () => req<PortOwner[]>('/ports'),

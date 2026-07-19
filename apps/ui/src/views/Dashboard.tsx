@@ -1,7 +1,7 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useQueries, useQuery, useQueryClient} from '@tanstack/react-query';
 import type {ActionWithRun, ContainerInfo, ProjectTree, RunStatus} from '@control/shared';
-import {isActiveStatus} from '@control/shared';
+import {isActiveStatus, resolveDashboardEnvironmentId} from '@control/shared';
 import {api} from '../api.js';
 import {
   BacklitButton,
@@ -34,6 +34,57 @@ function containerLed(c: ContainerInfo): RunStatus | 'idle' {
 
 const EMPTY_SPARK = [0];
 
+function projectActions(tree: ProjectTree): ActionWithRun[] {
+  return tree.modules.flatMap((m) => m.actions).filter((a) => !a.hidden);
+}
+
+function buildPowerItems(tree: ProjectTree, recentRuns: Record<string, string>): ProjectService[] {
+  return projectActions(tree)
+    .filter((a) => a.favorite)
+    .map((action) => {
+      const run = action.activeRun;
+      return {
+        key: `action:${action.id}`,
+        name: action.name,
+        kind: 'action' as const,
+        actionId: action.id,
+        status: run?.status ?? 'idle',
+        ports: run?.ports,
+        pulse: run?.status === 'starting',
+        runId: run?.id ?? recentRuns[action.id] ?? null,
+      };
+    });
+}
+
+function buildRuntimeServices(
+  projectId: string,
+  runningContainers: ContainerInfo[],
+  externalServices: {projectId?: string | null; processName?: string | null; port: number}[]
+): ProjectService[] {
+  const services: ProjectService[] = [];
+  for (const c of runningContainers.filter((c) => c.projectId === projectId)) {
+    services.push({
+      key: `container:${c.id}`,
+      name: c.composeService ?? c.name,
+      kind: 'container',
+      status: containerLed(c),
+      ports: c.ports.filter((p) => p.publicPort != null).map((p) => p.publicPort!),
+      pulse: c.health === 'starting',
+    });
+  }
+  for (const o of externalServices.filter((o) => o.projectId === projectId)) {
+    services.push({
+      key: `external:${o.port}`,
+      name: o.processName ?? 'process',
+      kind: 'container',
+      status: 'running',
+      ports: [o.port],
+    });
+  }
+
+  return services;
+}
+
 export function Dashboard({
   projectsOnly,
   onOpenProject,
@@ -57,6 +108,7 @@ export function Dashboard({
     mem: number[];
     disk: number[];
   }>({cpu: [], mem: [], disk: []});
+  const [manualRecentRuns, setManualRecentRuns] = useState<Record<string, string>>({});
   const projectListRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -89,6 +141,8 @@ export function Dashboard({
     queryFn: api.containers,
     refetchInterval: 4000,
   });
+  const groupsQ = useQuery({queryKey: ['groups'], queryFn: api.listGroups});
+  const groups = groupsQ.data ?? [];
   const containers = containersQ.data ?? [];
   const portsQ = useQuery({queryKey: ['ports'], queryFn: api.ports, refetchInterval: 4000});
   const externalServices = (portsQ.data ?? []).filter((o) => o.owner === 'external' && o.projectId);
@@ -111,6 +165,17 @@ export function Dashboard({
   }
   const favorites = allActions.filter((a) => a.action.favorite);
   const activeRuns = allActions.filter((a) => a.action.activeRun);
+
+  const recentRuns = useMemo(() => {
+    const fromTree: Record<string, string> = {};
+    for (const tree of treeData) {
+      for (const action of projectActions(tree)) {
+        if (action.activeRun?.id) fromTree[action.id] = action.activeRun.id;
+      }
+    }
+    return {...manualRecentRuns, ...fromTree};
+  }, [treeData, manualRecentRuns]);
+
   const runningContainers = containers.filter((c) => c.state === 'running');
 
   const counts = {
@@ -176,12 +241,11 @@ export function Dashboard({
   }, [activeRuns, invalidate]);
 
   const startFavorites = useCallback(async () => {
-    const targets = favorites.length > 0 ? favorites : allActions;
-    for (const {action} of targets) {
-      if (!action.activeRun) await api.startAction(action.id);
+    for (const tree of treeData) {
+      await api.startProjectPower(tree.id);
     }
     invalidate();
-  }, [favorites, allActions, invalidate]);
+  }, [treeData, invalidate]);
 
   const restartFavorites = useCallback(async () => {
     await stopAll();
@@ -189,24 +253,36 @@ export function Dashboard({
   }, [stopAll, startFavorites]);
 
   const toggleProject = useCallback(
-    async (tree: ProjectTree) => {
+    async (tree: ProjectTree, groupList: {id: string; steps: {actionId: string}[]}[]) => {
       if (pendingToggle[tree.id]) return;
-      const actions = tree.modules.flatMap((m) => m.actions).filter((a) => !a.hidden);
-      const targets =
-        actions.filter((a) => a.favorite).length > 0 ? actions.filter((a) => a.favorite) : actions;
-      const running = targets.filter((a) => a.activeRun && isActiveStatus(a.activeRun.status));
-      const dir = running.length > 0 ? 'off' : 'on';
+
+      const envId = resolveDashboardEnvironmentId(tree);
+      const env = envId ? tree.environments.find((e) => e.id === envId) : undefined;
+      let powerRunning = false;
+      if (env?.targetType === 'action') {
+        const action = tree.modules.flatMap((m) => m.actions).find((a) => a.id === env.targetId);
+        powerRunning = !!(action?.activeRun && isActiveStatus(action.activeRun.status));
+      } else if (env?.targetType === 'group') {
+        const group = groupList.find((g) => g.id === env.targetId);
+        powerRunning =
+          group?.steps.some((step) => {
+            const action = tree.modules
+              .flatMap((m) => m.actions)
+              .find((a) => a.id === step.actionId);
+            return !!(action?.activeRun && isActiveStatus(action.activeRun.status));
+          }) ?? false;
+      } else {
+        const actions = tree.modules.flatMap((m) => m.actions).filter((a) => !a.hidden);
+        powerRunning = actions
+          .filter((a) => a.favorite)
+          .some((a) => a.activeRun && isActiveStatus(a.activeRun.status));
+      }
+
+      const dir = powerRunning ? 'off' : 'on';
       setPendingToggle((p) => ({...p, [tree.id]: dir}));
       try {
-        if (dir === 'off') {
-          for (const a of running) {
-            if (a.activeRun) await api.stopRun(a.activeRun.id);
-          }
-        } else {
-          for (const a of targets) {
-            if (!a.activeRun) await api.startAction(a.id);
-          }
-        }
+        if (dir === 'off') await api.stopProjectPower(tree.id);
+        else await api.startProjectPower(tree.id);
         invalidate();
       } catch {
         setPendingToggle((p) => {
@@ -214,7 +290,6 @@ export function Dashboard({
           return rest;
         });
       } finally {
-        // Start: server `starting` takes over via anyStarting. Stop: keep until runs exit.
         if (dir === 'on') {
           setPendingToggle((p) => {
             const {[tree.id]: _, ...rest} = p;
@@ -249,38 +324,29 @@ export function Dashboard({
     });
   }, [pendingToggle, treeData]);
 
-  const buildServices = (tree: ProjectTree, projectId: string): ProjectService[] => {
-    const services: ProjectService[] = [];
-    for (const mod of tree.modules) {
-      for (const action of mod.actions) {
-        if (action.hidden) continue;
-        if (action.activeRun && isActiveStatus(action.activeRun.status)) {
-          services.push({
-            name: action.name,
-            status: action.activeRun.status,
-            ports: action.activeRun.ports,
-            pulse: action.activeRun.status === 'starting',
-          });
+  const toggleService = useCallback(
+    async (svc: ProjectService) => {
+      const active = svc.status !== 'idle' && isActiveStatus(svc.status);
+      try {
+        if (svc.kind === 'group' && svc.groupId) {
+          if (active) await api.stopGroup(svc.groupId);
+          else await api.startGroup(svc.groupId);
+        } else if (svc.actionId) {
+          if (active && svc.runId) await api.stopRun(svc.runId);
+          else {
+            const res = await api.startAction(svc.actionId);
+            if (res && 'id' in res) {
+              setManualRecentRuns((prev) => ({...prev, [svc.actionId!]: res.id}));
+            }
+          }
         }
+        invalidate();
+      } catch {
+        /* ignore */
       }
-    }
-    for (const c of runningContainers.filter((c) => c.projectId === projectId)) {
-      services.push({
-        name: c.composeService ?? c.name,
-        status: containerLed(c),
-        ports: c.ports.filter((p) => p.publicPort != null).map((p) => p.publicPort!),
-        pulse: c.health === 'starting',
-      });
-    }
-    for (const o of externalServices.filter((o) => o.projectId === projectId)) {
-      services.push({
-        name: o.processName ?? 'process',
-        status: 'running',
-        ports: [o.port],
-      });
-    }
-    return services;
-  };
+    },
+    [invalidate]
+  );
 
   const notifications: ControlStripNotification[] = useMemo(() => {
     const items: ControlStripNotification[] = [];
@@ -421,31 +487,31 @@ export function Dashboard({
                   <span className="chassis-rail-line" />
                 </div>
 
-                {!selectedRunId && (
-                  <div className="flex shrink-0 items-center gap-3">
-                    <RotaryKnob
-                      value={LOG_FILTERS.indexOf(logFilter)}
-                      steps={LOG_FILTERS.length}
-                      label={logFilter}
-                      onChange={(v) => setLogFilter(LOG_FILTERS[v] ?? 'all')}
-                    />
-                    <BacklitButton
-                      size="sm"
-                      onClick={() => {
-                        clearEvents();
-                        setSelectedRunId(null);
-                      }}
-                    >
-                      Clear
-                    </BacklitButton>
-                  </div>
-                )}
+                <div className="flex shrink-0 items-center gap-3">
+                  <RotaryKnob
+                    value={LOG_FILTERS.indexOf(logFilter)}
+                    steps={LOG_FILTERS.length}
+                    label={logFilter}
+                    disabled={!!selectedRunId}
+                    onChange={(v) => setLogFilter(LOG_FILTERS[v] ?? 'all')}
+                  />
+                  <BacklitButton
+                    size="sm"
+                    disabled={!!selectedRunId}
+                    onClick={() => {
+                      clearEvents();
+                      setSelectedRunId(null);
+                    }}
+                  >
+                    Clear
+                  </BacklitButton>
+                </div>
               </div>
             }
           >
             <div className="flex-1 min-h-0 overflow-hidden">
               {selectedRunId ? (
-                <div className="flex-1 min-h-0 overflow-hidden rounded-lg border border-[rgba(0,0,0,0.6)] bg-[#0b0d0a] p-1">
+                <div className="h-full overflow-hidden rounded-lg border border-[rgba(0,0,0,0.6)] bg-[#0b0d0a] p-1">
                   <LogPanel runId={selectedRunId} />
                 </div>
               ) : events.length === 0 ? (
@@ -521,6 +587,12 @@ export function Dashboard({
           const busy = anyStarting || toggling;
           const pm = projectMetrics.data?.projects[p.id];
           const metrics = activeCount > 0 ? {cpu: pm?.cpu ?? 0, mem: pm?.memory ?? 0} : undefined;
+          const moduleServices = tree
+            ? [
+                ...buildPowerItems(tree, recentRuns),
+                ...buildRuntimeServices(p.id, runningContainers, externalServices),
+              ]
+            : [];
 
           return (
             <div key={p.id} className="flex w-72 shrink-0 flex-col self-stretch">
@@ -531,8 +603,22 @@ export function Dashboard({
                 on={activeCount > 0}
                 busy={busy}
                 onClick={() => onOpenProject(p.id)}
-                onToggle={tree ? () => void toggleProject(tree) : undefined}
-                services={tree ? buildServices(tree, p.id) : []}
+                onToggle={tree ? () => void toggleProject(tree, groups) : undefined}
+                environments={tree?.environments ?? []}
+                selectedEnvironmentId={tree?.selectedEnvironmentId ?? null}
+                defaultEnvironmentId={tree?.defaultEnvironmentId ?? null}
+                onSelectEnvironment={
+                  tree
+                    ? (id) => {
+                        void api.patchProject(p.id, {selectedEnvironmentId: id}).then(() => {
+                          qc.invalidateQueries({queryKey: ['tree', p.id]});
+                        });
+                      }
+                    : undefined
+                }
+                services={moduleServices}
+                onOpenRun={onOpenRun}
+                onToggleService={(svc) => void toggleService(svc)}
                 metrics={metrics}
               />
             </div>

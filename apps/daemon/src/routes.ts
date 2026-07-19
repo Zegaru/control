@@ -2,17 +2,22 @@ import { readFileSync } from 'node:fs'
 import { Hono } from 'hono'
 import {
   createGroupBodySchema,
+  createEnvironmentBodySchema,
   createProjectBodySchema,
   patchActionBodySchema,
+  patchEnvironmentBodySchema,
   patchGroupBodySchema,
   patchModuleBodySchema,
   patchProjectBodySchema,
+  startWithEnvBodySchema,
 } from '@control/shared'
 import {
   HttpError,
   createAction,
+  createEnvironment,
   createGroup,
   createProject,
+  deleteEnvironment,
   deleteGroup,
   deleteProject,
   getAction,
@@ -20,10 +25,12 @@ import {
   getProjectTree,
   getRun,
   listActiveRuns,
+  listEnvironments,
   listGroups,
   listProjects,
   listRunsForAction,
   patchAction,
+  patchEnvironment,
   patchModule,
   patchProject,
   rescanProject,
@@ -31,6 +38,7 @@ import {
 } from './registry.js'
 import { supervisor } from './supervisor.js'
 import { startGroup, stopGroup } from './groupRunner.js'
+import { startProjectPower, stopProjectPower } from './projectPower.js'
 import { claimedPorts, getPortMap } from './ports.js'
 import { getDockerStatus, listContainers } from './docker.js'
 import { buildComposeProjectMatcher } from './registry.js'
@@ -85,6 +93,35 @@ api.delete('/projects/:id', (c) => {
   return c.body(null, 204)
 })
 
+api.post('/projects/:id/power/start', async (c) => {
+  await startProjectPower(c.req.param('id'))
+  return c.json({ ok: true })
+})
+
+api.post('/projects/:id/power/stop', (c) => {
+  stopProjectPower(c.req.param('id'))
+  return c.json({ ok: true })
+})
+
+api.get('/projects/:id/environments', (c) => c.json(listEnvironments(c.req.param('id'))))
+
+api.post('/projects/:id/environments', async (c) => {
+  const body = createEnvironmentBodySchema.parse(await c.req.json())
+  return c.json(createEnvironment(c.req.param('id'), body), 201)
+})
+
+// --- environments ----------------------------------------------------------
+
+api.patch('/environments/:id', async (c) => {
+  const body = patchEnvironmentBodySchema.parse(await c.req.json())
+  return c.json(patchEnvironment(c.req.param('id'), body))
+})
+
+api.delete('/environments/:id', (c) => {
+  deleteEnvironment(c.req.param('id'))
+  return c.body(null, 204)
+})
+
 // --- modules & actions -----------------------------------------------------
 
 api.patch('/modules/:id', async (c) => {
@@ -114,7 +151,9 @@ api.post('/actions/:id/start', async (c) => {
       409,
     )
   }
-  return c.json(supervisor.start(action), 201)
+  const raw = await c.req.json().catch(() => ({}))
+  const body = startWithEnvBodySchema.parse(raw)
+  return c.json(supervisor.start(action, body.env), 201)
 })
 
 // --- runs ------------------------------------------------------------------
@@ -161,7 +200,9 @@ api.delete('/groups/:id', (c) => {
 })
 
 api.post('/groups/:id/start', async (c) => {
-  await startGroup(c.req.param('id'))
+  const raw = await c.req.json().catch(() => ({}))
+  const body = startWithEnvBodySchema.parse(raw)
+  await startGroup(c.req.param('id'), body.env)
   return c.json({ ok: true })
 })
 

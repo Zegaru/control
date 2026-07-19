@@ -70,8 +70,20 @@ export const projectSchema = z.object({
   lastScanAt: z.number().nullable().optional(),
   /** Explicit compose project names this project claims (overrides basename inference). */
   composeProjects: z.array(z.string()).default([]),
+  /** Dashboard ON uses this environment when set. */
+  selectedEnvironmentId: z.string().nullable().optional(),
+  /** Dashboard ON falls back to this when nothing is explicitly selected. */
+  defaultEnvironmentId: z.string().nullable().optional(),
 })
 export type Project = z.infer<typeof projectSchema>
+
+/** Environment id used for Dashboard ON: explicit selection, then project default. */
+export function resolveDashboardEnvironmentId(project: {
+  selectedEnvironmentId?: string | null
+  defaultEnvironmentId?: string | null
+}): string | null {
+  return project.selectedEnvironmentId ?? project.defaultEnvironmentId ?? null
+}
 
 export const moduleSchema = z.object({
   id: z.string(),
@@ -130,6 +142,19 @@ export const groupSchema = z.object({
 })
 export type Group = z.infer<typeof groupSchema>
 
+export const environmentTargetTypeSchema = z.enum(['action', 'group'])
+export type EnvironmentTargetType = z.infer<typeof environmentTargetTypeSchema>
+
+export const environmentSchema = z.object({
+  id: z.string(),
+  projectId: z.string(),
+  name: z.string(),
+  env: z.record(z.string()),
+  targetType: environmentTargetTypeSchema,
+  targetId: z.string(),
+})
+export type Environment = z.infer<typeof environmentSchema>
+
 // ---------------------------------------------------------------------------
 // Composite views
 // ---------------------------------------------------------------------------
@@ -146,6 +171,7 @@ export type ModuleWithActions = z.infer<typeof moduleWithActionsSchema>
 
 export const projectTreeSchema = projectSchema.extend({
   modules: z.array(moduleWithActionsSchema),
+  environments: z.array(environmentSchema),
 })
 export type ProjectTree = z.infer<typeof projectTreeSchema>
 
@@ -227,6 +253,8 @@ export const patchProjectBodySchema = z.object({
   favorite: z.boolean().optional(),
   icon: z.string().nullable().optional(),
   composeProjects: z.array(z.string()).optional(),
+  selectedEnvironmentId: z.string().nullable().optional(),
+  defaultEnvironmentId: z.string().nullable().optional(),
 })
 export type PatchProjectBody = z.infer<typeof patchProjectBodySchema>
 
@@ -276,6 +304,27 @@ export const patchGroupBodySchema = z.object({
   steps: z.array(groupStepSchema).optional(),
 })
 export type PatchGroupBody = z.infer<typeof patchGroupBodySchema>
+
+export const createEnvironmentBodySchema = z.object({
+  name: z.string().min(1),
+  env: z.record(z.string()).default({}),
+  targetType: environmentTargetTypeSchema,
+  targetId: z.string().min(1),
+})
+export type CreateEnvironmentBody = z.infer<typeof createEnvironmentBodySchema>
+
+export const patchEnvironmentBodySchema = z.object({
+  name: z.string().min(1).optional(),
+  env: z.record(z.string()).optional(),
+  targetType: environmentTargetTypeSchema.optional(),
+  targetId: z.string().min(1).optional(),
+})
+export type PatchEnvironmentBody = z.infer<typeof patchEnvironmentBodySchema>
+
+export const startWithEnvBodySchema = z.object({
+  env: z.record(z.string()).optional(),
+})
+export type StartWithEnvBody = z.infer<typeof startWithEnvBodySchema>
 
 // ---------------------------------------------------------------------------
 // WebSocket events (daemon -> UI)

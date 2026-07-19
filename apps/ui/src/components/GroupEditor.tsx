@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { Group, GroupStep } from '@control/shared'
 import { api } from '../api.js'
 import { useAllActions } from '../useAllActions.js'
-import { Button, TextInput } from './ui.js'
+import { Button, Select, TextInput } from './ui.js'
 
 const WAIT_OPTIONS: GroupStep['waitFor'][] = ['none', 'healthy', 'exit']
 
@@ -52,8 +52,11 @@ export function GroupEditor({
     const fa = actions.find((a) => a.action.id === id)
     return fa ? `${fa.projectName} / ${fa.action.name}` : id
   }
-  const field =
-    'rounded border border-panel-edge bg-bezel px-3 py-2 text-sm outline-none focus:border-phosphor-dim'
+
+  const waitOptions = WAIT_OPTIONS.map((w) => ({
+    value: w,
+    label: w === 'none' ? 'no wait' : `wait ${w}`,
+  }))
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
@@ -84,18 +87,14 @@ export function GroupEditor({
             >
               <span className="w-5 text-right text-ink-faint">{i + 1}.</span>
               <span className="min-w-0 flex-1 truncate text-sm">{label(step.actionId)}</span>
-              <select
+              <Select
                 value={step.waitFor}
-                onChange={(e) => setWait(i, e.target.value as GroupStep['waitFor'])}
-                className={`${field} py-1 text-xs`}
+                onValueChange={(v) => v && setWait(i, v as GroupStep['waitFor'])}
+                size="sm"
+                className="w-28 shrink-0"
                 title="Wait condition before starting the next step"
-              >
-                {WAIT_OPTIONS.map((w) => (
-                  <option key={w} value={w}>
-                    {w === 'none' ? 'no wait' : `wait ${w}`}
-                  </option>
-                ))}
-              </select>
+                options={waitOptions}
+              />
               <Button variant="icon" onClick={() => move(i, -1)} title="Up">
                 ↑
               </Button>
@@ -117,18 +116,16 @@ export function GroupEditor({
           )}
         </ol>
 
-        <select
-          value=""
-          onChange={(e) => addStep(e.target.value)}
-          className={`${field} mb-5 w-full`}
-        >
-          <option value="">+ Add an action…</option>
-          {actions.map((fa) => (
-            <option key={fa.action.id} value={fa.action.id}>
-              {fa.projectName} / {fa.moduleName} / {fa.action.name}
-            </option>
-          ))}
-        </select>
+        <Select
+          value={null}
+          onValueChange={(v) => v && addStep(v)}
+          placeholder="+ Add an action…"
+          className="mb-5"
+          options={actions.map((fa) => ({
+            value: fa.action.id,
+            label: `${fa.projectName} / ${fa.moduleName} / ${fa.action.name}`,
+          }))}
+        />
 
         <div className="flex justify-end gap-2">
           <Button variant="ghost" onClick={onClose}>

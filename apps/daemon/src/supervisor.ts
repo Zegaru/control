@@ -32,7 +32,7 @@ class Supervisor {
   private handles = new Map<string, RunHandle>()
 
   /** Spawn a fresh run for an action. Returns the created Run row. */
-  start(action: Action): Run {
+  start(action: Action, runtimeEnv?: Record<string, string>): Run {
     const runId = newId('run')
     const now = Date.now()
     const logFile = join(LOGS_DIR, `${runId}.log`)
@@ -64,7 +64,7 @@ class Supervisor {
       })
       .run()
 
-    const env = this.buildEnv(action)
+    const env = this.buildEnv(action, runtimeEnv)
     const cwd = resolve(resolveActionCwd(action) ?? process.cwd())
 
     // Run the command string through a shell so PATH lookups and Windows .cmd
@@ -183,11 +183,12 @@ class Supervisor {
     }
   }
 
-  private buildEnv(action: Action): Record<string, string> {
+  private buildEnv(action: Action, runtimeEnv?: Record<string, string>): Record<string, string> {
     const env: Record<string, string> = {}
     for (const [k, v] of Object.entries(process.env)) {
       if (v !== undefined) env[k] = v
     }
+    if (runtimeEnv) Object.assign(env, runtimeEnv)
     if (action.envOverrides) Object.assign(env, action.envOverrides)
     // Nudge tools toward emitting color even though stdout is a pipe.
     env.FORCE_COLOR = env.FORCE_COLOR ?? '1'

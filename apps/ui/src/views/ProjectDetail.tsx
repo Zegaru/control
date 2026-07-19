@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { Environment } from '@control/shared'
 import { api } from '../api.js'
 import { Chip, Led, Panel, Button, TextInput } from '../components/kit.js'
 import { ActionRow } from '../components/ActionRow.js'
 import { AddActionDialog } from '../components/AddActionDialog.js'
+import { EnvironmentEditor } from '../components/EnvironmentEditor.js'
 
 export function ProjectDetail({
   projectId,
@@ -20,7 +22,9 @@ export function ProjectDetail({
   const [addingCommand, setAddingCommand] = useState<
     { moduleId: string } | { projectId: string } | null
   >(null)
+  const [editingEnv, setEditingEnv] = useState<Environment | null | 'new'>(null)
   const tree = useQuery({ queryKey: ['tree', projectId], queryFn: () => api.projectTree(projectId) })
+  const groups = useQuery({ queryKey: ['groups'], queryFn: api.listGroups })
 
   const rescan = useMutation({
     mutationFn: () => api.scanProject(projectId),
@@ -48,6 +52,20 @@ export function ProjectDetail({
       qc.invalidateQueries({ queryKey: ['ports'] })
     },
   })
+  const setDefaultEnv = useMutation({
+    mutationFn: (defaultEnvironmentId: string | null) =>
+      api.patchProject(projectId, { defaultEnvironmentId }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tree', projectId] })
+      qc.invalidateQueries({ queryKey: ['projects'] })
+    },
+  })
+  const removeEnv = useMutation({
+    mutationFn: (id: string) => api.deleteEnvironment(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['tree', projectId] }),
+  })
+
+  const invalidateTree = () => qc.invalidateQueries({ queryKey: ['tree', projectId] })
 
   if (!tree.data) return <div className="text-sm text-ink-dim">Loading…</div>
   const p = tree.data
@@ -132,6 +150,81 @@ export function ProjectDetail({
           />
         </div>
       </Panel>
+
+      <Panel title="Environments">
+        <p className="mb-3 text-[11px] text-ink-faint">
+          Named env + startup target for Dashboard ON. Star one as the default; override it from the
+          Dashboard selector.
+        </p>
+        {p.environments.length === 0 ? (
+          <p className="mb-3 text-sm text-ink-faint">No environments yet.</p>
+        ) : (
+          <div className="mb-3 space-y-2">
+            {p.environments.map((env) => {
+              const targetLabel =
+                env.targetType === 'group'
+                  ? (groups.data?.find((g) => g.id === env.targetId)?.name ?? 'launch group')
+                  : p.modules.flatMap((m) => m.actions).find((a) => a.id === env.targetId)?.name ??
+                    'command'
+              const isDefault = p.defaultEnvironmentId === env.id
+              return (
+                <div
+                  key={env.id}
+                  className="flex items-center gap-2 rounded-md border border-panel-edge bg-panel px-3 py-2"
+                >
+                  <Button
+                    variant="icon"
+                    onClick={() => setDefaultEnv.mutate(isDefault ? null : env.id)}
+                    title={isDefault ? 'Default for Dashboard' : 'Set as Dashboard default'}
+                    className={isDefault ? 'text-phosphor' : 'text-ink-faint'}
+                  >
+                    {isDefault ? '★' : '☆'}
+                  </Button>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 text-sm text-ink">
+                      <span>{env.name}</span>
+                      {isDefault && <Chip tone="phosphor">default</Chip>}
+                    </div>
+                    <div className="truncate text-[10px] text-ink-faint">{targetLabel}</div>
+                  </div>
+                  <Button variant="ghost" onClick={() => setEditingEnv(env)} className="px-2 py-1 text-xs">
+                    Edit
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      if (confirm(`Delete environment "${env.name}"?`)) removeEnv.mutate(env.id)
+                    }}
+                    className="px-2 py-1 text-xs text-danger hover:not-data-disabled:text-danger"
+                  >
+                    Delete
+                  </Button>
+                </div>
+              )
+            })}
+          </div>
+        )}
+        <Button
+          variant="ghost"
+          onClick={() => setEditingEnv('new')}
+          className="rounded border border-panel-edge px-3 py-1.5"
+        >
+          + Add environment
+        </Button>
+      </Panel>
+
+      {editingEnv != null && (
+        <EnvironmentEditor
+          projectId={projectId}
+          tree={p}
+          environment={editingEnv === 'new' ? null : editingEnv}
+          onClose={() => setEditingEnv(null)}
+          onSaved={() => {
+            setEditingEnv(null)
+            invalidateTree()
+          }}
+        />
+      )}
 
       {addingCommand && (
         <AddActionDialog
