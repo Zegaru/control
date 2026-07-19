@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import type { ContainerHealth, ContainerState } from '@control/shared'
 import { api } from '../api.js'
 import { LogPanel } from './LogPanel.js'
-import { Led } from './kit.js'
+import { Led, Button } from './kit.js'
 
 function dockerLed(state: ContainerState, health: ContainerHealth) {
   if (state !== 'running') return 'idle'
@@ -38,9 +38,9 @@ export function ContainerDrawer({ containerId, onClose }: { containerId: string;
               </a>
             ))}
         </div>
-        <button onClick={onClose} className="px-2 text-lg text-ink-dim">
+        <Button variant="icon" onClick={onClose} className="px-2 text-lg text-ink-dim">
           ✕
-        </button>
+        </Button>
       </header>
       <div className="flex-1 overflow-hidden bg-[#0b0d0a] p-2">
         <LogPanel containerId={containerId} />

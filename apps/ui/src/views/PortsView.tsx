@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { PortOwner } from '@control/shared'
 import { api } from '../api.js'
-import { Chip, Panel } from '../components/kit.js'
+import { Chip, Panel, Button } from '../components/kit.js'
 
 const ownerTone = (owner: PortOwner['owner']) =>
   owner === 'run' ? 'phosphor' : owner === 'container' ? 'amber' : 'default'
@@ -84,9 +84,13 @@ export function PortsView({ onOpenRun }: { onOpenRun: (runId: string) => void })
                       open ↗
                     </a>
                     {o.runId && (
-                      <button onClick={() => onOpenRun(o.runId!)} className="text-ink-dim">
+                      <Button
+                        variant="ghost"
+                        onClick={() => onOpenRun(o.runId!)}
+                        className="px-0 py-0 text-ink-dim"
+                      >
                         logs
-                      </button>
+                      </Button>
                     )}
                   </td>
                 </tr>

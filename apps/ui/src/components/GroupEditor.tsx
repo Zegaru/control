@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Group, GroupStep } from '@control/shared'
 import { api } from '../api.js'
 import { useAllActions } from '../useAllActions.js'
+import { Button, TextInput } from './ui.js'
 
 const WAIT_OPTIONS: GroupStep['waitFor'][] = ['none', 'healthy', 'exit']
 
@@ -66,12 +67,11 @@ export function GroupEditor({
 
         <label className="mb-4 block">
           <span className="mb-1 block text-xs text-ink-dim">Name</span>
-          <input
+          <TextInput
             autoFocus
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Full stack"
-            className={`${field} w-full`}
           />
         </label>
 
@@ -96,15 +96,20 @@ export function GroupEditor({
                   </option>
                 ))}
               </select>
-              <button onClick={() => move(i, -1)} className="px-1 text-ink-faint" title="Up">
+              <Button variant="icon" onClick={() => move(i, -1)} title="Up">
                 ↑
-              </button>
-              <button onClick={() => move(i, 1)} className="px-1 text-ink-faint" title="Down">
+              </Button>
+              <Button variant="icon" onClick={() => move(i, 1)} title="Down">
                 ↓
-              </button>
-              <button onClick={() => removeStep(i)} className="px-1 text-danger" title="Remove">
+              </Button>
+              <Button
+                variant="icon"
+                onClick={() => removeStep(i)}
+                title="Remove"
+                className="text-danger hover:not-data-disabled:text-danger"
+              >
                 ✕
-              </button>
+              </Button>
             </li>
           ))}
           {steps.length === 0 && (
@@ -126,16 +131,16 @@ export function GroupEditor({
         </select>
 
         <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="rounded px-3 py-1.5 text-xs text-ink-dim">
+          <Button variant="ghost" onClick={onClose}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={save}
             disabled={busy || !name.trim() || steps.length === 0}
-            className="rounded border border-phosphor-dim px-4 py-1.5 text-xs font-bold text-phosphor disabled:opacity-40"
+            focusableWhenDisabled
           >
             {busy ? 'Saving…' : 'Save Group'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

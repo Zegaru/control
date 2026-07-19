@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { ActionWithRun } from '@control/shared'
 import { api } from '../api.js'
 import { statusLabel } from './kit.js'
+import { Button, TextInput } from './ui.js'
 
 /**
  * Edit an action's command + health signals (portHint / healthUrl / env) and
@@ -47,7 +48,8 @@ export function ActionEditor({ action, onClose }: { action: ActionWithRun; onClo
     }
   }
 
-  const field = 'w-full rounded border border-panel-edge bg-bezel px-3 py-2 text-sm outline-none focus:border-phosphor-dim'
+  const field =
+    'w-full rounded border border-panel-edge bg-bezel px-3 py-2 text-sm outline-none focus:border-phosphor-dim'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
@@ -62,11 +64,15 @@ export function ActionEditor({ action, onClose }: { action: ActionWithRun; onClo
         <div className="space-y-3">
           <label className="block">
             <span className="mb-1 block text-xs text-ink-dim">Name</span>
-            <input value={name} onChange={(e) => setName(e.target.value)} className={field} />
+            <TextInput value={name} onChange={(e) => setName(e.target.value)} />
           </label>
           <label className="block">
             <span className="mb-1 block text-xs text-ink-dim">Command</span>
-            <input value={command} onChange={(e) => setCommand(e.target.value)} className={`${field} font-mono`} />
+            <TextInput
+              value={command}
+              onChange={(e) => setCommand(e.target.value)}
+              className="font-mono"
+            />
             {action.source === 'detected' && (
               <span className="mt-1 block text-[10px] text-ink-faint">
                 Detected action — a re-scan preserves this override.
@@ -76,20 +82,18 @@ export function ActionEditor({ action, onClose }: { action: ActionWithRun; onClo
           <div className="grid grid-cols-2 gap-3">
             <label className="block">
               <span className="mb-1 block text-xs text-ink-dim">Port hint</span>
-              <input
+              <TextInput
                 value={portHint}
                 onChange={(e) => setPortHint(e.target.value.replace(/\D/g, ''))}
                 placeholder="3000"
-                className={field}
               />
             </label>
             <label className="block">
               <span className="mb-1 block text-xs text-ink-dim">Health URL</span>
-              <input
+              <TextInput
                 value={healthUrl}
                 onChange={(e) => setHealthUrl(e.target.value)}
                 placeholder="http://localhost:3000/health"
-                className={field}
               />
             </label>
           </div>
@@ -125,16 +129,12 @@ export function ActionEditor({ action, onClose }: { action: ActionWithRun; onClo
         </div>
 
         <div className="mt-5 flex justify-end gap-2">
-          <button onClick={onClose} className="rounded px-3 py-1.5 text-xs text-ink-dim">
+          <Button variant="ghost" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            onClick={save}
-            disabled={busy}
-            className="rounded border border-phosphor-dim px-4 py-1.5 text-xs font-bold text-phosphor disabled:opacity-40"
-          >
+          </Button>
+          <Button onClick={save} disabled={busy} focusableWhenDisabled>
             {busy ? 'Saving…' : 'Save'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

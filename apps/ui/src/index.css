@@ -289,7 +289,7 @@ body {
 }
 
 .text-glow {
-  text-shadow: 0 0 8px rgba(125, 252, 154, 0.5);
+  text-shadow: 0 0 10px rgba(125, 252, 154, 0.65), 0 0 24px rgba(125, 252, 154, 0.25);
 }
 
 .glow-phosphor {
@@ -309,7 +309,7 @@ body {
 }
 
 .text-glow-amber {
-  text-shadow: 0 0 8px rgba(245, 179, 74, 0.5);
+  text-shadow: 0 0 8px rgba(245, 179, 74, 0.7), 0 0 18px rgba(245, 179, 74, 0.3);
 }
 
 .text-glow-danger {

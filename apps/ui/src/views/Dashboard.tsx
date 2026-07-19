@@ -294,7 +294,7 @@ export function Dashboard({
   const hostGauge = (base: number) => Math.min(90, base + (tick % 5));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-2">
       {!projectsOnly && (
         <>
           <div className="grid grid-cols-[1fr_1fr] gap-2">
@@ -344,7 +344,7 @@ export function Dashboard({
               title="Event Logs"
               crt
               footer={
-                <div className="flex items-center gap-2 pt-2">
+                <div className="flex items-center gap-6 pt-2">
                   <BacklitButton
                     size="sm"
                     onClick={() => setClearedLogs(new Set(logRows.map((r) => r.id)))}
@@ -432,9 +432,6 @@ export function Dashboard({
       )}
 
       <div>
-        <h2 className="font-ui mb-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-ink-dim">
-          Projects
-        </h2>
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
           {(projects.data ?? []).map((p) => {
             const tree = treeData.find((t) => t.id === p.id);

@@ -1,5 +1,11 @@
 import {useId, type ReactNode} from 'react';
+import {Switch} from '@base-ui/react/switch';
 import type {RunStatus} from '@control/shared';
+import {cn} from '../lib/cn.js';
+import {Button} from './ui.js';
+
+export {Button, TextInput} from './ui.js';
+export type {ButtonProps, ButtonVariant, ButtonTone, ButtonSize, TextInputProps} from './ui.js';
 
 export function statusColor(status: RunStatus | 'idle'): string {
   switch (status) {
@@ -111,35 +117,35 @@ export function RockerToggle({
 }) {
   const glow = busy ? 'var(--color-amber)' : on ? 'var(--color-phosphor)' : 'transparent';
   return (
-    <button
-      onClick={(e) => {
-        e.stopPropagation();
-        onToggle();
-      }}
+    <Switch.Root
+      checked={on}
       disabled={disabled}
-      aria-pressed={on}
-      className="rocker-housing font-ui relative flex h-14 w-16 flex-col overflow-hidden rounded-md p-0.5 text-[10px] font-bold disabled:opacity-40"
+      nativeButton
+      render={<button type="button" />}
+      onCheckedChange={() => onToggle()}
+      onClick={(e) => e.stopPropagation()}
+      className="rocker-housing font-ui relative flex h-14 w-16 flex-col overflow-hidden rounded-md p-0.5 text-[10px] font-bold data-disabled:opacity-40"
       style={{
         boxShadow: `inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -2px 4px rgba(0,0,0,0.5), 0 0 14px -2px ${glow}`,
       }}
     >
       <span
-        className={`flex flex-1 items-center justify-center rounded-sm transition-colors ${
-          on
-            ? `rocker-segment-on text-black ${busy ? 'busy' : ''}`
-            : 'text-ink-faint'
-        }`}
+        className={cn(
+          'flex flex-1 items-center justify-center rounded-sm transition-colors',
+          on ? `rocker-segment-on text-black ${busy ? 'busy' : ''}` : 'text-ink-faint',
+        )}
       >
         {labels[0]}
       </span>
       <span
-        className={`mt-0.5 flex flex-1 items-center justify-center rounded-sm transition-colors ${
-          !on ? 'rocker-segment-off text-ink' : 'text-ink-faint'
-        }`}
+        className={cn(
+          'mt-0.5 flex flex-1 items-center justify-center rounded-sm transition-colors',
+          !on ? 'rocker-segment-off text-ink' : 'text-ink-faint',
+        )}
       >
         {labels[1]}
       </span>
-    </button>
+    </Switch.Root>
   );
 }
 
@@ -322,9 +328,7 @@ export function RotaryKnob({
           {Math.round(value)}
         </span>
       </div>
-      <span className="font-ui text-[9px] uppercase tracking-wider text-ink-faint">
-        {label}
-      </span>
+      <span className="font-ui text-[9px] uppercase tracking-wider text-ink-faint">{label}</span>
     </div>
   );
 }
@@ -352,9 +356,7 @@ export function CircularGauge({
           </span>
         </span>
       </div>
-      <span className="font-ui text-[10px] uppercase tracking-wider text-ink-dim">
-        {label}
-      </span>
+      <span className="font-ui text-[10px] uppercase tracking-wider text-ink-dim">{label}</span>
     </div>
   );
 }
@@ -372,40 +374,10 @@ export function BacklitButton({
   size?: 'sm' | 'md';
   disabled?: boolean;
 }) {
-  const border =
-    tone === 'phosphor'
-      ? 'var(--color-phosphor-dim)'
-      : tone === 'amber'
-      ? 'var(--color-amber)'
-      : tone === 'danger'
-      ? 'var(--color-danger)'
-      : 'var(--color-panel-edge)';
-  const text =
-    tone === 'phosphor'
-      ? 'var(--color-phosphor)'
-      : tone === 'amber'
-      ? 'var(--color-amber)'
-      : tone === 'danger'
-      ? 'var(--color-danger)'
-      : 'var(--color-ink-dim)';
-  const glow =
-    tone === 'phosphor'
-      ? 'glow-phosphor'
-      : tone === 'amber'
-      ? 'glow-amber'
-      : tone === 'danger'
-      ? 'glow-danger'
-      : '';
-  const pad = size === 'sm' ? 'px-3 py-1.5 text-[10px]' : 'px-4 py-2 text-[11px]';
   return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={`backlit-btn font-ui rounded uppercase tracking-widest font-semibold disabled:opacity-40 ${pad} ${glow}`}
-      style={{borderColor: border, color: text}}
-    >
+    <Button variant="backlit" tone={tone} size={size} disabled={disabled} onClick={onClick}>
       {children}
-    </button>
+    </Button>
   );
 }
 
@@ -421,29 +393,30 @@ export function MasterPower({
 }) {
   const glow = on ? 'var(--color-danger-glow)' : 'transparent';
   return (
-    <button
-      onClick={(e) => {
-        e.stopPropagation();
-        onToggle();
-      }}
+    <Switch.Root
+      checked={on}
       disabled={disabled}
-      aria-pressed={on}
-      className="rocker-housing rocker-danger font-ui relative flex h-16 w-20 flex-col overflow-hidden rounded-md p-0.5 text-[9px] font-bold disabled:opacity-40"
+      nativeButton
+      render={<button type="button" />}
+      onCheckedChange={() => onToggle()}
+      onClick={(e) => e.stopPropagation()}
+      className="rocker-housing rocker-danger font-ui relative flex h-16 w-20 flex-col overflow-hidden rounded-md p-0.5 text-[9px] font-bold data-disabled:opacity-40"
       style={{
         boxShadow: `inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -2px 4px rgba(0,0,0,0.5), 0 0 16px -2px ${glow}`,
       }}
     >
       <span
-        className={`flex flex-[2] items-center justify-center rounded-sm transition-colors ${
-          on ? 'rocker-segment-on danger text-black' : 'text-ink-faint'
-        }`}
+        className={cn(
+          'flex flex-[2] items-center justify-center rounded-sm transition-colors',
+          on ? 'rocker-segment-on danger text-black' : 'text-ink-faint',
+        )}
       >
         ON
       </span>
       <span className="font-ui rocker-segment-off mt-0.5 flex flex-1 items-center justify-center rounded-sm text-[8px] uppercase tracking-wider text-ink-faint">
         All Systems
       </span>
-    </button>
+    </Switch.Root>
   );
 }
 
@@ -530,38 +503,59 @@ export function NavItem({
   onClick: () => void;
 }) {
   return (
-    <button
+    <Button
+      variant="ghost"
       onClick={onClick}
-      className={`font-ui flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm transition-colors ${
+      aria-current={active ? 'page' : undefined}
+      className={cn(
+        'font-ui relative flex w-full items-center justify-start gap-3 rounded-md px-3 py-2.5 text-left text-sm',
         active
-          ? 'border-l-2 border-amber bg-panel-raised pl-[10px] text-amber'
-          : 'text-ink-dim hover:bg-panel-raised'
-      }`}
+          ? 'bg-amber/12 text-amber text-glow-amber hover:not-data-disabled:text-amber'
+          : 'text-ink-dim hover:not-data-disabled:bg-panel-raised/50 hover:not-data-disabled:text-ink',
+      )}
     >
-      <span className="w-4 shrink-0 text-center">{icon}</span>
+      {active && (
+        <span
+          className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-amber"
+          style={{boxShadow: '0 0 8px var(--color-amber)'}}
+          aria-hidden
+        />
+      )}
+      <span
+        className={cn(
+          'w-4 shrink-0 text-center',
+          active && 'drop-shadow-[0_0_6px_var(--color-amber)]',
+        )}
+      >
+        {icon}
+      </span>
       {label}
-    </button>
+    </Button>
   );
 }
 
 export function AgentStatus({online, label}: {online: boolean; label?: string}) {
   return (
-    <div className="bezel-recessed rounded-md p-3">
-      <div className="flex items-center gap-2 text-[10px] text-ink-faint">
+    <div className="bezel-recessed rounded-lg px-3 py-3">
+      <div className="flex items-center gap-2.5 text-[10px] text-ink-dim">
         <Led status={online ? 'healthy' : 'failed'} pulse={online} ring />
         <span className="font-ui uppercase tracking-wider">
           {label ?? (online ? 'Agent Running' : 'Agent Offline')}
         </span>
       </div>
       {online && (
-        <div className="mt-2 overflow-hidden">
-          <svg viewBox="0 0 100 20" className="waveform-track h-5 w-[120%]" aria-hidden>
+        <div className="mt-2.5 overflow-hidden">
+          <svg viewBox="0 0 120 24" className="waveform-track h-6 w-[130%]" aria-hidden>
             <polyline
-              points="0,12 8,8 16,14 24,6 32,10 40,4 48,12 56,7 64,11 72,5 80,9 88,13 96,6"
+              points="0,14 8,14 12,14 16,3 20,21 24,7 28,17 32,12 40,12 44,2 48,22 52,9 56,14 64,14 68,5 72,19 76,10 80,14 88,14 92,2 96,22 100,8 104,14 112,14 116,6 120,16"
               fill="none"
               stroke="var(--color-phosphor)"
-              strokeWidth={1.5}
-              style={{filter: 'drop-shadow(0 0 3px var(--color-phosphor))'}}
+              strokeWidth={1.75}
+              strokeLinejoin="round"
+              style={{
+                filter:
+                  'drop-shadow(0 0 3px var(--color-phosphor)) drop-shadow(0 0 8px var(--color-phosphor))',
+              }}
             />
           </svg>
         </div>
@@ -604,13 +598,14 @@ export function ProjectModule({
 }) {
   if (variant === 'add') {
     return (
-      <button
+      <Button
+        variant="ghost"
         onClick={onClick}
-        className="bezel-raised flex min-h-[200px] flex-col items-center justify-center gap-2 rounded-lg border-dashed text-ink-faint transition-colors hover:border-phosphor-dim hover:text-phosphor"
+        className="bezel-raised flex min-h-[200px] w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-panel-edge text-ink-faint hover:not-data-disabled:border-phosphor-dim hover:not-data-disabled:text-phosphor"
       >
         <span className="text-3xl">+</span>
         <span className="font-ui text-[11px] uppercase tracking-wider">Add Project</span>
-      </button>
+      </Button>
     );
   }
 
@@ -622,17 +617,21 @@ export function ProjectModule({
       <Screw className="bottom-2 right-2" />
       <div className="bezel-recessed flex flex-1 flex-col overflow-hidden rounded-md bg-bezel">
         <div className="flex items-start justify-between gap-2 border-b border-panel-edge px-4 py-3">
-          <button onClick={onClick} className="min-w-0 flex-1 text-left">
-            <div className="flex items-center gap-2">
-              <span className="font-ui text-sm font-semibold uppercase tracking-wide">{name}</span>
-              {favorite && <span className="text-amber">★</span>}
-            </div>
-            {path && (
-              <div className="mt-0.5 truncate text-[10px] text-ink-faint">
-                {path}
+          <Button
+            variant="ghost"
+            onClick={onClick}
+            className="min-w-0 flex-1 items-start justify-start px-0 py-0 text-left hover:not-data-disabled:text-ink"
+          >
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-ui text-sm font-semibold uppercase tracking-wide text-ink">
+                  {name}
+                </span>
+                {favorite && <span className="text-amber">★</span>}
               </div>
-            )}
-          </button>
+              {path && <div className="mt-0.5 truncate text-[10px] text-ink-faint">{path}</div>}
+            </div>
+          </Button>
           {onToggle != null && on != null && (
             <RockerToggle on={on} busy={busy} onToggle={onToggle} />
           )}
@@ -717,7 +716,7 @@ export function ControlStrip({
       : 'var(--color-ink-faint)';
 
   return (
-    <div className="bezel-raised mt-6 rounded-lg p-2">
+    <div className="bezel-raised mt-2 rounded-lg p-2">
       <Screw className="top-2 left-2" />
       <Screw className="top-2 right-2" />
       <Screw className="bottom-2 left-2" />

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import type { ContainerHealth, ContainerInfo, ContainerState } from '@control/shared'
 import { api } from '../api.js'
-import { Chip, Led, Panel } from '../components/kit.js'
+import { Chip, Led, Panel, Button } from '../components/kit.js'
 
 function dockerLed(state: ContainerState, health: ContainerHealth) {
   if (state !== 'running') return 'idle'
@@ -99,12 +99,13 @@ export function DockerView({ onOpenContainer }: { onOpenContainer: (id: string) 
                       </a>
                     ))}
                 </div>
-                <button
+                <Button
+                  variant="ghost"
                   onClick={() => onOpenContainer(c.id)}
-                  className="shrink-0 rounded border border-panel-edge px-3 py-1 text-xs text-ink-dim hover:text-ink"
+                  className="shrink-0 rounded border border-panel-edge px-3 py-1"
                 >
                   Logs
-                </button>
+                </Button>
               </div>
             ))}
           </div>

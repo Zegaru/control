@@ -54,17 +54,17 @@ export function App() {
     <SocketProvider>
       <div className="flex h-screen w-screen p-2">
         <div className="flex h-full w-full overflow-hidden text-ink p-2 bg-panel rounded-xl">
-          <aside className="bezel-raised flex w-56 shrink-0 flex-col rounded-lg bg-bezel p-3">
-            <div className="mb-6 px-2 pt-2">
-              <div className="font-ui text-2xl font-bold tracking-[0.15em] text-phosphor text-glow">
+          <aside className="bezel-raised flex w-56 shrink-0 flex-col rounded-xl bg-bezel p-4">
+            <div className="mb-8 px-2 pt-1">
+              <div className="font-ui text-2xl font-bold tracking-[0.18em] text-phosphor text-glow">
                 CONTROL
               </div>
-              <div className="font-ui mt-1 text-[10px] uppercase tracking-widest text-ink-faint">
+              <div className="font-ui mt-1.5 text-[10px] uppercase tracking-[0.2em] text-ink-faint">
                 Local Dev Command Center
               </div>
             </div>
 
-            <nav className="flex flex-col gap-1">
+            <nav className="flex flex-col gap-1.5">
               {NAV.map((item) => {
                 const active =
                   view.kind === item.key || (item.key === 'projects' && view.kind === 'project');
@@ -80,7 +80,7 @@ export function App() {
               })}
             </nav>
 
-            <div className="mt-auto">
+            <div className="mt-auto pt-4">
               <AgentStatus
                 online={daemonUp}
                 label={daemonUp ? `Agent v${health.data?.version}` : 'Agent Offline'}

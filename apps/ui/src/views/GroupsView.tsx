@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { Group } from '@control/shared'
 import { api } from '../api.js'
-import { Led, Panel } from '../components/kit.js'
+import { Led, Panel, Button } from '../components/kit.js'
 import { useAllActions } from '../useAllActions.js'
 import { GroupEditor } from '../components/GroupEditor.js'
 
@@ -43,12 +43,7 @@ export function GroupsView() {
             start web + worker.
           </p>
         </div>
-        <button
-          onClick={() => setEditing('new')}
-          className="rounded border border-phosphor-dim px-4 py-1.5 text-xs font-bold text-phosphor"
-        >
-          + New Group
-        </button>
+        <Button onClick={() => setEditing('new')}>+ New Group</Button>
       </div>
 
       {(groups.data ?? []).length === 0 && (
@@ -67,22 +62,23 @@ export function GroupsView() {
             title={g.name}
             right={
               <div className="flex items-center gap-2">
-                <button onClick={() => setEditing(g)} className="text-xs text-ink-dim">
+                <Button variant="ghost" onClick={() => setEditing(g)} className="px-2 py-1">
                   Edit
-                </button>
-                <button onClick={() => remove(g)} className="text-xs text-danger">
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => remove(g)}
+                  className="px-2 py-1 text-danger hover:not-data-disabled:text-danger"
+                >
                   Delete
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant={running ? 'danger' : 'primary'}
                   onClick={() => (running ? stop(g) : start(g))}
-                  className={`rounded px-3 py-1 text-xs font-bold ${
-                    running
-                      ? 'border border-danger text-danger'
-                      : 'border border-phosphor-dim text-phosphor'
-                  }`}
+                  className="px-3 py-1"
                 >
                   {running ? 'STOP ALL' : 'START'}
-                </button>
+                </Button>
               </div>
             }
           >
