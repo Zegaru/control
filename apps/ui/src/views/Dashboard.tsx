@@ -297,41 +297,44 @@ export function Dashboard({
     <div className="space-y-6">
       {!projectsOnly && (
         <>
-          <div className="grid grid-cols-[1fr_1fr] gap-6">
+          <div className="grid grid-cols-[1fr_1fr] gap-2">
             <Panel title="System Status" crt>
-              <div
-                className="mb-4 text-3xl font-bold text-glow"
-                style={{color: 'var(--color-phosphor)'}}
-              >
+              <div className="mb-4 text-3xl font-bold text-phosphor text-glow">
                 {counts.running + counts.starting} SERVICES{' '}
                 {counts.starting ? 'STARTING' : 'RUNNING'}
               </div>
-              <div className="mb-4 grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-4 gap-3">
                 <SegmentCounter value={counts.running} label="Running" tone="phosphor" />
                 <SegmentCounter value={counts.starting} label="Starting" tone="amber" />
-                <SegmentCounter value={counts.stopped} label="Stopped" tone="dim" />
-                <SegmentCounter
-                  value={counts.failed}
-                  label={counts.failed ? 'Failed' : 'Failed'}
-                  tone={counts.failed ? 'danger' : 'dim'}
-                />
+                <SegmentCounter value={counts.stopped} label="Stopped" tone="phosphor" />
+                <SegmentCounter value={counts.failed} label="Failed" tone="danger" />
               </div>
-              <div className="mb-4 grid grid-cols-3 gap-3">
-                <Sparkline data={sparkCpu} label="CPU" unit="%" />
-                <Sparkline data={sparkMem} label="Memory" unit="%" />
-                <Sparkline data={sparkDisk} label="Disk" unit="%" />
+              <div className="mt-4 border-t border-[rgba(125,252,154,0.12)] pt-3">
+                <div className="font-ui mb-2 text-[10px] uppercase tracking-[0.2em] text-ink-dim">
+                  Resource Usage
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <Sparkline data={sparkCpu} label="CPU" unit="%" />
+                  <Sparkline data={sparkMem} label="Memory" unit="%" />
+                  <Sparkline data={sparkDisk} label="Disk" unit="%" />
+                </div>
               </div>
               {activePorts.length > 0 && (
-                <div>
-                  <div className="font-ui mb-2 text-[9px] uppercase tracking-wider text-[var(--color-ink-faint)]">
+                <div className="mt-4 border-t border-[rgba(125,252,154,0.12)] pt-3">
+                  <div className="font-ui mb-2 text-[10px] uppercase tracking-[0.2em] text-ink-dim">
                     Active Ports
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    {activePorts.map((p) => (
+                    {activePorts.slice(0, 6).map((p) => (
                       <Chip key={p} tone="phosphor">
                         {p}
                       </Chip>
                     ))}
+                    {activePorts.length > 6 && (
+                      <span className="opacity-60">
+                        <Chip tone="phosphor">+{activePorts.length - 6}</Chip>
+                      </span>
+                    )}
                   </div>
                 </div>
               )}
@@ -357,24 +360,24 @@ export function Dashboard({
               }
             >
               {logRows.length === 0 ? (
-                <p className="text-[var(--color-ink-faint)]">No active events.</p>
+                <p className="text-ink-faint">No active events.</p>
               ) : (
                 <table className="w-full text-left">
                   <tbody>
                     {logRows.map((row) => (
                       <tr
                         key={row.id}
-                        className="cursor-pointer border-b border-[var(--color-panel-edge)]/50 hover:bg-[rgba(125,252,154,0.04)]"
+                        className="cursor-pointer border-b border-panel-edge/50 hover:bg-phosphor/4"
                         onClick={() => {
                           if (row.kind === 'run') onOpenRun(row.id.replace('run-', ''));
                           else if (row.kind === 'container')
                             onOpenContainer(row.id.replace('ctr-', ''));
                         }}
                       >
-                        <td className="py-1 pr-3 text-[var(--color-ink-faint)]">
+                        <td className="py-1 pr-3 text-ink-faint">
                           {new Date().toLocaleTimeString()}
                         </td>
-                        <td className="py-1 pr-3 text-[var(--color-ink-dim)]">{row.project}</td>
+                        <td className="py-1 pr-3 text-ink-dim">{row.project}</td>
                         <td className="py-1 pr-3">{row.name}</td>
                         <td className="py-1 pr-3">
                           <span
@@ -392,7 +395,7 @@ export function Dashboard({
                         </td>
                         <td className="py-1">
                           {row.ports.map((p) => (
-                            <span key={p} className="mr-1 text-[var(--color-info)]">
+                            <span key={p} className="mr-1 text-info">
                               :{p}
                             </span>
                           ))}
@@ -429,7 +432,7 @@ export function Dashboard({
       )}
 
       <div>
-        <h2 className="font-ui mb-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--color-ink-dim)]">
+        <h2 className="font-ui mb-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-ink-dim">
           Projects
         </h2>
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">

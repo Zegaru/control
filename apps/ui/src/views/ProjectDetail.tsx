@@ -45,13 +45,13 @@ export function ProjectDetail({
     },
   })
 
-  if (!tree.data) return <div className="text-sm text-[var(--color-ink-dim)]">Loading…</div>
+  if (!tree.data) return <div className="text-sm text-ink-dim">Loading…</div>
   const p = tree.data
 
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-3">
-        <button onClick={onBack} className="text-sm text-[var(--color-ink-dim)] hover:text-[var(--color-ink)]">
+        <button onClick={onBack} className="text-sm text-ink-dim hover:text-ink">
           ← Projects
         </button>
       </div>
@@ -61,18 +61,18 @@ export function ProjectDetail({
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-bold">{p.name}</h1>
             <button onClick={() => toggleFav.mutate(!p.favorite)} title="Favorite project">
-              <span style={{ color: p.favorite ? 'var(--color-amber)' : 'var(--color-ink-faint)' }}>
+              <span className={p.favorite ? 'text-amber' : 'text-ink-faint'}>
                 {p.favorite ? '★' : '☆'}
               </span>
             </button>
           </div>
-          <div className="mt-1 text-[11px] text-[var(--color-ink-faint)]">{p.rootPath}</div>
+          <div className="mt-1 text-[11px] text-ink-faint">{p.rootPath}</div>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => rescan.mutate()}
             disabled={rescan.isPending}
-            className="rounded border border-[var(--color-panel-edge)] px-3 py-1.5 text-xs text-[var(--color-ink-dim)] hover:text-[var(--color-ink)]"
+            className="rounded border border-panel-edge px-3 py-1.5 text-xs text-ink-dim hover:text-ink"
           >
             {rescan.isPending ? 'Scanning…' : '↻ Re-scan'}
           </button>
@@ -80,7 +80,7 @@ export function ProjectDetail({
             onClick={() => {
               if (confirm(`Remove "${p.name}" from CONTROL? This does not touch the folder.`)) remove.mutate()
             }}
-            className="rounded border border-[var(--color-panel-edge)] px-3 py-1.5 text-xs text-[var(--color-danger)]"
+            className="rounded border border-panel-edge px-3 py-1.5 text-xs text-danger"
           >
             Remove
           </button>
@@ -88,7 +88,7 @@ export function ProjectDetail({
       </div>
 
       <Panel title="Docker compose projects claimed by this project">
-        <p className="mb-2 text-[11px] text-[var(--color-ink-faint)]">
+        <p className="mb-2 text-[11px] text-ink-faint">
           Containers with these <code>com.docker.compose.project</code> labels are attributed here.
           Useful when a repo's infra splits into multiple compose projects (CONTROL otherwise
           guesses from folder names).
@@ -97,12 +97,12 @@ export function ProjectDetail({
           {(p.composeProjects ?? []).map((claim) => (
             <span
               key={claim}
-              className="inline-flex items-center gap-1 rounded border border-[var(--color-phosphor-dim)] px-2 py-0.5 text-[11px] text-[var(--color-phosphor)]"
+              className="inline-flex items-center gap-1 rounded border border-phosphor-dim px-2 py-0.5 text-[11px] text-phosphor"
             >
               {claim}
               <button
                 onClick={() => setClaims.mutate((p.composeProjects ?? []).filter((x) => x !== claim))}
-                className="text-[var(--color-ink-faint)] hover:text-[var(--color-danger)]"
+                className="text-ink-faint hover:text-danger"
               >
                 ✕
               </button>
@@ -119,7 +119,7 @@ export function ProjectDetail({
               }
             }}
             placeholder="add label + Enter"
-            className="w-40 rounded border border-[var(--color-panel-edge)] bg-[var(--color-bezel)] px-2 py-1 text-xs outline-none focus:border-[var(--color-phosphor-dim)]"
+            className="w-40 rounded border border-panel-edge bg-bezel px-2 py-1 text-xs outline-none focus:border-phosphor-dim"
           />
         </div>
       </Panel>
@@ -141,7 +141,7 @@ export function ProjectDetail({
           >
             <div className="space-y-2">
               {primary.length === 0 && secondary.length === 0 && (
-                <p className="text-sm text-[var(--color-ink-faint)]">No actions detected.</p>
+                <p className="text-sm text-ink-faint">No actions detected.</p>
               )}
               {primary.map((a) => (
                 <ActionRow key={a.id} action={a} onOpenRun={onOpenRun} />
@@ -151,7 +151,7 @@ export function ProjectDetail({
                 <>
                   <button
                     onClick={() => setShowSecondary((v) => !v)}
-                    className="mt-2 text-[11px] uppercase tracking-wider text-[var(--color-ink-faint)] hover:text-[var(--color-ink-dim)]"
+                    className="mt-2 text-[11px] uppercase tracking-wider text-ink-faint hover:text-ink-dim"
                   >
                     {showSecondary ? '▾' : '▸'} {secondary.length} tasks (build, test, lint…)
                   </button>

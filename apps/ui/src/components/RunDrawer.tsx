@@ -14,12 +14,12 @@ export function RunDrawer({ runId, onClose }: { runId: string; onClose: () => vo
   }
 
   return (
-    <div className="fixed inset-y-0 right-0 z-40 flex w-[640px] max-w-[90vw] flex-col border-l border-[var(--color-panel-edge)] bg-[var(--color-panel)] shadow-2xl">
-      <header className="flex items-center justify-between border-b border-[var(--color-panel-edge)] px-4 py-3">
+    <div className="fixed inset-y-0 right-0 z-40 flex w-[640px] max-w-[90vw] flex-col border-l border-panel-edge bg-panel shadow-2xl">
+      <header className="flex items-center justify-between border-b border-panel-edge px-4 py-3">
         <div className="flex items-center gap-2">
           <Led status={run?.status ?? 'idle'} pulse={run?.status === 'starting'} />
           <span className="text-sm font-semibold">Run {runId.slice(0, 12)}</span>
-          <span className="text-[10px] uppercase tracking-wider text-[var(--color-ink-faint)]">
+          <span className="text-[10px] uppercase tracking-wider text-ink-faint">
             {statusLabel(run?.status ?? 'idle')}
           </span>
           {run?.ports.map((p) => (
@@ -28,7 +28,7 @@ export function RunDrawer({ runId, onClose }: { runId: string; onClose: () => vo
               href={`http://localhost:${p}`}
               target="_blank"
               rel="noreferrer"
-              className="rounded border border-[var(--color-phosphor-dim)] px-2 py-0.5 text-[11px] text-[var(--color-phosphor)]"
+              className="rounded border border-phosphor-dim px-2 py-0.5 text-[11px] text-phosphor"
             >
               :{p} ↗
             </a>
@@ -39,19 +39,19 @@ export function RunDrawer({ runId, onClose }: { runId: string; onClose: () => vo
             <>
               <button
                 onClick={() => stop(false)}
-                className="rounded border border-[var(--color-panel-edge)] px-2 py-1 text-xs text-[var(--color-ink-dim)]"
+                className="rounded border border-panel-edge px-2 py-1 text-xs text-ink-dim"
               >
                 Stop
               </button>
               <button
                 onClick={() => stop(true)}
-                className="rounded border border-[var(--color-danger)] px-2 py-1 text-xs text-[var(--color-danger)]"
+                className="rounded border border-danger px-2 py-1 text-xs text-danger"
               >
                 Force Kill
               </button>
             </>
           )}
-          <button onClick={onClose} className="px-2 text-lg text-[var(--color-ink-dim)]">
+          <button onClick={onClose} className="px-2 text-lg text-ink-dim">
             ✕
           </button>
         </div>

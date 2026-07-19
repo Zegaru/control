@@ -10,10 +10,13 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@base-ui/react": "^1.6.0",
     "@control/shared": "workspace:*",
     "@tanstack/react-query": "^5.62.0",
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/xterm": "^5.5.0",
+    "cnfast": "^0.0.8",
+    "motion": "^12.42.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

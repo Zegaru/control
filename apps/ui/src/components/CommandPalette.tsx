@@ -45,7 +45,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[60] flex items-start justify-center bg-black/60 pt-[15vh]" onClick={onClose}>
       <div
-        className="w-[600px] overflow-hidden rounded-lg border border-[var(--color-panel-edge)] bg-[var(--color-panel-raised)]"
+        className="w-[600px] overflow-hidden rounded-lg border border-panel-edge bg-panel-raised"
         onClick={(e) => e.stopPropagation()}
       >
         <input
@@ -59,7 +59,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
             else if (e.key === 'Escape') onClose()
           }}
           placeholder="Start an action…  (e.g. ent-agi web)"
-          className="w-full border-b border-[var(--color-panel-edge)] bg-transparent px-4 py-3 text-sm outline-none"
+          className="w-full border-b border-panel-edge bg-transparent px-4 py-3 text-sm outline-none"
         />
         <ul className="max-h-[50vh] overflow-y-auto">
           {results.map((fa, i) => (
@@ -68,19 +68,19 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
               onMouseEnter={() => setSel(i)}
               onClick={() => run(i)}
               className={`flex cursor-pointer items-center gap-3 px-4 py-2 text-sm ${
-                i === sel ? 'bg-[var(--color-panel)]' : ''
+                i === sel ? 'bg-panel' : ''
               }`}
             >
               <Led status={fa.action.activeRun?.status ?? 'idle'} />
-              <span className="text-[var(--color-ink-faint)]">{fa.projectName} /</span>
+              <span className="text-ink-faint">{fa.projectName} /</span>
               <span>{fa.action.name}</span>
-              <span className="ml-auto text-[10px] uppercase tracking-wider text-[var(--color-ink-faint)]">
+              <span className="ml-auto text-[10px] uppercase tracking-wider text-ink-faint">
                 {fa.action.activeRun ? 'stop' : 'start'}
               </span>
             </li>
           ))}
           {results.length === 0 && (
-            <li className="px-4 py-6 text-center text-sm text-[var(--color-ink-faint)]">No matches.</li>
+            <li className="px-4 py-6 text-center text-sm text-ink-faint">No matches.</li>
           )}
         </ul>
       </div>

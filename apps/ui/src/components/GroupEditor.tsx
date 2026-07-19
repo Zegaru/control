@@ -52,20 +52,20 @@ export function GroupEditor({
     return fa ? `${fa.projectName} / ${fa.action.name}` : id
   }
   const field =
-    'rounded border border-[var(--color-panel-edge)] bg-[var(--color-bezel)] px-3 py-2 text-sm outline-none focus:border-[var(--color-phosphor-dim)]'
+    'rounded border border-panel-edge bg-bezel px-3 py-2 text-sm outline-none focus:border-phosphor-dim'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
       <div
-        className="max-h-[85vh] w-[600px] overflow-y-auto rounded-lg border border-[var(--color-panel-edge)] bg-[var(--color-panel-raised)] p-5"
+        className="max-h-[85vh] w-[600px] overflow-y-auto rounded-lg border border-panel-edge bg-panel-raised p-5"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-widest text-[var(--color-ink-dim)]">
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-widest text-ink-dim">
           {group ? 'Edit Group' : 'New Launch Group'}
         </h2>
 
         <label className="mb-4 block">
-          <span className="mb-1 block text-xs text-[var(--color-ink-dim)]">Name</span>
+          <span className="mb-1 block text-xs text-ink-dim">Name</span>
           <input
             autoFocus
             value={name}
@@ -75,14 +75,14 @@ export function GroupEditor({
           />
         </label>
 
-        <div className="mb-2 text-xs text-[var(--color-ink-dim)]">Steps (run top to bottom)</div>
+        <div className="mb-2 text-xs text-ink-dim">Steps (run top to bottom)</div>
         <ol className="mb-3 space-y-2">
           {steps.map((step, i) => (
             <li
               key={`${step.actionId}-${i}`}
-              className="flex items-center gap-2 rounded border border-[var(--color-panel-edge)] px-2 py-1.5"
+              className="flex items-center gap-2 rounded border border-panel-edge px-2 py-1.5"
             >
-              <span className="w-5 text-right text-[var(--color-ink-faint)]">{i + 1}.</span>
+              <span className="w-5 text-right text-ink-faint">{i + 1}.</span>
               <span className="min-w-0 flex-1 truncate text-sm">{label(step.actionId)}</span>
               <select
                 value={step.waitFor}
@@ -96,19 +96,19 @@ export function GroupEditor({
                   </option>
                 ))}
               </select>
-              <button onClick={() => move(i, -1)} className="px-1 text-[var(--color-ink-faint)]" title="Up">
+              <button onClick={() => move(i, -1)} className="px-1 text-ink-faint" title="Up">
                 ↑
               </button>
-              <button onClick={() => move(i, 1)} className="px-1 text-[var(--color-ink-faint)]" title="Down">
+              <button onClick={() => move(i, 1)} className="px-1 text-ink-faint" title="Down">
                 ↓
               </button>
-              <button onClick={() => removeStep(i)} className="px-1 text-[var(--color-danger)]" title="Remove">
+              <button onClick={() => removeStep(i)} className="px-1 text-danger" title="Remove">
                 ✕
               </button>
             </li>
           ))}
           {steps.length === 0 && (
-            <li className="text-[11px] text-[var(--color-ink-faint)]">No steps yet — add one below.</li>
+            <li className="text-[11px] text-ink-faint">No steps yet — add one below.</li>
           )}
         </ol>
 
@@ -126,13 +126,13 @@ export function GroupEditor({
         </select>
 
         <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="rounded px-3 py-1.5 text-xs text-[var(--color-ink-dim)]">
+          <button onClick={onClose} className="rounded px-3 py-1.5 text-xs text-ink-dim">
             Cancel
           </button>
           <button
             onClick={save}
             disabled={busy || !name.trim() || steps.length === 0}
-            className="rounded border border-[var(--color-phosphor-dim)] px-4 py-1.5 text-xs font-bold text-[var(--color-phosphor)] disabled:opacity-40"
+            className="rounded border border-phosphor-dim px-4 py-1.5 text-xs font-bold text-phosphor disabled:opacity-40"
           >
             {busy ? 'Saving…' : 'Save Group'}
           </button>

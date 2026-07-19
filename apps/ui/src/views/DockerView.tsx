@@ -25,12 +25,12 @@ export function DockerView({ onOpenContainer }: { onOpenContainer: (id: string) 
       <div className="max-w-2xl">
         <h1 className="mb-3 text-xl font-bold">Docker</h1>
         <Panel>
-          <div className="flex items-center gap-2 text-sm text-[var(--color-amber)]">
+          <div className="flex items-center gap-2 text-sm text-amber">
             <Led status="failed" />
             Docker is not reachable.
           </div>
-          <p className="mt-2 text-xs text-[var(--color-ink-faint)]">{status.data.error}</p>
-          <p className="mt-3 text-sm text-[var(--color-ink-dim)]">
+          <p className="mt-2 text-xs text-ink-faint">{status.data.error}</p>
+          <p className="mt-3 text-sm text-ink-dim">
             Start Docker Desktop (or set <code>DOCKER_HOST</code>) and this view will populate
             automatically.
           </p>
@@ -60,7 +60,7 @@ export function DockerView({ onOpenContainer }: { onOpenContainer: (id: string) 
 
       {list.length === 0 && (
         <Panel>
-          <p className="py-6 text-center text-sm text-[var(--color-ink-faint)]">No containers.</p>
+          <p className="py-6 text-center text-sm text-ink-faint">No containers.</p>
         </Panel>
       )}
 
@@ -70,7 +70,7 @@ export function DockerView({ onOpenContainer }: { onOpenContainer: (id: string) 
             {cs.map((c) => (
               <div
                 key={c.id}
-                className="flex items-center gap-3 rounded-md border border-[var(--color-panel-edge)] bg-[var(--color-panel)] px-3 py-2"
+                className="flex items-center gap-3 rounded-md border border-panel-edge bg-panel px-3 py-2"
               >
                 <Led status={dockerLed(c.state, c.health)} pulse={c.health === 'starting'} />
                 <div className="min-w-0 flex-1">
@@ -80,7 +80,7 @@ export function DockerView({ onOpenContainer }: { onOpenContainer: (id: string) 
                       <Chip tone={c.health === 'healthy' ? 'phosphor' : 'amber'}>{c.health}</Chip>
                     )}
                   </div>
-                  <div className="truncate text-[11px] text-[var(--color-ink-faint)]">
+                  <div className="truncate text-[11px] text-ink-faint">
                     {c.image} · {c.status}
                   </div>
                 </div>
@@ -93,7 +93,7 @@ export function DockerView({ onOpenContainer }: { onOpenContainer: (id: string) 
                         href={`http://localhost:${p.publicPort}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="rounded border border-[var(--color-phosphor-dim)] px-2 py-0.5 text-[11px] text-[var(--color-phosphor)]"
+                        className="rounded border border-phosphor-dim px-2 py-0.5 text-[11px] text-phosphor"
                       >
                         :{p.publicPort}
                       </a>
@@ -101,7 +101,7 @@ export function DockerView({ onOpenContainer }: { onOpenContainer: (id: string) 
                 </div>
                 <button
                   onClick={() => onOpenContainer(c.id)}
-                  className="shrink-0 rounded border border-[var(--color-panel-edge)] px-3 py-1 text-xs text-[var(--color-ink-dim)] hover:text-[var(--color-ink)]"
+                  className="shrink-0 rounded border border-panel-edge px-3 py-1 text-xs text-ink-dim hover:text-ink"
                 >
                   Logs
                 </button>

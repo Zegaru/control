@@ -71,14 +71,14 @@ export function Panel({
       <Screw className="bottom-2 left-2" />
       <Screw className="bottom-2 right-2" />
 
-      <div className="bezel-recessed flex flex-1 min-h-0 flex-col overflow-hidden rounded-2xl bg-[var(--color-bezel)]">
+      <div className="bezel-recessed flex flex-1 min-h-0 flex-col overflow-hidden rounded-2xl bg-bezel">
         <div className={`flex-1 h-full ${crt ? 'crt-frame p-0' : 'p-4'}`}>
-          <div className="bezel-recessed h-full rounded-2xl bg-gray-900 p-4">
+          <div className="bezel-recessed border-0! h-full rounded-2xl bg-bezel p-4">
             <div className={crt ? 'crt bezel-recessed border-0! h-full rounded-2xl p-6' : 'h-full'}>
               <div className="relative z-10 h-full">
                 {title && (
                   <header className="font-ui flex items-center justify-between py-2">
-                    <h2 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--color-ink-dim)]">
+                    <h2 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-ink-dim">
                       {title}
                     </h2>
                     {right}
@@ -127,14 +127,14 @@ export function RockerToggle({
         className={`flex flex-1 items-center justify-center rounded-sm transition-colors ${
           on
             ? `rocker-segment-on text-black ${busy ? 'busy' : ''}`
-            : 'text-[var(--color-ink-faint)]'
+            : 'text-ink-faint'
         }`}
       >
         {labels[0]}
       </span>
       <span
         className={`mt-0.5 flex flex-1 items-center justify-center rounded-sm transition-colors ${
-          !on ? 'rocker-segment-off text-[var(--color-ink)]' : 'text-[var(--color-ink-faint)]'
+          !on ? 'rocker-segment-off text-ink' : 'text-ink-faint'
         }`}
       >
         {labels[1]}
@@ -152,12 +152,12 @@ export function Chip({
 }) {
   const toneCls =
     tone === 'phosphor'
-      ? 'border-[var(--color-phosphor-dim)] text-[var(--color-phosphor)] bg-[rgba(125,252,154,0.06)]'
+      ? 'border-phosphor-dim text-phosphor bg-phosphor/6'
       : tone === 'amber'
-      ? 'border-[var(--color-amber)] text-[var(--color-amber)] bg-[rgba(245,179,74,0.06)]'
+      ? 'border-amber text-amber bg-amber/6'
       : tone === 'info'
-      ? 'border-[var(--color-info)] text-[var(--color-info)] bg-[rgba(94,184,255,0.06)]'
-      : 'border-[var(--color-panel-edge)] text-[var(--color-ink-dim)] bg-[var(--color-bezel)]';
+      ? 'border-info text-info bg-info/6'
+      : 'border-panel-edge text-ink-dim bg-bezel';
   return (
     <span
       className={`inline-flex items-center rounded px-2 py-0.5 text-[11px] font-medium shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] ${toneCls}`}
@@ -193,11 +193,14 @@ export function SegmentCounter({
       ? 'text-glow-danger'
       : '';
   return (
-    <div className="bezel-recessed rounded-md px-4 py-3 text-center">
-      <div className={`text-3xl font-bold ${glowCls}`} style={{color}}>
+    <div className="crt-well rounded-md px-4 py-3 text-center">
+      <div className={`text-2xl font-bold ${glowCls}`} style={{color}}>
         {value}
       </div>
-      <div className="font-ui mt-1 text-[10px] uppercase tracking-widest text-[var(--color-ink-faint)]">
+      <div
+        className="font-ui mt-1.5 text-[10px] uppercase tracking-widest"
+        style={{color, opacity: 0.65}}
+      >
         {label}
       </div>
     </div>
@@ -319,7 +322,7 @@ export function RotaryKnob({
           {Math.round(value)}
         </span>
       </div>
-      <span className="font-ui text-[9px] uppercase tracking-wider text-[var(--color-ink-faint)]">
+      <span className="font-ui text-[9px] uppercase tracking-wider text-ink-faint">
         {label}
       </span>
     </div>
@@ -349,7 +352,7 @@ export function CircularGauge({
           </span>
         </span>
       </div>
-      <span className="font-ui text-[10px] uppercase tracking-wider text-[var(--color-ink-dim)]">
+      <span className="font-ui text-[10px] uppercase tracking-wider text-ink-dim">
         {label}
       </span>
     </div>
@@ -432,12 +435,12 @@ export function MasterPower({
     >
       <span
         className={`flex flex-[2] items-center justify-center rounded-sm transition-colors ${
-          on ? 'rocker-segment-on danger text-black' : 'text-[var(--color-ink-faint)]'
+          on ? 'rocker-segment-on danger text-black' : 'text-ink-faint'
         }`}
       >
         ON
       </span>
-      <span className="font-ui rocker-segment-off mt-0.5 flex flex-1 items-center justify-center rounded-sm text-[8px] uppercase tracking-wider text-[var(--color-ink-faint)]">
+      <span className="font-ui rocker-segment-off mt-0.5 flex flex-1 items-center justify-center rounded-sm text-[8px] uppercase tracking-wider text-ink-faint">
         All Systems
       </span>
     </button>
@@ -445,34 +448,44 @@ export function MasterPower({
 }
 
 export function Sparkline({data, label, unit}: {data: number[]; label: string; unit?: string}) {
-  const w = 120;
-  const h = 32;
+  const gradId = useId().replace(/:/g, '');
+  const w = 72;
+  const h = 26;
   const max = Math.max(...data, 1);
   const min = Math.min(...data, 0);
   const range = max - min || 1;
-  const points = data
-    .map((v, i) => {
-      const x = (i / Math.max(data.length - 1, 1)) * w;
-      const y = h - ((v - min) / range) * (h - 4) - 2;
-      return `${x},${y}`;
-    })
-    .join(' ');
+  const coords = data.map((v, i) => {
+    const x = (i / Math.max(data.length - 1, 1)) * w;
+    const y = h - ((v - min) / range) * (h - 4) - 2;
+    return `${x},${y}`;
+  });
+  const points = coords.join(' ');
+  const area = `${points} ${w},${h} 0,${h}`;
   const latest = data[data.length - 1] ?? 0;
   return (
-    <div className="bezel-recessed rounded-md px-3 py-2">
-      <div className="font-ui mb-1 flex items-baseline justify-between text-[9px] uppercase tracking-wider text-[var(--color-ink-faint)]">
-        <span>{label}</span>
-        <span className="text-[var(--color-phosphor)]">
+    <div className="crt-well flex items-end justify-between gap-2 rounded-md px-3 py-2.5">
+      <div className="min-w-0">
+        <div className="font-ui text-[9px] uppercase tracking-wider text-phosphor opacity-60">
+          {label}
+        </div>
+        <div className="mt-1 text-lg font-bold leading-none text-glow text-phosphor">
           {latest}
           {unit}
-        </span>
+        </div>
       </div>
-      <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="block">
+      <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="block shrink-0" aria-hidden>
+        <defs>
+          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--color-phosphor)" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="var(--color-phosphor)" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <polygon points={area} fill={`url(#${gradId})`} />
         <polyline
           points={points}
           fill="none"
           stroke="var(--color-phosphor)"
-          strokeWidth={1.5}
+          strokeWidth={1.25}
           style={{filter: 'drop-shadow(0 0 3px var(--color-phosphor))'}}
         />
       </svg>
@@ -496,7 +509,7 @@ export function TerminalScreen({
           {children}
         </div>
         {footer && (
-          <div className="font-ui relative z-10 flex items-center gap-3 border-t border-[var(--color-panel-edge)] bg-[var(--color-bezel)]/80 px-4 py-3 text-[10px] uppercase tracking-wider text-[var(--color-ink-faint)] backdrop-blur-sm">
+          <div className="font-ui relative z-10 flex items-center gap-3 border-t border-panel-edge bg-bezel/80 px-4 py-3 text-[10px] uppercase tracking-wider text-ink-faint backdrop-blur-sm">
             {footer}
           </div>
         )}
@@ -521,8 +534,8 @@ export function NavItem({
       onClick={onClick}
       className={`font-ui flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm transition-colors ${
         active
-          ? 'border-l-2 border-[var(--color-amber)] bg-[var(--color-panel-raised)] pl-[10px] text-[var(--color-amber)]'
-          : 'text-[var(--color-ink-dim)] hover:bg-[var(--color-panel-raised)]'
+          ? 'border-l-2 border-amber bg-panel-raised pl-[10px] text-amber'
+          : 'text-ink-dim hover:bg-panel-raised'
       }`}
     >
       <span className="w-4 shrink-0 text-center">{icon}</span>
@@ -534,7 +547,7 @@ export function NavItem({
 export function AgentStatus({online, label}: {online: boolean; label?: string}) {
   return (
     <div className="bezel-recessed rounded-md p-3">
-      <div className="flex items-center gap-2 text-[10px] text-[var(--color-ink-faint)]">
+      <div className="flex items-center gap-2 text-[10px] text-ink-faint">
         <Led status={online ? 'healthy' : 'failed'} pulse={online} ring />
         <span className="font-ui uppercase tracking-wider">
           {label ?? (online ? 'Agent Running' : 'Agent Offline')}
@@ -593,7 +606,7 @@ export function ProjectModule({
     return (
       <button
         onClick={onClick}
-        className="bezel-raised flex min-h-[200px] flex-col items-center justify-center gap-2 rounded-lg border-dashed text-[var(--color-ink-faint)] transition-colors hover:border-[var(--color-phosphor-dim)] hover:text-[var(--color-phosphor)]"
+        className="bezel-raised flex min-h-[200px] flex-col items-center justify-center gap-2 rounded-lg border-dashed text-ink-faint transition-colors hover:border-phosphor-dim hover:text-phosphor"
       >
         <span className="text-3xl">+</span>
         <span className="font-ui text-[11px] uppercase tracking-wider">Add Project</span>
@@ -607,15 +620,15 @@ export function ProjectModule({
       <Screw className="top-2 right-2" />
       <Screw className="bottom-2 left-2" />
       <Screw className="bottom-2 right-2" />
-      <div className="bezel-recessed flex flex-1 flex-col overflow-hidden rounded-md bg-[var(--color-bezel)]">
-        <div className="flex items-start justify-between gap-2 border-b border-[var(--color-panel-edge)] px-4 py-3">
+      <div className="bezel-recessed flex flex-1 flex-col overflow-hidden rounded-md bg-bezel">
+        <div className="flex items-start justify-between gap-2 border-b border-panel-edge px-4 py-3">
           <button onClick={onClick} className="min-w-0 flex-1 text-left">
             <div className="flex items-center gap-2">
               <span className="font-ui text-sm font-semibold uppercase tracking-wide">{name}</span>
-              {favorite && <span style={{color: 'var(--color-amber)'}}>★</span>}
+              {favorite && <span className="text-amber">★</span>}
             </div>
             {path && (
-              <div className="mt-0.5 truncate text-[10px] text-[var(--color-ink-faint)]">
+              <div className="mt-0.5 truncate text-[10px] text-ink-faint">
                 {path}
               </div>
             )}
@@ -647,7 +660,7 @@ export function ProjectModule({
           {children}
 
           {metrics && (
-            <div className="mt-auto flex justify-around border-t border-[var(--color-panel-edge)] pt-3">
+            <div className="mt-auto flex justify-around border-t border-panel-edge pt-3">
               {metrics.cpu != null && <RotaryKnob value={metrics.cpu} label="CPU" />}
               {metrics.mem != null && <RotaryKnob value={metrics.mem} label="MEM" />}
               {metrics.disk != null && <RotaryKnob value={metrics.disk} label="DISK" />}
@@ -709,11 +722,11 @@ export function ControlStrip({
       <Screw className="top-2 right-2" />
       <Screw className="bottom-2 left-2" />
       <Screw className="bottom-2 right-2" />
-      <div className="bezel-recessed rounded-md bg-[var(--color-bezel)] p-4">
+      <div className="bezel-recessed rounded-md bg-bezel p-4">
         <div className="flex flex-wrap items-center gap-6">
           <div className="flex items-center gap-3">
             <MasterPower on={masterOn} onToggle={onMasterToggle} />
-            <span className="font-ui text-[9px] uppercase tracking-widest text-[var(--color-ink-faint)]">
+            <span className="font-ui text-[9px] uppercase tracking-widest text-ink-faint">
               Master Power
             </span>
           </div>
@@ -734,11 +747,11 @@ export function ControlStrip({
 
           {network && (
             <div className="bezel-recessed rounded-md px-3 py-2 text-[10px]">
-              <div className="font-ui mb-1 text-[9px] uppercase tracking-wider text-[var(--color-ink-faint)]">
+              <div className="font-ui mb-1 text-[9px] uppercase tracking-wider text-ink-faint">
                 Network
               </div>
-              <div className="text-[var(--color-info)]">↑ {network.up}</div>
-              <div className="text-[var(--color-info)]">↓ {network.down}</div>
+              <div className="text-info">↑ {network.up}</div>
+              <div className="text-info">↓ {network.down}</div>
             </div>
           )}
 
@@ -760,14 +773,14 @@ export function ControlStrip({
                   <span className="flex-1" style={{color: notifColor(n.tone)}}>
                     {n.message}
                   </span>
-                  {n.time && <span className="text-[var(--color-ink-faint)]">{n.time}</span>}
+                  {n.time && <span className="text-ink-faint">{n.time}</span>}
                 </li>
               ))}
             </ul>
           )}
 
           {version && (
-            <span className="font-ui ml-auto text-[10px] uppercase tracking-wider text-[var(--color-ink-faint)]">
+            <span className="font-ui ml-auto text-[10px] uppercase tracking-wider text-ink-faint">
               v{version}
             </span>
           )}

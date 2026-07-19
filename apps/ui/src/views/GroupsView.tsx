@@ -38,14 +38,14 @@ export function GroupsView() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold">Launch Groups</h1>
-          <p className="mt-1 text-sm text-[var(--color-ink-dim)]">
+          <p className="mt-1 text-sm text-ink-dim">
             Start several actions in order — e.g. bring up infra, wait until it's healthy, then
             start web + worker.
           </p>
         </div>
         <button
           onClick={() => setEditing('new')}
-          className="rounded border border-[var(--color-phosphor-dim)] px-4 py-1.5 text-xs font-bold text-[var(--color-phosphor)]"
+          className="rounded border border-phosphor-dim px-4 py-1.5 text-xs font-bold text-phosphor"
         >
           + New Group
         </button>
@@ -53,7 +53,7 @@ export function GroupsView() {
 
       {(groups.data ?? []).length === 0 && (
         <Panel>
-          <p className="py-6 text-center text-sm text-[var(--color-ink-faint)]">
+          <p className="py-6 text-center text-sm text-ink-faint">
             No launch groups yet.
           </p>
         </Panel>
@@ -67,18 +67,18 @@ export function GroupsView() {
             title={g.name}
             right={
               <div className="flex items-center gap-2">
-                <button onClick={() => setEditing(g)} className="text-xs text-[var(--color-ink-dim)]">
+                <button onClick={() => setEditing(g)} className="text-xs text-ink-dim">
                   Edit
                 </button>
-                <button onClick={() => remove(g)} className="text-xs text-[var(--color-danger)]">
+                <button onClick={() => remove(g)} className="text-xs text-danger">
                   Delete
                 </button>
                 <button
                   onClick={() => (running ? stop(g) : start(g))}
                   className={`rounded px-3 py-1 text-xs font-bold ${
                     running
-                      ? 'border border-[var(--color-danger)] text-[var(--color-danger)]'
-                      : 'border border-[var(--color-phosphor-dim)] text-[var(--color-phosphor)]'
+                      ? 'border border-danger text-danger'
+                      : 'border border-phosphor-dim text-phosphor'
                   }`}
                 >
                   {running ? 'STOP ALL' : 'START'}
@@ -91,20 +91,20 @@ export function GroupsView() {
                 const fa = byId.get(s.actionId)
                 return (
                   <li key={`${s.actionId}-${i}`} className="flex items-center gap-3 text-sm">
-                    <span className="w-5 text-right text-[var(--color-ink-faint)]">{i + 1}.</span>
+                    <span className="w-5 text-right text-ink-faint">{i + 1}.</span>
                     <Led status={fa?.action.activeRun?.status ?? 'idle'} />
                     <span>
                       {fa ? (
                         <>
-                          <span className="text-[var(--color-ink-faint)]">{fa.projectName} / </span>
+                          <span className="text-ink-faint">{fa.projectName} / </span>
                           {fa.action.name}
                         </>
                       ) : (
-                        <span className="text-[var(--color-ink-faint)]">missing action</span>
+                        <span className="text-ink-faint">missing action</span>
                       )}
                     </span>
                     {s.waitFor !== 'none' && (
-                      <span className="text-[10px] uppercase tracking-wider text-[var(--color-amber)]">
+                      <span className="text-[10px] uppercase tracking-wider text-amber">
                         then wait for {s.waitFor}
                       </span>
                     )}

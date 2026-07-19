@@ -33,30 +33,43 @@ body,
 
 body {
   margin: 0;
-  background: radial-gradient(circle at 30% -10%, #1a1a1a 0%, transparent 55%), var(--color-bezel);
+  position: relative;
+  background: #1a1a1a;
   color: var(--color-ink);
   font-family: var(--font-mono);
   -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  isolation: isolate;
 }
 
 .font-ui {
   font-family: var(--font-ui);
 }
 
-/* Recessed bezel — CRT screens, terminal interiors, counter wells */
+/* Recessed bezel — CRT screens, terminal interiors, counter wells.
+   Depth from inset shadow + a faint top specular; no full outline. */
 .bezel-recessed {
   background: linear-gradient(180deg, #080808 0%, var(--color-panel) 40%, #111 100%);
-  border: 1px solid #1a1a1a;
-  box-shadow: inset 0 3px 10px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.03),
-    0 1px 0 rgba(255, 255, 255, 0.04);
+  border: none;
+  box-shadow: inset 0 3px 10px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
-/* Raised bezel — module frames, outer housing */
+/* Recessed well rendered "on" the CRT phosphor screen */
+.crt-well {
+  background: linear-gradient(180deg, #0d1311 0%, rgba(0, 0, 0, 0.35) 100%);
+  border: none;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(125, 252, 154, 0.22);
+}
+
+/* Raised bezel — module frames, outer housing.
+   Light edge only along the top face; sides/bottom stay in shadow. */
 .bezel-raised {
   position: relative;
   background: linear-gradient(180deg, #1c1c1c 0%, var(--color-panel-raised) 30%, #121212 100%);
-  border: 1px solid var(--color-panel-edge);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), inset 0 -1px 0 rgba(0, 0, 0, 0.4),
+  border: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 -1px 0 rgba(0, 0, 0, 0.45),
     0 3px 12px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(0, 0, 0, 0.35);
 }
 
@@ -67,7 +80,7 @@ body {
   /* border-bottom: 1px solid #000;   */
   border-left: 1px solid #222;
   border-radius: 16px;
-  box-shadow: inset 0 6px 12px rgba(0, 0, 0, 0.9), inset 0 -2px 0 rgba(255, 255, 255, 0.08),
+  box-shadow: inset -20px 20px 12px rgb(3 3 3 / 90%), inset 0 -2px 0 rgba(255, 255, 255, 0.08),
     0 4px 8px rgba(0, 0, 0, 0.6);
 }
 
@@ -75,8 +88,8 @@ body {
 .crt {
   background: repeating-linear-gradient(
       0deg,
-      rgba(125, 252, 154, 0.05) 0px,
-      rgba(125, 252, 154, 0.05) 2px,
+      rgba(47, 96, 59, 0.03) 0px,
+      rgba(125, 252, 154, 0.03) 2px,
       transparent 2px,
       transparent 4px
     ),

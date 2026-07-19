@@ -48,7 +48,7 @@ export function ActionRow({
   }
 
   return (
-    <div className="flex items-center gap-3 rounded-md border border-[var(--color-panel-edge)] bg-[var(--color-panel)] px-3 py-2">
+    <div className="flex items-center gap-3 rounded-md border border-panel-edge bg-panel px-3 py-2">
       {editing && <ActionEditor action={action} onClose={() => setEditing(false)} />}
       <Led status={status} pulse={busy} />
       <button
@@ -57,19 +57,19 @@ export function ActionRow({
         disabled={!run}
         title={action.command}
       >
-        <span className="truncate text-sm text-[var(--color-ink)]">{action.name}</span>
+        <span className="truncate text-sm text-ink">{action.name}</span>
         {action.primary && !compact && <Chip>server</Chip>}
         {action.portHint && <Chip tone={active ? 'phosphor' : 'default'}>:{action.portHint}</Chip>}
       </button>
 
       {!compact && (
-        <span className="w-16 shrink-0 text-right text-[10px] uppercase tracking-wider text-[var(--color-ink-faint)]">
+        <span className="w-16 shrink-0 text-right text-[10px] uppercase tracking-wider text-ink-faint">
           {statusLabel(status)}
         </span>
       )}
 
       <button onClick={toggleFav} className="shrink-0 text-sm" title="Favorite">
-        <span style={{ color: action.favorite ? 'var(--color-amber)' : 'var(--color-ink-faint)' }}>
+        <span className={action.favorite ? 'text-amber' : 'text-ink-faint'}>
           {action.favorite ? '★' : '☆'}
         </span>
       </button>
@@ -80,7 +80,7 @@ export function ActionRow({
             e.stopPropagation()
             setEditing(true)
           }}
-          className="shrink-0 text-sm text-[var(--color-ink-faint)] hover:text-[var(--color-ink)]"
+          className="shrink-0 text-sm text-ink-faint hover:text-ink"
           title="Edit action"
         >
           ⚙
@@ -91,8 +91,8 @@ export function ActionRow({
         onClick={toggle}
         className={`shrink-0 rounded px-3 py-1 text-xs font-bold transition-colors ${
           active
-            ? 'border border-[var(--color-danger)] text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10'
-            : 'border border-[var(--color-phosphor-dim)] text-[var(--color-phosphor)] hover:bg-[var(--color-phosphor)]/10'
+            ? 'border border-danger text-danger hover:bg-danger/10'
+            : 'border border-phosphor-dim text-phosphor hover:bg-phosphor/10'
         }`}
       >
         {active ? 'STOP' : 'START'}
