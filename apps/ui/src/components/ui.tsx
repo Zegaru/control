@@ -22,12 +22,16 @@ const sizeCls: Record<ButtonSize, string> = {
   md: 'px-4 py-2 text-[11px]',
 };
 
-const backlitToneCls: Record<ButtonTone, string> = {
-  default: 'border-panel-edge text-ink-dim',
-  phosphor: 'border-phosphor-dim text-phosphor glow-phosphor',
-  amber: 'border-amber text-amber glow-amber',
-  danger: 'border-danger text-danger glow-danger',
+const mechToneCls: Record<ButtonTone, string> = {
+  default: '',
+  phosphor: 'backlit-btn-phosphor',
+  amber: 'backlit-btn-amber',
+  danger: 'backlit-btn-danger',
 };
+
+/** Shared mechanical key chrome (raised face in recessed well). */
+const mechBase =
+  'backlit-btn font-ui inline-flex items-center justify-center rounded-[5px] uppercase tracking-widest font-semibold select-none';
 
 function buttonClassName({
   variant,
@@ -45,14 +49,7 @@ function buttonClassName({
   const disabled = 'data-disabled:opacity-40';
 
   if (variant === 'backlit') {
-    return cn(
-      'backlit-btn font-ui rounded uppercase tracking-widest font-semibold select-none',
-      sizeCls[size],
-      backlitToneCls[tone],
-      focus,
-      disabled,
-      className,
-    );
+    return cn(mechBase, sizeCls[size], mechToneCls[tone], focus, disabled, className);
   }
 
   if (variant === 'icon') {
@@ -77,8 +74,9 @@ function buttonClassName({
 
   if (variant === 'danger') {
     return cn(
-      'rounded border border-danger px-4 py-1.5 text-xs font-bold text-danger select-none',
-      'hover:not-data-disabled:bg-danger/10',
+      mechBase,
+      sizeCls[size],
+      'backlit-btn-danger',
       focus,
       'focus-visible:outline-danger',
       disabled,
@@ -86,10 +84,11 @@ function buttonClassName({
     );
   }
 
-  // primary
+  // primary — mechanical key, phosphor accent by default
   return cn(
-    'rounded border border-phosphor-dim px-4 py-1.5 text-xs font-bold text-phosphor select-none',
-    'hover:not-data-disabled:bg-phosphor/10',
+    mechBase,
+    sizeCls[size],
+    mechToneCls[tone === 'default' ? 'phosphor' : tone],
     focus,
     disabled,
     className,

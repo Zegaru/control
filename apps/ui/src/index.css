@@ -185,58 +185,249 @@ body {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-/* Plastic rocker switch housing */
+/*
+ * True 3D rocker — two faces hinged at the seam (not a flat rotated plate).
+ * ON:  top into well + lit, bottom proud + dark
+ * OFF: top proud + dark, bottom into well + dark
+ * BUSY: same tilt as ON, but bottom lit amber (per reference)
+ */
 .rocker-housing {
-  background: linear-gradient(180deg, #2a2a2a 0%, #141414 50%, #0a0a0a 100%);
-  border: 1px solid #3a3a3a;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -2px 4px rgba(0, 0, 0, 0.5),
-    0 2px 6px rgba(0, 0, 0, 0.4);
+  --rocker-glow: transparent;
+  --rocker-angle: -22deg;
+  perspective: 520px;
+  perspective-origin: 50% 45%;
+  background: #050505;
+  border: 1px solid #0a0a0a;
+  border-radius: 6px;
+  box-shadow:
+    inset 0 4px 10px rgba(0, 0, 0, 0.95),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04),
+    inset 1px 0 0 rgba(255, 255, 255, 0.03),
+    inset -2px 0 6px rgba(0, 0, 0, 0.5),
+    0 0 0 1px #1a1a1a,
+    inset 0 0 24px -4px var(--rocker-glow),
+    0 0 18px -2px var(--rocker-glow);
+  transition: box-shadow 0.2s ease;
 }
 
-.rocker-housing:active:not(:disabled) {
-  transform: translateY(1px);
+.rocker-housing.rocker-on {
+  --rocker-glow: color-mix(in srgb, var(--color-phosphor) 55%, transparent);
+  --rocker-angle: 22deg;
 }
 
-.rocker-danger {
-  border-color: var(--color-danger);
+.rocker-housing.rocker-busy {
+  --rocker-glow: color-mix(in srgb, var(--color-amber) 55%, transparent);
+  --rocker-angle: 22deg;
 }
 
-.rocker-segment-on {
-  background: linear-gradient(180deg, #9affb8 0%, var(--color-phosphor) 40%, #4a9a62 100%);
-  box-shadow: inset 0 -1px 2px rgba(0, 0, 0, 0.3), 0 0 8px var(--color-phosphor);
+.rocker-housing.rocker-danger.rocker-on {
+  --rocker-glow: color-mix(in srgb, var(--color-danger) 50%, transparent);
 }
 
-.rocker-segment-on.busy {
-  background: linear-gradient(180deg, #ffd080 0%, var(--color-amber) 40%, #a07020 100%);
-  box-shadow: inset 0 -1px 2px rgba(0, 0, 0, 0.3), 0 0 8px var(--color-amber);
+.rocker-housing.rocker-off {
+  --rocker-glow: transparent;
+  --rocker-angle: -22deg;
 }
 
-.rocker-segment-on.danger {
-  background: linear-gradient(180deg, #ff9a94 0%, var(--color-danger) 40%, #a03028 100%);
-  box-shadow: inset 0 -1px 2px rgba(0, 0, 0, 0.3), 0 0 10px var(--color-danger-glow);
+.rocker-body {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  transform-style: preserve-3d;
 }
 
-.rocker-segment-off {
-  background: linear-gradient(180deg, #222 0%, #141414 60%, #0a0a0a 100%);
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+/* Top face — hinged at its bottom edge (the seam) */
+.rocker-face-on {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  border-radius: 4px 4px 0 0;
+  transform-origin: center bottom;
+  transform: rotateX(var(--rocker-angle));
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  transition: transform 0.2s cubic-bezier(0.33, 1, 0.68, 1), background 0.15s ease,
+    box-shadow 0.15s ease, color 0.15s ease;
 }
 
-/* Backlit mechanical button */
+/* Bottom face — hinged at its top edge (the seam) */
+.rocker-face-off {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  border-radius: 0 0 4px 4px;
+  transform-origin: center top;
+  transform: rotateX(var(--rocker-angle));
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  transition: transform 0.2s cubic-bezier(0.33, 1, 0.68, 1), background 0.15s ease,
+    box-shadow 0.15s ease, color 0.15s ease;
+}
+
+.rocker-face-on.rocker-face-tall {
+  flex: 2;
+}
+
+/* Backlit frosted plastic — radial hotspot behind the label */
+.rocker-segment-lit {
+  background:
+    radial-gradient(ellipse 90% 80% at 50% 42%, rgba(255, 255, 255, 0.45) 0%, transparent 42%),
+    radial-gradient(ellipse 100% 90% at 50% 50%, #b6ffd0 0%, var(--color-phosphor) 45%, #2f8f52 100%);
+  color: #0a120c;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.15);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.25),
+    0 0 12px 2px var(--color-phosphor),
+    0 0 28px 4px color-mix(in srgb, var(--color-phosphor) 50%, transparent);
+}
+
+.rocker-segment-lit.busy {
+  background:
+    radial-gradient(ellipse 90% 80% at 50% 42%, rgba(255, 255, 255, 0.4) 0%, transparent 42%),
+    radial-gradient(ellipse 100% 90% at 50% 50%, #ffe0a0 0%, var(--color-amber) 45%, #a07020 100%);
+  color: #1a1000;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.25),
+    0 0 12px 2px var(--color-amber),
+    0 0 28px 4px color-mix(in srgb, var(--color-amber) 50%, transparent);
+}
+
+.rocker-segment-lit.danger {
+  background:
+    radial-gradient(ellipse 90% 80% at 50% 42%, rgba(255, 255, 255, 0.35) 0%, transparent 42%),
+    radial-gradient(ellipse 100% 90% at 50% 50%, #ffb0aa 0%, var(--color-danger) 45%, #a03028 100%);
+  color: #1a0504;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.3),
+    0 0 12px 2px var(--color-danger),
+    0 0 28px 4px var(--color-danger-glow);
+}
+
+/* Proud dark face (toward viewer) — catch light on outer edge */
+.rocker-segment-raised {
+  background: linear-gradient(180deg, #222 0%, #171717 40%, #1c1c1c 100%);
+  color: #c8c4b8;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.06),
+    0 2px 4px rgba(0, 0, 0, 0.45);
+}
+
+/* Sunk dark face (into the well) */
+.rocker-segment-sunk {
+  background: linear-gradient(180deg, #0e0e0e 0%, #0a0a0a 100%);
+  color: #6a655c;
+  box-shadow:
+    inset 0 3px 8px rgba(0, 0, 0, 0.85),
+    inset 0 1px 0 rgba(0, 0, 0, 0.6);
+}
+
+/* Seam shadow where proud face overhangs the sunk face */
+.rocker-on .rocker-face-off.rocker-segment-raised,
+.rocker-busy .rocker-face-off {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 -3px 6px rgba(0, 0, 0, 0.55),
+    0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.rocker-busy .rocker-face-off.rocker-segment-lit {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.25),
+    0 -3px 6px rgba(0, 0, 0, 0.45),
+    0 0 12px 2px var(--color-amber),
+    0 0 28px 4px color-mix(in srgb, var(--color-amber) 50%, transparent);
+}
+
+.rocker-off .rocker-face-on.rocker-segment-raised {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 3px 6px rgba(0, 0, 0, 0.55);
+}
+
+/* Mechanical tactile button — raised matte key in a recessed well.
+   Tone glow via --btn-glow; do not replace box-shadow with glow-* utilities. */
 .backlit-btn {
-  background: linear-gradient(180deg, #1a1a1a 0%, #0e0e0e 100%);
-  border: 1px solid var(--color-panel-edge);
-  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  transition: transform 0.08s ease, box-shadow 0.08s ease;
+  --btn-glow: transparent;
+  position: relative;
+  isolation: isolate;
+  background: linear-gradient(180deg, #1c1c1c 0%, #141414 42%, #0f0f0f 100%);
+  border: 1px solid #0a0a0a;
+  border-radius: 5px;
+  color: #c4bfb2;
+  box-shadow:
+    /* face bevel */
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.55),
+    inset 1px 0 0 rgba(255, 255, 255, 0.04),
+    inset -1px 0 0 rgba(0, 0, 0, 0.25),
+    /* key thickness */
+    0 1px 0 #050505,
+    0 2px 3px rgba(0, 0, 0, 0.65),
+    /* recessed well / cutout ring */
+    0 0 0 1.5px #080808,
+    0 0 0 2.5px #161616,
+    /* soft housing ambient + optional tone */
+    0 0 10px 1px rgba(200, 195, 180, 0.06),
+    0 0 12px -1px var(--btn-glow);
+  transition: transform 0.07s ease, box-shadow 0.07s ease, filter 0.07s ease;
 }
 
-.backlit-btn:hover:not(:disabled) {
-  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 0 10px -2px currentColor;
+.backlit-btn:hover:not(:disabled, [data-disabled]) {
+  background: linear-gradient(180deg, #222 0%, #171717 42%, #111 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+    inset 1px 0 0 rgba(255, 255, 255, 0.05),
+    inset -1px 0 0 rgba(0, 0, 0, 0.22),
+    0 1px 0 #050505,
+    0 2px 4px rgba(0, 0, 0, 0.7),
+    0 0 0 1.5px #080808,
+    0 0 0 2.5px #1a1a1a,
+    0 0 12px 1px rgba(200, 195, 180, 0.09),
+    0 0 14px -1px var(--btn-glow);
 }
 
-.backlit-btn:active:not(:disabled) {
+.backlit-btn:active:not(:disabled, [data-disabled]) {
   transform: translateY(1px);
-  box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.7);
+  background: linear-gradient(180deg, #121212 0%, #0c0c0c 100%);
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.75),
+    inset 0 1px 0 rgba(0, 0, 0, 0.4),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.03),
+    0 0 0 1.5px #060606,
+    0 0 0 2.5px #141414,
+    0 0 6px 0 rgba(0, 0, 0, 0.4),
+    0 0 8px -2px var(--btn-glow);
+}
+
+.backlit-btn-phosphor {
+  --btn-glow: color-mix(in srgb, var(--color-phosphor) 55%, transparent);
+  color: var(--color-phosphor);
+}
+
+.backlit-btn-amber {
+  --btn-glow: color-mix(in srgb, var(--color-amber) 55%, transparent);
+  color: var(--color-amber);
+}
+
+.backlit-btn-danger {
+  --btn-glow: color-mix(in srgb, var(--color-danger) 50%, transparent);
+  color: var(--color-danger);
 }
 
 /* Knob metal face */

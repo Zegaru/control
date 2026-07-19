@@ -115,7 +115,21 @@ export function RockerToggle({
   disabled?: boolean;
   labels?: [string, string];
 }) {
-  const glow = busy ? 'var(--color-amber)' : on ? 'var(--color-phosphor)' : 'transparent';
+  // Half-lit + hinged faces:
+  // ON  → top lit green (into well), bottom dark proud
+  // BUSY → bottom lit amber (proud), top dark sunk  (matches STARTING ref)
+  // OFF → top dark proud, bottom dark sunk
+  const topCls = busy
+    ? 'rocker-segment-sunk'
+    : on
+      ? 'rocker-segment-lit'
+      : 'rocker-segment-raised';
+  const bottomCls = busy
+    ? 'rocker-segment-lit busy'
+    : on
+      ? 'rocker-segment-raised'
+      : 'rocker-segment-sunk';
+
   return (
     <Switch.Root
       checked={on}
@@ -124,26 +138,14 @@ export function RockerToggle({
       render={<button type="button" />}
       onCheckedChange={() => onToggle()}
       onClick={(e) => e.stopPropagation()}
-      className="rocker-housing font-ui relative flex h-14 w-16 flex-col overflow-hidden rounded-md p-0.5 text-[10px] font-bold data-disabled:opacity-40"
-      style={{
-        boxShadow: `inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -2px 4px rgba(0,0,0,0.5), 0 0 14px -2px ${glow}`,
-      }}
+      className={cn(
+        'rocker-housing font-ui relative flex h-16 w-[4.25rem] flex-col rounded-md p-1.5 text-[11px] font-bold tracking-wide data-disabled:opacity-40',
+        busy ? 'rocker-busy' : on ? 'rocker-on' : 'rocker-off',
+      )}
     >
-      <span
-        className={cn(
-          'flex flex-1 items-center justify-center rounded-sm transition-colors',
-          on ? `rocker-segment-on text-black ${busy ? 'busy' : ''}` : 'text-ink-faint',
-        )}
-      >
-        {labels[0]}
-      </span>
-      <span
-        className={cn(
-          'mt-0.5 flex flex-1 items-center justify-center rounded-sm transition-colors',
-          !on ? 'rocker-segment-off text-ink' : 'text-ink-faint',
-        )}
-      >
-        {labels[1]}
+      <span className="rocker-body">
+        <span className={cn('rocker-face-on', topCls)}>{labels[0]}</span>
+        <span className={cn('rocker-face-off', bottomCls)}>{labels[1]}</span>
       </span>
     </Switch.Root>
   );
@@ -391,7 +393,6 @@ export function MasterPower({
   onToggle: () => void;
   disabled?: boolean;
 }) {
-  const glow = on ? 'var(--color-danger-glow)' : 'transparent';
   return (
     <Switch.Root
       checked={on}
@@ -400,21 +401,28 @@ export function MasterPower({
       render={<button type="button" />}
       onCheckedChange={() => onToggle()}
       onClick={(e) => e.stopPropagation()}
-      className="rocker-housing rocker-danger font-ui relative flex h-16 w-20 flex-col overflow-hidden rounded-md p-0.5 text-[9px] font-bold data-disabled:opacity-40"
-      style={{
-        boxShadow: `inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -2px 4px rgba(0,0,0,0.5), 0 0 16px -2px ${glow}`,
-      }}
+      className={cn(
+        'rocker-housing rocker-danger font-ui relative flex h-[4.5rem] w-[5.25rem] flex-col rounded-md p-1.5 text-[10px] font-bold tracking-wide data-disabled:opacity-40',
+        on ? 'rocker-on' : 'rocker-off',
+      )}
     >
-      <span
-        className={cn(
-          'flex flex-[2] items-center justify-center rounded-sm transition-colors',
-          on ? 'rocker-segment-on danger text-black' : 'text-ink-faint',
-        )}
-      >
-        ON
-      </span>
-      <span className="font-ui rocker-segment-off mt-0.5 flex flex-1 items-center justify-center rounded-sm text-[8px] uppercase tracking-wider text-ink-faint">
-        All Systems
+      <span className="rocker-body">
+        <span
+          className={cn(
+            'rocker-face-on rocker-face-tall',
+            on ? 'rocker-segment-lit danger' : 'rocker-segment-raised',
+          )}
+        >
+          ON
+        </span>
+        <span
+          className={cn(
+            'rocker-face-off font-ui text-[8px] uppercase tracking-wider',
+            on ? 'rocker-segment-raised' : 'rocker-segment-sunk',
+          )}
+        >
+          All Systems
+        </span>
       </span>
     </Switch.Root>
   );
