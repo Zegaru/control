@@ -19,6 +19,31 @@ import { bus } from './events.js'
 let client: Docker | null = null
 let lastError: string | null = null
 
+type DockerStats = {
+  cpu_stats: {
+    cpu_usage: {total_usage: number}
+    system_cpu_usage?: number
+    online_cpus?: number
+  }
+  precpu_stats: {
+    cpu_usage: {total_usage: number}
+    system_cpu_usage?: number
+  }
+  memory_stats: {usage?: number; limit?: number}
+}
+
+function calcCpuPercent(stats: DockerStats): number {
+  const cpu = stats.cpu_stats.cpu_usage.total_usage
+  const prevCpu = stats.precpu_stats.cpu_usage.total_usage
+  const sys = stats.cpu_stats.system_cpu_usage ?? 0
+  const prevSys = stats.precpu_stats.system_cpu_usage ?? 0
+  const cpus = stats.cpu_stats.online_cpus ?? 1
+  const cpuDelta = cpu - prevCpu
+  const sysDelta = sys - prevSys
+  if (cpuDelta <= 0 || sysDelta <= 0) return 0
+  return (cpuDelta / sysDelta) * cpus * 100
+}
+
 function getClient(): Docker {
   if (client) return client
   // dockerode auto-reads DOCKER_HOST; otherwise use the platform default
@@ -115,6 +140,33 @@ export async function listContainers(
       createdAt: c.Created * 1000,
     }
   })
+}
+
+/** One-shot resource usage for running containers (CPU % host-scale, RSS bytes). */
+export async function getContainerStatsBatch(
+  containerIds: string[],
+): Promise<Map<string, {cpu: number; memBytes: number}>> {
+  const out = new Map<string, {cpu: number; memBytes: number}>()
+  if (containerIds.length === 0) return out
+
+  const status = await getDockerStatus()
+  if (!status.available) return out
+
+  await Promise.all(
+    containerIds.map(async (id) => {
+      try {
+        const container = getClient().getContainer(id)
+        const stats = (await container.stats({stream: false})) as DockerStats
+        const cpu = calcCpuPercent(stats)
+        const memBytes = stats.memory_stats.usage ?? 0
+        out.set(id, {cpu, memBytes})
+      } catch {
+        /* container gone or stats unavailable */
+      }
+    }),
+  )
+
+  return out
 }
 
 /** Stream a container's logs (follow) to a callback. Returns a stop function. */

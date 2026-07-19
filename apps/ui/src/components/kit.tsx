@@ -228,6 +228,15 @@ function arcPath(cx: number, cy: number, r: number, startAngle: number, endAngle
   return `M ${start.x} ${start.y} A ${r} ${r} 0 ${large} 1 ${end.x} ${end.y}`;
 }
 
+function gaugeTone(value: number): string {
+  if (value >= 85) return 'var(--color-danger)';
+  if (value >= 60) return 'var(--color-amber)';
+  return 'var(--color-phosphor)';
+}
+
+/** Open-arc progress ring — no needle, no knob hub. */
+const GAUGE_GLOW_PAD = 10;
+
 function DialArc({
   value,
   size,
@@ -239,45 +248,62 @@ function DialArc({
   strokeWidth: number;
   color: string;
 }) {
-  const gradId = useId().replace(/:/g, '');
   const clamped = Math.max(0, Math.min(100, value));
   const cx = size / 2;
   const cy = size / 2;
-  const r = (size - strokeWidth) / 2 - 2;
+  const r = (size - strokeWidth) / 2 - 1;
+  // ~270° sweep, open at the bottom (SYSTEM HEALTH reference)
   const start = Math.PI * 0.75;
   const sweep = Math.PI * 1.5;
   const end = start + (sweep * clamped) / 100;
-  const ticks = Array.from({length: 12}, (_, i) => {
-    const a = start + (sweep * i) / 11;
-    const inner = r - strokeWidth;
-    const outer = r + 1;
+  const ticks = Array.from({length: 24}, (_, i) => {
+    const a = start + (sweep * i) / 23;
+    const major = i % 4 === 0;
+    const inner = r - (major ? strokeWidth * 0.55 : strokeWidth * 0.35);
+    const outer = r + strokeWidth * 0.15;
     return {
       x1: cx + inner * Math.cos(a),
       y1: cy + inner * Math.sin(a),
       x2: cx + outer * Math.cos(a),
       y2: cy + outer * Math.sin(a),
+      major,
     };
   });
+  const outer = size + GAUGE_GLOW_PAD * 2;
 
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden>
+    <svg
+      width={outer}
+      height={outer}
+      viewBox={`${-GAUGE_GLOW_PAD} ${-GAUGE_GLOW_PAD} ${outer} ${outer}`}
+      aria-hidden
+      className="block overflow-visible"
+    >
       {ticks.map((t, i) => (
-        <line key={i} x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2} stroke="#444" strokeWidth={0.75} />
+        <line
+          key={i}
+          x1={t.x1}
+          y1={t.y1}
+          x2={t.x2}
+          y2={t.y2}
+          stroke={t.major ? '#3a3a3a' : '#2a2a2a'}
+          strokeWidth={t.major ? 1 : 0.6}
+        />
       ))}
-      <circle cx={cx} cy={cy} r={r * 0.35} fill={`url(#${gradId})`} />
-      <defs>
-        <radialGradient id={gradId} cx="35%" cy="30%">
-          <stop offset="0%" stopColor="#444" />
-          <stop offset="60%" stopColor="#1a1a1a" />
-          <stop offset="100%" stopColor="#0a0a0a" />
-        </radialGradient>
-      </defs>
+      <path
+        d={arcPath(cx, cy, r, start, start + sweep)}
+        fill="none"
+        stroke="#141414"
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+      />
       <path
         d={arcPath(cx, cy, r, start, start + sweep)}
         fill="none"
         stroke="var(--color-panel-edge)"
-        strokeWidth={strokeWidth}
+        strokeWidth={Math.max(1, strokeWidth - 2)}
         strokeLinecap="round"
+        opacity={0.5}
       />
       {clamped > 0 && (
         <path
@@ -286,52 +312,12 @@ function DialArc({
           stroke={color}
           strokeWidth={strokeWidth}
           strokeLinecap="round"
-          style={{filter: `drop-shadow(0 0 4px ${color})`}}
+          style={{
+            filter: `drop-shadow(0 0 3px ${color}) drop-shadow(0 0 8px ${color})`,
+          }}
         />
       )}
-      <line
-        x1={cx}
-        y1={cy}
-        x2={cx + r * 0.55 * Math.cos(end)}
-        y2={cy + r * 0.55 * Math.sin(end)}
-        stroke={color}
-        strokeWidth={2}
-        strokeLinecap="round"
-      />
     </svg>
-  );
-}
-
-export function RotaryKnob({
-  value,
-  label,
-  size = 'sm',
-}: {
-  value: number;
-  label: string;
-  size?: 'sm' | 'md';
-}) {
-  const px = size === 'sm' ? 48 : 64;
-  const stroke = size === 'sm' ? 3 : 4;
-  const tone =
-    value >= 85
-      ? 'var(--color-danger)'
-      : value >= 60
-      ? 'var(--color-amber)'
-      : 'var(--color-phosphor)';
-  return (
-    <div className="flex flex-col items-center gap-1">
-      <div className="knob-face bezel-recessed relative rounded-full p-1">
-        <DialArc value={value} size={px} strokeWidth={stroke} color={tone} />
-        <span
-          className="absolute inset-0 flex items-center justify-center text-[9px] font-bold"
-          style={{color: tone}}
-        >
-          {Math.round(value)}
-        </span>
-      </div>
-      <span className="font-ui text-[9px] uppercase tracking-wider text-ink-faint">{label}</span>
-    </div>
   );
 }
 
@@ -339,26 +325,54 @@ export function CircularGauge({
   value,
   label,
   unit = '%',
+  size = 'md',
+  detail,
+  formatValue,
 }: {
   value: number;
   label: string;
   unit?: string;
+  size?: 'sm' | 'md';
+  /** Replaces the numeric readout (e.g. network up/down). */
+  detail?: ReactNode;
+  formatValue?: (value: number) => ReactNode;
 }) {
-  const px = 72;
-  const tone =
-    value >= 85 ? 'var(--color-danger)' : value >= 60 ? 'var(--color-amber)' : 'var(--color-info)';
+  const px = size === 'sm' ? 56 : 72;
+  const stroke = size === 'sm' ? 4 : 5;
+  const color = gaugeTone(value);
+  const readout =
+    detail ??
+    (formatValue ? (
+      formatValue(value)
+    ) : (
+      <>
+        {Math.round(value)}
+        {unit ? <span className="text-[0.65em] opacity-70">{unit}</span> : null}
+      </>
+    ));
+
   return (
-    <div className="flex flex-col items-center gap-1">
-      <div className="knob-face bezel-recessed relative rounded-full p-1.5">
-        <DialArc value={value} size={px} strokeWidth={5} color={tone} />
-        <span className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-sm font-bold" style={{color: tone}}>
-            {Math.round(value)}
-            {unit}
+    <div className="flex flex-col items-center overflow-visible">
+      <div className="gauge-face relative overflow-visible rounded-full">
+        <DialArc value={value} size={px} strokeWidth={stroke} color={color} />
+        <div
+          className="pointer-events-none absolute flex flex-col items-center justify-center px-2"
+          style={{inset: GAUGE_GLOW_PAD}}
+        >
+          <span className="font-ui text-[9px] font-medium uppercase tracking-[0.14em] text-ink-dim">
+            {label}
           </span>
-        </span>
+          <span
+            className={cn(
+              'font-ui mt-0.5 font-semibold leading-none text-ink',
+              size === 'sm' ? 'text-sm' : 'text-base',
+              detail && 'mt-1 flex flex-col items-center gap-0.5 text-[10px] font-medium',
+            )}
+          >
+            {readout}
+          </span>
+        </div>
       </div>
-      <span className="font-ui text-[10px] uppercase tracking-wider text-ink-dim">{label}</span>
     </div>
   );
 }
@@ -623,7 +637,7 @@ export function ProjectModule({
       <Screw className="top-2 right-2" />
       <Screw className="bottom-2 left-2" />
       <Screw className="bottom-2 right-2" />
-      <div className="bezel-recessed flex flex-1 flex-col overflow-hidden rounded-md bg-bezel">
+      <div className="bezel-recessed flex flex-1 flex-col overflow-visible rounded-md bg-bezel">
         <div className="flex items-start justify-between gap-2 border-b border-panel-edge px-4 py-3">
           <Button
             variant="ghost"
@@ -667,10 +681,10 @@ export function ProjectModule({
           {children}
 
           {metrics && (
-            <div className="mt-auto flex justify-around border-t border-panel-edge pt-3">
-              {metrics.cpu != null && <RotaryKnob value={metrics.cpu} label="CPU" />}
-              {metrics.mem != null && <RotaryKnob value={metrics.mem} label="MEM" />}
-              {metrics.disk != null && <RotaryKnob value={metrics.disk} label="DISK" />}
+            <div className="mt-auto flex justify-around overflow-visible border-t border-panel-edge px-1 pt-3">
+              {metrics.cpu != null && <CircularGauge size="sm" value={metrics.cpu} label="CPU" />}
+              {metrics.mem != null && <CircularGauge size="sm" value={metrics.mem} label="MEM" />}
+              {metrics.disk != null && <CircularGauge size="sm" value={metrics.disk} label="DISK" />}
             </div>
           )}
         </div>
@@ -746,21 +760,11 @@ export function ControlStrip({
             ))}
           </div>
 
-          <div className="flex flex-1 flex-wrap justify-center gap-6">
+          <div className="flex flex-1 flex-wrap justify-center gap-5">
             {gauges.map((g) => (
               <CircularGauge key={g.label} value={g.value} label={g.label} unit={g.unit} />
             ))}
           </div>
-
-          {network && (
-            <div className="bezel-recessed rounded-md px-3 py-2 text-[10px]">
-              <div className="font-ui mb-1 text-[9px] uppercase tracking-wider text-ink-faint">
-                Network
-              </div>
-              <div className="text-info">↑ {network.up}</div>
-              <div className="text-info">↓ {network.down}</div>
-            </div>
-          )}
 
           {notifications.length > 0 && (
             <ul className="min-w-[140px] space-y-1 text-[10px]">

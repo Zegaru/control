@@ -1,4 +1,4 @@
-import { basename } from 'node:path'
+import { basename, join } from 'node:path'
 import { existsSync } from 'node:fs'
 import { and, desc, eq, inArray } from 'drizzle-orm'
 import {
@@ -158,6 +158,7 @@ export function rescanProject(projectId: string): void {
   const seenModuleIds = new Set<string>()
 
   for (const dm of detected) {
+    const moduleCwd = dm.relPath ? join(project.rootPath, dm.relPath) : project.rootPath
     let moduleRow = db
       .select()
       .from(schema.modules)
@@ -203,7 +204,7 @@ export function rescanProject(projectId: string): void {
         // Upsert ONLY the derived-from-source fields. Preserve favorite,
         // hidden, a renamed name, envOverrides, healthUrl, portHint overrides.
         db.update(schema.actions)
-          .set({ command: da.command, type: da.type, primary: da.primary })
+          .set({ command: da.command, type: da.type, primary: da.primary, cwd: moduleCwd })
           .where(eq(schema.actions.id, existing.id))
           .run()
       } else {
@@ -214,7 +215,7 @@ export function rescanProject(projectId: string): void {
             naturalKey: da.naturalKey,
             name: da.name,
             command: da.command,
-            cwd: null,
+            cwd: moduleCwd,
             type: da.type,
             source: 'detected',
             favorite: false,
@@ -366,6 +367,16 @@ export function patchAction(id: string, body: PatchActionBody): Action {
 export function getAction(id: string): Action | null {
   const row = db.select().from(schema.actions).where(eq(schema.actions.id, id)).get()
   return row ? toAction(row) : null
+}
+
+/** Working directory for a run: explicit cwd, else the module's directory under the project root. */
+export function resolveActionCwd(action: Action): string | null {
+  if (action.cwd) return action.cwd
+  const mod = db.select().from(schema.modules).where(eq(schema.modules.id, action.moduleId)).get()
+  if (!mod) return null
+  const project = db.select().from(schema.projects).where(eq(schema.projects.id, mod.projectId)).get()
+  if (!project) return null
+  return mod.relPath ? join(project.rootPath, mod.relPath) : project.rootPath
 }
 
 // --- runs ------------------------------------------------------------------

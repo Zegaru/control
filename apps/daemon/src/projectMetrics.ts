@@ -1,0 +1,212 @@
+import os from 'node:os'
+import {eq} from 'drizzle-orm'
+import {execa} from 'execa'
+import type {ProjectMetricsSnapshot} from '@control/shared'
+import {db, schema} from './db/index.js'
+import {buildComposeProjectMatcher, getAction, listActiveRuns} from './registry.js'
+import {getContainerStatsBatch, listContainers} from './docker.js'
+
+type ProcRow = {id: number; parentId: number; ws: number; cpu: number}
+
+const SAMPLE_MS = 2000
+const PROC_CACHE_MS = 2000
+
+let latest: ProjectMetricsSnapshot = {at: Date.now(), projects: {}}
+let timer: NodeJS.Timeout | null = null
+let prevCpuByPid: Map<number, number> | null = null
+let prevSampleAt = 0
+let procCache: {at: number; rows: ProcRow[]} | null = null
+
+function pidAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch (err) {
+    return (err as NodeJS.ErrnoException).code === 'EPERM'
+  }
+}
+
+function clampPct(n: number): number {
+  return Math.round(Math.min(100, Math.max(0, n)))
+}
+
+function collectTree(rootPid: number, childrenOf: Map<number, number[]>): Set<number> {
+  const out = new Set<number>()
+  const stack = [rootPid]
+  while (stack.length) {
+    const pid = stack.pop()!
+    if (out.has(pid)) continue
+    out.add(pid)
+    for (const child of childrenOf.get(pid) ?? []) stack.push(child)
+  }
+  return out
+}
+
+async function loadProcesses(): Promise<ProcRow[]> {
+  if (procCache && Date.now() - procCache.at < PROC_CACHE_MS) return procCache.rows
+
+  if (process.platform === 'win32') {
+    const cmd = [
+      'Get-CimInstance Win32_Process | ForEach-Object {',
+      '[pscustomobject]@{',
+      'Id=[int]$_.ProcessId;',
+      'ParentId=[int]$_.ParentProcessId;',
+      'WS=[int64]$_.WorkingSetSize;',
+      'Cpu=[int64]$_.KernelModeTime + [int64]$_.UserModeTime',
+      '}',
+      '} | ConvertTo-Json -Compress',
+    ].join(' ')
+    try {
+      const {stdout} = await execa('powershell.exe', ['-NoProfile', '-Command', cmd], {timeout: 12000})
+      const parsed = JSON.parse(stdout || '[]')
+      const rows: ProcRow[] = (Array.isArray(parsed) ? parsed : [parsed])
+        .filter((r) => r && typeof r.Id === 'number')
+        .map((r) => ({
+          id: r.Id,
+          parentId: r.ParentId ?? 0,
+          ws: Number(r.WS) || 0,
+          cpu: Number(r.Cpu) || 0,
+        }))
+      procCache = {at: Date.now(), rows}
+      return rows
+    } catch {
+      return []
+    }
+  }
+
+  try {
+    const {stdout} = await execa('ps', ['-eo', 'pid=', 'ppid=', 'rss=', 'pcpu='], {timeout: 5000})
+    const rows: ProcRow[] = []
+    for (const line of stdout.split('\n')) {
+      const parts = line.trim().split(/\s+/)
+      if (parts.length < 4) continue
+      const id = Number(parts[0])
+      const parentId = Number(parts[1])
+      const ws = Number(parts[2]) * 1024
+      const pcpu = Number(parts[3])
+      if (!Number.isFinite(id)) continue
+      rows.push({id, parentId, ws, cpu: pcpu})
+    }
+    procCache = {at: Date.now(), rows}
+    return rows
+  } catch {
+    return []
+  }
+}
+
+function cpuPercentForTree(
+  pids: Set<number>,
+  byId: Map<number, ProcRow>,
+  wallMs: number,
+): number {
+  if (wallMs <= 0) return 0
+  const cores = os.cpus().length || 1
+
+  if (process.platform === 'win32') {
+    if (!prevCpuByPid) return 0
+    let delta = 0
+    for (const pid of pids) {
+      const row = byId.get(pid)
+      const prev = prevCpuByPid.get(pid)
+      if (!row || prev == null) continue
+      const d = row.cpu - prev
+      if (d > 0) delta += d
+    }
+    return clampPct((delta / 10000 / wallMs / cores) * 100)
+  }
+
+  let sum = 0
+  for (const pid of pids) {
+    const row = byId.get(pid)
+    if (row) sum += row.cpu
+  }
+  return clampPct(sum / cores)
+}
+
+function memBytesForTree(pids: Set<number>, byId: Map<number, ProcRow>): number {
+  let sum = 0
+  for (const pid of pids) {
+    sum += byId.get(pid)?.ws ?? 0
+  }
+  return sum
+}
+
+function projectIdForAction(actionId: string): string | null {
+  const action = getAction(actionId)
+  if (!action) return null
+  const mod = db.select().from(schema.modules).where(eq(schema.modules.id, action.moduleId)).get()
+  return mod?.projectId ?? null
+}
+
+async function sample(): Promise<ProjectMetricsSnapshot> {
+  const now = Date.now()
+  const wallMs = prevSampleAt ? now - prevSampleAt : SAMPLE_MS
+  const rows = await loadProcesses()
+  const byId = new Map(rows.map((r) => [r.id, r]))
+  const childrenOf = new Map<number, number[]>()
+  for (const r of rows) {
+    const list = childrenOf.get(r.parentId) ?? []
+    list.push(r.id)
+    childrenOf.set(r.parentId, list)
+  }
+
+  const totals = new Map<string, {cpu: number; memBytes: number}>()
+  const bump = (projectId: string, cpu: number, memBytes: number) => {
+    const cur = totals.get(projectId) ?? {cpu: 0, memBytes: 0}
+    cur.cpu += cpu
+    cur.memBytes += memBytes
+    totals.set(projectId, cur)
+  }
+
+  for (const run of listActiveRuns()) {
+    if (!run.pid || !pidAlive(run.pid)) continue
+    const projectId = projectIdForAction(run.actionId)
+    if (!projectId) continue
+    const tree = collectTree(run.pid, childrenOf)
+    bump(projectId, cpuPercentForTree(tree, byId, wallMs), memBytesForTree(tree, byId))
+  }
+
+  const mapProject = buildComposeProjectMatcher()
+  const containers = (await listContainers(mapProject)).filter(
+    (c) => c.state === 'running' && c.projectId,
+  )
+  const stats = await getContainerStatsBatch(containers.map((c) => c.id))
+  const hostMem = os.totalmem()
+
+  for (const c of containers) {
+    if (!c.projectId) continue
+    const s = stats.get(c.id)
+    if (!s) continue
+    bump(c.projectId, s.cpu, s.memBytes)
+  }
+
+  const projects: ProjectMetricsSnapshot['projects'] = {}
+  for (const [projectId, t] of totals) {
+    projects[projectId] = {
+      cpu: clampPct(t.cpu),
+      memory: hostMem > 0 ? clampPct((t.memBytes / hostMem) * 100) : 0,
+    }
+  }
+
+  prevCpuByPid = new Map(rows.map((r) => [r.id, r.cpu]))
+  prevSampleAt = now
+  latest = {at: now, projects}
+  return latest
+}
+
+export function startProjectMetrics(intervalMs = SAMPLE_MS): void {
+  if (timer) return
+  void sample()
+  timer = setInterval(() => {
+    void sample()
+  }, intervalMs)
+  timer.unref?.()
+}
+
+export async function sampleProjectMetricsNow(): Promise<ProjectMetricsSnapshot> {
+  return sample()
+}
+
+export function getProjectMetrics(): ProjectMetricsSnapshot {
+  return latest
+}

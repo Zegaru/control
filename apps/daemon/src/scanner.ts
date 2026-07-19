@@ -83,10 +83,11 @@ function detectModuleAt(dir: string, rootDir: string): DetectedModule | null {
     stacks.push({ kind: 'node', packageManager: pm, confidence: 1 })
     const scripts = (pkg?.scripts ?? {}) as Record<string, string>
     for (const scriptName of Object.keys(scripts)) {
+      const quoted = scriptName.includes(':') ? `"${scriptName}"` : scriptName
       actions.push({
         naturalKey: `${keyPrefix}:script:${scriptName}`,
         name: scriptName,
-        command: `${pm} run ${scriptName}`,
+        command: `${pm} run ${quoted}`,
         type: 'script',
         primary: PRIMARY_RE.test(scriptName),
       })

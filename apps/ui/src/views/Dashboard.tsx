@@ -18,6 +18,7 @@ import {
   type ProjectService,
 } from '../components/kit.js';
 import {AddProjectDialog} from '../components/AddProjectDialog.js';
+import {useSocket} from '../socket.js';
 
 function containerLed(c: ContainerInfo): RunStatus | 'idle' {
   if (c.state !== 'running') return 'idle';
@@ -26,41 +27,7 @@ function containerLed(c: ContainerInfo): RunStatus | 'idle' {
   return 'healthy';
 }
 
-function hashId(id: string): number {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
-  return Math.abs(h);
-}
-
-function placeholderMetrics(id: string, activeCount: number) {
-  const h = hashId(id);
-  const base = 12 + (h % 18) + activeCount * 7;
-  return {
-    cpu: Math.min(92, base + ((h >> 3) % 14)),
-    mem: Math.min(88, base - 4 + ((h >> 5) % 16)),
-    disk: Math.min(75, 18 + ((h >> 7) % 28)),
-  };
-}
-
-function sparkSeries(seed: number, points: number, level: number) {
-  const out: number[] = [];
-  let v = level;
-  for (let i = 0; i < points; i++) {
-    v += ((seed + i * 17) % 11) - 5;
-    v = Math.max(5, Math.min(95, v));
-    out.push(v);
-  }
-  return out;
-}
-
-type LogRow = {
-  id: string;
-  project: string;
-  name: string;
-  status: RunStatus | 'idle';
-  ports: number[];
-  kind: 'run' | 'container' | 'external';
-};
+const EMPTY_SPARK = [0];
 
 export function Dashboard({
   projectsOnly,
@@ -74,12 +41,26 @@ export function Dashboard({
   onOpenContainer: (id: string) => void;
 }) {
   const qc = useQueryClient();
+  const {events, clearEvents} = useSocket();
   const [adding, setAdding] = useState(false);
-  const [clearedLogs, setClearedLogs] = useState<Set<string>>(new Set());
-  const [tick, setTick] = useState(0);
+  const [metricHistory, setMetricHistory] = useState<{
+    cpu: number[];
+    mem: number[];
+    disk: number[];
+  }>({cpu: [], mem: [], disk: []});
 
   const projects = useQuery({queryKey: ['projects'], queryFn: api.listProjects});
   const health = useQuery({queryKey: ['health'], queryFn: api.health, refetchInterval: 5000});
+  const hostMetrics = useQuery({
+    queryKey: ['host-metrics'],
+    queryFn: api.hostMetrics,
+    refetchInterval: 1500,
+  });
+  const projectMetrics = useQuery({
+    queryKey: ['project-metrics'],
+    queryFn: api.projectMetrics,
+    refetchInterval: 2000,
+  });
   const containersQ = useQuery({
     queryKey: ['containers'],
     queryFn: api.containers,
@@ -123,16 +104,18 @@ export function Dashboard({
       runningContainers.filter((c) => c.health === 'unhealthy').length,
   };
 
-  const projectName = (id: string | null) =>
-    id ? projects.data?.find((p) => p.id === id)?.name ?? null : null;
-
   const totalActive = activeRuns.length + runningContainers.length + externalServices.length;
   const masterOn = totalActive > 0;
 
   useEffect(() => {
-    const id = setInterval(() => setTick((t) => t + 1), 3000);
-    return () => clearInterval(id);
-  }, []);
+    const m = hostMetrics.data;
+    if (!m) return;
+    setMetricHistory((h) => ({
+      cpu: [...h.cpu, m.cpu].slice(-16),
+      mem: [...h.mem, m.memory].slice(-16),
+      disk: [...h.disk, m.disk].slice(-16),
+    }));
+  }, [hostMetrics.data]);
 
   const invalidate = useCallback(() => {
     qc.invalidateQueries({queryKey: ['tree']});
@@ -140,6 +123,8 @@ export function Dashboard({
     qc.invalidateQueries({queryKey: ['runs']});
     qc.invalidateQueries({queryKey: ['containers']});
     qc.invalidateQueries({queryKey: ['ports']});
+    qc.invalidateQueries({queryKey: ['host-metrics']});
+    qc.invalidateQueries({queryKey: ['project-metrics']});
   }, [qc]);
 
   const activePorts = useMemo(() => {
@@ -156,53 +141,9 @@ export function Dashboard({
     return [...ports].sort((a, b) => a - b);
   }, [activeRuns, runningContainers, externalServices]);
 
-  const sparkCpu = useMemo(
-    () => sparkSeries(tick, 16, 20 + counts.running * 6 + counts.starting * 3),
-    [tick, counts.running, counts.starting]
-  );
-  const sparkMem = useMemo(
-    () => sparkSeries(tick + 7, 16, 30 + counts.running * 4),
-    [tick, counts.running]
-  );
-  const sparkDisk = useMemo(
-    () => sparkSeries(tick + 13, 16, 22 + counts.running * 2),
-    [tick, counts.running]
-  );
-
-  const logRows: LogRow[] = useMemo(() => {
-    const rows: LogRow[] = [];
-    for (const {tree, action} of activeRuns) {
-      rows.push({
-        id: `run-${action.activeRun!.id}`,
-        project: tree.name,
-        name: action.name,
-        status: action.activeRun!.status,
-        ports: action.activeRun!.ports,
-        kind: 'run',
-      });
-    }
-    for (const c of runningContainers) {
-      rows.push({
-        id: `ctr-${c.id}`,
-        project: projectName(c.projectId) ?? 'docker',
-        name: c.composeService ?? c.name,
-        status: containerLed(c),
-        ports: c.ports.filter((p) => p.publicPort != null).map((p) => p.publicPort!),
-        kind: 'container',
-      });
-    }
-    for (const o of externalServices) {
-      rows.push({
-        id: `ext-${o.port}`,
-        project: projectName(o.projectId ?? null) ?? 'external',
-        name: o.processName ?? 'process',
-        status: 'running',
-        ports: [o.port],
-        kind: 'external',
-      });
-    }
-    return rows.filter((r) => !clearedLogs.has(r.id));
-  }, [activeRuns, runningContainers, externalServices, clearedLogs, projects.data]);
+  const sparkCpu = metricHistory.cpu.length ? metricHistory.cpu : EMPTY_SPARK;
+  const sparkMem = metricHistory.mem.length ? metricHistory.mem : EMPTY_SPARK;
+  const sparkDisk = metricHistory.disk.length ? metricHistory.disk : EMPTY_SPARK;
 
   const stopAll = useCallback(async () => {
     for (const {action} of activeRuns) {
@@ -291,7 +232,11 @@ export function Dashboard({
     return items.slice(0, 3);
   }, [counts]);
 
-  const hostGauge = (base: number) => Math.min(90, base + (tick % 5));
+  const gauges = [
+    {label: 'CPU', value: hostMetrics.data?.cpu ?? 0},
+    {label: 'Memory', value: hostMetrics.data?.memory ?? 0},
+    {label: 'Disk', value: hostMetrics.data?.disk ?? 0},
+  ];
 
   return (
     <div className="space-y-2">
@@ -345,10 +290,7 @@ export function Dashboard({
               crt
               footer={
                 <div className="flex items-center gap-6 pt-2">
-                  <BacklitButton
-                    size="sm"
-                    onClick={() => setClearedLogs(new Set(logRows.map((r) => r.id)))}
-                  >
+                  <BacklitButton size="sm" onClick={clearEvents}>
                     Clear
                   </BacklitButton>
                   <span className="flex items-center gap-2">
@@ -359,23 +301,19 @@ export function Dashboard({
                 </div>
               }
             >
-              {logRows.length === 0 ? (
-                <p className="text-ink-faint">No active events.</p>
+              {events.length === 0 ? (
+                <p className="text-ink-faint">No events yet.</p>
               ) : (
                 <table className="w-full text-left">
                   <tbody>
-                    {logRows.map((row) => (
+                    {events.map((row) => (
                       <tr
                         key={row.id}
                         className="cursor-pointer border-b border-panel-edge/50 hover:bg-phosphor/4"
-                        onClick={() => {
-                          if (row.kind === 'run') onOpenRun(row.id.replace('run-', ''));
-                          else if (row.kind === 'container')
-                            onOpenContainer(row.id.replace('ctr-', ''));
-                        }}
+                        onClick={() => onOpenRun(row.runId)}
                       >
                         <td className="py-1 pr-3 text-ink-faint">
-                          {new Date().toLocaleTimeString()}
+                          {new Date(row.at).toLocaleTimeString()}
                         </td>
                         <td className="py-1 pr-3 text-ink-dim">{row.project}</td>
                         <td className="py-1 pr-3">{row.name}</td>
@@ -383,14 +321,15 @@ export function Dashboard({
                           <span
                             style={{
                               color:
-                                row.status === 'failed' || row.status === 'unhealthy'
+                                row.level === 'error'
                                   ? 'var(--color-danger)'
-                                  : row.status === 'starting'
+                                  : row.level === 'warn'
                                   ? 'var(--color-amber)'
                                   : 'var(--color-phosphor)',
                             }}
                           >
                             {statusLabel(row.status)}
+                            {row.exitCode != null ? ` · exit ${row.exitCode}` : ''}
                           </span>
                         </td>
                         <td className="py-1">
@@ -407,65 +346,61 @@ export function Dashboard({
               )}
             </Panel>
           </div>
-
-          <ControlStrip
-            masterOn={masterOn}
-            onMasterToggle={() => {
-              if (masterOn) void stopAll();
-            }}
-            actions={[
-              {label: 'Start All', tone: 'phosphor', onClick: () => void startFavorites()},
-              {label: 'Stop All', tone: 'danger', onClick: () => void stopAll()},
-              {label: 'Restart All', tone: 'amber', onClick: () => void restartFavorites()},
-              {label: 'Health Check', onClick: () => invalidate()},
-            ]}
-            gauges={[
-              {label: 'CPU', value: hostGauge(18 + counts.running * 5)},
-              {label: 'Memory', value: hostGauge(28 + counts.running * 4)},
-              {label: 'Disk', value: hostGauge(22 + counts.running * 2)},
-            ]}
-            notifications={notifications}
-            version={health.data?.version}
-            network={{up: '—', down: '—'}}
-          />
         </>
       )}
 
-      <div>
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
-          {(projects.data ?? []).map((p) => {
-            const tree = treeData.find((t) => t.id === p.id);
-            const activeActions = tree
-              ? tree.modules
-                  .flatMap((m) => m.actions)
-                  .filter((a) => a.activeRun && isActiveStatus(a.activeRun.status))
-              : [];
-            const projContainers = runningContainers.filter((c) => c.projectId === p.id);
-            const projExternal = externalServices.filter((o) => o.projectId === p.id);
-            const activeCount = activeActions.length + projContainers.length + projExternal.length;
-            const anyStarting =
-              activeActions.some((a) => a.activeRun!.status === 'starting') ||
-              projContainers.some((c) => c.health === 'starting');
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
+        {(projects.data ?? []).map((p) => {
+          const tree = treeData.find((t) => t.id === p.id);
+          const activeActions = tree
+            ? tree.modules
+                .flatMap((m) => m.actions)
+                .filter((a) => a.activeRun && isActiveStatus(a.activeRun.status))
+            : [];
+          const projContainers = runningContainers.filter((c) => c.projectId === p.id);
+          const projExternal = externalServices.filter((o) => o.projectId === p.id);
+          const activeCount = activeActions.length + projContainers.length + projExternal.length;
+          const anyStarting =
+            activeActions.some((a) => a.activeRun!.status === 'starting') ||
+            projContainers.some((c) => c.health === 'starting');
+          const pm = projectMetrics.data?.projects[p.id];
+          const metrics =
+            activeCount > 0 ? {cpu: pm?.cpu ?? 0, mem: pm?.memory ?? 0} : undefined;
 
-            return (
-              <ProjectModule
-                key={p.id}
-                name={p.name}
-                path={p.rootPath}
-                favorite={p.favorite}
-                on={activeCount > 0}
-                busy={anyStarting}
-                onClick={() => onOpenProject(p.id)}
-                onToggle={tree ? () => void toggleProject(tree) : undefined}
-                services={tree ? buildServices(tree, p.id) : []}
-                metrics={placeholderMetrics(p.id, activeCount)}
-              />
-            );
-          })}
+          return (
+            <ProjectModule
+              key={p.id}
+              name={p.name}
+              path={p.rootPath}
+              favorite={p.favorite}
+              on={activeCount > 0}
+              busy={anyStarting}
+              onClick={() => onOpenProject(p.id)}
+              onToggle={tree ? () => void toggleProject(tree) : undefined}
+              services={tree ? buildServices(tree, p.id) : []}
+              metrics={metrics}
+            />
+          );
+        })}
 
-          <ProjectModule variant="add" onClick={() => setAdding(true)} />
-        </div>
+        <ProjectModule variant="add" onClick={() => setAdding(true)} />
       </div>
+
+      <ControlStrip
+        masterOn={masterOn}
+        onMasterToggle={() => {
+          if (masterOn) void stopAll();
+        }}
+        actions={[
+          {label: 'Start All', tone: 'phosphor', onClick: () => void startFavorites()},
+          {label: 'Stop All', tone: 'danger', onClick: () => void stopAll()},
+          {label: 'Restart All', tone: 'amber', onClick: () => void restartFavorites()},
+          {label: 'Health Check', onClick: () => invalidate()},
+        ]}
+        gauges={gauges}
+        notifications={notifications}
+        version={health.data?.version}
+      />
 
       {adding && <AddProjectDialog onClose={() => setAdding(false)} />}
     </div>

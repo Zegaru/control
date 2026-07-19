@@ -6,6 +6,8 @@ import type {
   CreateGroupBody,
   DockerStatus,
   Group,
+  HostMetrics,
+  ProjectMetricsSnapshot,
   PatchActionBody,
   PatchGroupBody,
   PatchProjectBody,
@@ -21,18 +23,22 @@ const BASE = '/api'
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     ...init,
-    headers: { 'content-type': 'application/json', ...(init?.headers ?? {}) },
+    headers: {'content-type': 'application/json', ...(init?.headers ?? {})},
   })
   if (!res.ok) {
     let detail: unknown
     try {
       detail = await res.json()
     } catch {
-      detail = { error: res.statusText }
+      detail = {error: res.statusText}
     }
-    throw new ApiError(res.status, (detail as { error?: string })?.error ?? 'error', detail)
+    throw new ApiError(res.status, (detail as {error?: string})?.error ?? 'error', detail)
   }
   if (res.status === 204) return undefined as T
+  const ct = res.headers.get('content-type') ?? ''
+  if (!ct.includes('application/json')) {
+    throw new ApiError(res.status, `expected json from ${path}, got ${ct || 'unknown'}`, null)
+  }
   return (await res.json()) as T
 }
 
@@ -48,6 +54,8 @@ export class ApiError extends Error {
 
 export const api = {
   health: () => req<{ ok: boolean; version: string }>('/health'),
+  hostMetrics: () => req<HostMetrics>('/host/metrics'),
+  projectMetrics: () => req<ProjectMetricsSnapshot>('/projects/metrics'),
 
   listProjects: () => req<ProjectSummary[]>('/projects'),
   createProject: (rootPath: string, name?: string) =>

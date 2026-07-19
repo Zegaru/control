@@ -13,6 +13,8 @@ import { attachWebSocket } from './wsHub.js'
 import { reconcileRuns } from './reconcile.js'
 import { watchDockerEvents } from './docker.js'
 import { version } from './version.js'
+import { startHostMetrics } from './hostMetrics.js'
+import { startProjectMetrics } from './projectMetrics.js'
 
 const app = new Hono()
 
@@ -38,6 +40,8 @@ if (existsSync(uiDist)) {
 
 async function main(): Promise<void> {
   await reconcileRuns()
+  startHostMetrics()
+  startProjectMetrics()
 
   const server = serve({ fetch: app.fetch, hostname: HOST, port: PORT }, (info) => {
     console.log(`\n  CONTROL daemon v${version}`)

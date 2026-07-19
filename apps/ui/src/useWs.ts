@@ -1,8 +1,33 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import type { WsClientMessage, WsEvent } from '@control/shared'
+import type { RunStatus, WsClientMessage, WsEvent } from '@control/shared'
 
 type LogListener = (runId: string, chunk: string) => void
+
+const MAX_EVENTS = 50
+
+export type EventLogLevel = 'info' | 'warn' | 'error'
+
+export type EventLogEntry = {
+  id: string
+  at: number
+  runId: string
+  actionId: string
+  project: string
+  name: string
+  status: RunStatus
+  exitCode?: number | null
+  ports: number[]
+  level: EventLogLevel
+}
+
+function eventLevel(status: RunStatus): EventLogLevel {
+  if (status === 'failed' || status === 'unhealthy') return 'error'
+  if (status === 'starting' || status === 'killed') return 'warn'
+  return 'info'
+}
+
+let eventSeq = 0
 
 /**
  * Single shared WebSocket to the daemon. Status/scan/port events invalidate the
@@ -12,11 +37,16 @@ type LogListener = (runId: string, chunk: string) => void
 export function useDaemonSocket(): {
   subscribeLogs: (runId: string, cb: LogListener) => () => void
   subscribeContainer: (containerId: string, cb: LogListener) => () => void
+  events: EventLogEntry[]
+  clearEvents: () => void
 } {
   const qc = useQueryClient()
   const socketRef = useRef<WebSocket | null>(null)
   const logListeners = useRef<Map<string, Set<LogListener>>>(new Map())
   const containerListeners = useRef<Map<string, Set<LogListener>>>(new Map())
+  const [events, setEvents] = useState<EventLogEntry[]>([])
+
+  const clearEvents = useCallback(() => setEvents([]), [])
 
   useEffect(() => {
     let closed = false
@@ -35,12 +65,26 @@ export function useDaemonSocket(): {
           return
         }
         switch (event.type) {
-          case 'run.status':
+          case 'run.status': {
+            const entry: EventLogEntry = {
+              id: `${event.runId}-${++eventSeq}`,
+              at: Date.now(),
+              runId: event.runId,
+              actionId: event.actionId,
+              project: event.projectName ?? '',
+              name: event.actionName ?? '',
+              status: event.status,
+              exitCode: event.exitCode,
+              ports: event.ports,
+              level: eventLevel(event.status),
+            }
+            setEvents((prev) => [entry, ...prev].slice(0, MAX_EVENTS))
             qc.invalidateQueries({ queryKey: ['projects'] })
             qc.invalidateQueries({ queryKey: ['runs'] })
             qc.invalidateQueries({ queryKey: ['tree'] })
             qc.invalidateQueries({ queryKey: ['ports'] })
             break
+          }
           case 'ports.changed':
             qc.invalidateQueries({ queryKey: ['ports'] })
             break
@@ -118,5 +162,5 @@ export function useDaemonSocket(): {
     if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg))
   }
 
-  return { subscribeLogs, subscribeContainer }
+  return { subscribeLogs, subscribeContainer, events, clearEvents }
 }

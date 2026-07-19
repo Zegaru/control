@@ -1,10 +1,11 @@
 import { createWriteStream, type WriteStream } from 'node:fs'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import pty from 'node-pty'
 import treeKill from 'tree-kill'
 import { eq } from 'drizzle-orm'
 import type { Action, Run, RunStatus } from '@control/shared'
 import { db, schema } from './db/index.js'
+import { getAction, resolveActionCwd } from './registry.js'
 import { LOGS_DIR } from './config.js'
 import { bus } from './events.js'
 import { newId } from './ids.js'
@@ -64,7 +65,7 @@ class Supervisor {
       .run()
 
     const env = this.buildEnv(action)
-    const cwd = action.cwd ?? process.cwd()
+    const cwd = resolve(resolveActionCwd(action) ?? process.cwd())
 
     // Run the command string through a shell so PATH lookups and Windows .cmd
     // shims (pnpm/npm/yarn) resolve correctly. ConPTY preserves colors.
@@ -165,6 +166,23 @@ class Supervisor {
     })
   }
 
+  private actionLabels(actionId: string): { projectName?: string; actionName?: string } {
+    const action = getAction(actionId)
+    if (!action) return {}
+    const mod = db
+      .select()
+      .from(schema.modules)
+      .where(eq(schema.modules.id, action.moduleId))
+      .get()
+    const proj = mod
+      ? db.select().from(schema.projects).where(eq(schema.projects.id, mod.projectId)).get()
+      : undefined
+    return {
+      projectName: proj?.name,
+      actionName: action.name,
+    }
+  }
+
   private buildEnv(action: Action): Record<string, string> {
     const env: Record<string, string> = {}
     for (const [k, v] of Object.entries(process.env)) {
@@ -246,6 +264,7 @@ class Supervisor {
       status,
       ports,
       exitCode,
+      ...this.actionLabels(handle?.actionId ?? ''),
     })
     bus.emitEvent({ type: 'ports.changed' })
   }
@@ -264,6 +283,7 @@ class Supervisor {
       status,
       ports: handle?.ports ?? [],
       pid,
+      ...this.actionLabels(handle?.actionId ?? ''),
     })
   }
 

@@ -430,10 +430,15 @@ body {
   color: var(--color-danger);
 }
 
-/* Knob metal face */
-.knob-face {
-  background: radial-gradient(circle at 35% 30%, #3a3a3a 0%, #1a1a1a 50%, #0a0a0a 100%);
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(255, 255, 255, 0.06);
+/* Circular gauge well — recessed instrument face; overflow visible so arc bloom isn't clipped */
+.gauge-face {
+  overflow: visible;
+  background: radial-gradient(circle at 50% 42%, #141414 0%, #0a0a0a 55%, #050505 100%);
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.75),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 0 0 1px #121212,
+    0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 /* Project module rivets */

@@ -284,6 +284,8 @@ export const wsEventSchema = z.discriminatedUnion('type', [
     ports: z.array(z.number().int()),
     pid: z.number().int().nullable().optional(),
     exitCode: z.number().int().nullable().optional(),
+    projectName: z.string().optional(),
+    actionName: z.string().optional(),
   }),
   z.object({
     type: z.literal('run.log'),
@@ -304,6 +306,30 @@ export const wsEventSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('scan.done'), projectId: z.string() }),
 ])
 export type WsEvent = z.infer<typeof wsEventSchema>
+
+// ---------------------------------------------------------------------------
+// Host metrics
+// ---------------------------------------------------------------------------
+
+export const hostMetricsSchema = z.object({
+  cpu: z.number().min(0).max(100),
+  memory: z.number().min(0).max(100),
+  disk: z.number().min(0).max(100),
+  at: z.number().int().nonnegative(),
+})
+export type HostMetrics = z.infer<typeof hostMetricsSchema>
+
+export const projectMetricSchema = z.object({
+  cpu: z.number().min(0).max(100),
+  memory: z.number().min(0).max(100),
+})
+export type ProjectMetric = z.infer<typeof projectMetricSchema>
+
+export const projectMetricsSnapshotSchema = z.object({
+  at: z.number().int().nonnegative(),
+  projects: z.record(z.string(), projectMetricSchema),
+})
+export type ProjectMetricsSnapshot = z.infer<typeof projectMetricsSnapshotSchema>
 
 // Messages UI -> daemon over the same socket (subscription control for log streams).
 export const wsClientMessageSchema = z.discriminatedUnion('type', [

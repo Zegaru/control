@@ -36,6 +36,8 @@ import { claimedPorts, getPortMap } from './ports.js'
 import { getDockerStatus, listContainers } from './docker.js'
 import { buildComposeProjectMatcher } from './registry.js'
 import { version } from './version.js'
+import { sampleNow } from './hostMetrics.js'
+import { sampleProjectMetricsNow } from './projectMetrics.js'
 
 function tailFile(path: string, lines: number): string {
   try {
@@ -51,9 +53,16 @@ export const api = new Hono()
 
 api.get('/health', (c) => c.json({ ok: true, version }))
 
+api.get('/host/metrics', async (c) => {
+  // Ensure a fresh sample on read (CPU needs a prior tick from the background loop).
+  return c.json(await sampleNow())
+})
+
 // --- projects --------------------------------------------------------------
 
 api.get('/projects', (c) => c.json(listProjects()))
+
+api.get('/projects/metrics', async (c) => c.json(await sampleProjectMetricsNow()))
 
 api.post('/projects', async (c) => {
   const body = createProjectBodySchema.parse(await c.req.json())
@@ -177,3 +186,5 @@ api.get('/docker/containers', async (c) => {
   const matcher = buildComposeProjectMatcher()
   return c.json(await listContainers(matcher))
 })
+
+api.notFound((c) => c.json({error: 'not_found'}, 404))
