@@ -1,4 +1,4 @@
-import {useId, type ReactNode} from 'react';
+import {useEffect, useId, useRef, useState, type ReactNode} from 'react';
 import {Switch} from '@base-ui/react/switch';
 import type {RunStatus} from '@control/shared';
 import {cn} from '../lib/cn.js';
@@ -38,18 +38,25 @@ export function Led({
   status,
   pulse,
   ring,
+  className,
 }: {
   status: RunStatus | 'idle';
   pulse?: boolean;
   ring?: boolean;
+  className?: string;
 }) {
   const color = statusColor(status);
+  const lit = status !== 'idle';
   return (
     <span
-      className={`led inline-block h-2.5 w-2.5 shrink-0 rounded-full ${ring ? 'led-ring' : ''} ${
-        pulse ? 'animate-pulse' : ''
-      }`}
-      style={{backgroundColor: color, color}}
+      className={cn(
+        'led inline-block h-2.5 w-2.5 shrink-0 rounded-full',
+        lit && 'led-lit',
+        lit && ring && 'led-ring',
+        pulse && 'animate-pulse',
+        className
+      )}
+      style={lit ? {backgroundColor: color, color} : undefined}
       aria-label={statusLabel(status)}
     />
   );
@@ -63,7 +70,7 @@ export function Panel({
   crt,
   footer,
 }: {
-  title?: string;
+  title?: ReactNode;
   right?: ReactNode;
   children: ReactNode;
   className?: string;
@@ -80,13 +87,21 @@ export function Panel({
       <div className="bezel-recessed flex flex-1 min-h-0 flex-col overflow-hidden rounded-2xl bg-bezel">
         <div className={`flex-1 h-full ${crt ? 'crt-frame p-0' : 'p-4'}`}>
           <div className="bezel-recessed border-0! h-full rounded-2xl bg-bezel p-4">
-            <div className={crt ? 'crt bezel-recessed border-0! h-full rounded-2xl p-6' : 'h-full'}>
-              <div className="relative z-10 h-full">
-                {title && (
-                  <header className="font-ui flex items-center justify-between py-2">
-                    <h2 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-ink-dim">
-                      {title}
-                    </h2>
+            <div className={crt ? 'crt bezel-recessed border-0! h-full rounded-xl p-4' : 'h-full'}>
+              <div className="relative z-10 h-full flex flex-col">
+                {(title || right) && (
+                  <header className="font-ui mb-1 flex items-center justify-between gap-3 overflow-visible pb-1">
+                    {title ? (
+                      typeof title === 'string' ? (
+                        <h2 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-ink-dim">
+                          {title}
+                        </h2>
+                      ) : (
+                        <div className="min-w-0 flex-1">{title}</div>
+                      )
+                    ) : (
+                      <span />
+                    )}
                     {right}
                   </header>
                 )}
@@ -119,16 +134,12 @@ export function RockerToggle({
   // ON  → top lit green (into well), bottom dark proud
   // BUSY → bottom lit amber (proud), top dark sunk  (matches STARTING ref)
   // OFF → top dark proud, bottom dark sunk
-  const topCls = busy
-    ? 'rocker-segment-sunk'
-    : on
-      ? 'rocker-segment-lit'
-      : 'rocker-segment-raised';
+  const topCls = busy ? 'rocker-segment-sunk' : on ? 'rocker-segment-lit' : 'rocker-segment-raised';
   const bottomCls = busy
     ? 'rocker-segment-lit busy'
     : on
-      ? 'rocker-segment-raised'
-      : 'rocker-segment-sunk';
+    ? 'rocker-segment-raised'
+    : 'rocker-segment-sunk';
 
   return (
     <Switch.Root
@@ -139,8 +150,8 @@ export function RockerToggle({
       onCheckedChange={() => onToggle()}
       onClick={(e) => e.stopPropagation()}
       className={cn(
-        'rocker-housing font-ui relative flex h-16 w-[4.25rem] flex-col rounded-md p-1.5 text-[11px] font-bold tracking-wide data-disabled:opacity-40',
-        busy ? 'rocker-busy' : on ? 'rocker-on' : 'rocker-off',
+        'rocker-housing font-ui relative flex h-16 w-17 flex-col rounded-md p-1.5 text-[11px] font-bold tracking-wide data-disabled:opacity-40',
+        busy ? 'rocker-busy' : on ? 'rocker-on' : 'rocker-off'
       )}
     >
       <span className="rocker-body">
@@ -160,15 +171,15 @@ export function Chip({
 }) {
   const toneCls =
     tone === 'phosphor'
-      ? 'border-phosphor-dim text-phosphor bg-phosphor/6'
+      ? 'border-phosphor-dim/70 text-phosphor bg-phosphor/10 text-glow shadow-[inset_0_1px_2px_rgba(0,0,0,0.45),0_0_10px_-2px_var(--color-phosphor)]'
       : tone === 'amber'
-      ? 'border-amber text-amber bg-amber/6'
+      ? 'border-amber text-amber bg-amber/6 shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)]'
       : tone === 'info'
-      ? 'border-info text-info bg-info/6'
-      : 'border-panel-edge text-ink-dim bg-bezel';
+      ? 'border-info text-info bg-info/6 shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)]'
+      : 'border-panel-edge text-ink-dim bg-bezel shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)]';
   return (
     <span
-      className={`inline-flex items-center rounded px-2 py-0.5 text-[11px] font-medium shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] ${toneCls}`}
+      className={`inline-flex items-center rounded px-2 py-0.5 text-[11px] font-medium ${toneCls}`}
     >
       {children}
     </span>
@@ -201,7 +212,7 @@ export function SegmentCounter({
       ? 'text-glow-danger'
       : '';
   return (
-    <div className="crt-well rounded-md px-4 py-3 text-center">
+    <div className="crt-well rounded-md px-4 py-2 text-center">
       <div className={`text-2xl font-bold ${glowCls}`} style={{color}}>
         {value}
       </div>
@@ -236,6 +247,44 @@ function gaugeTone(value: number): string {
 
 /** Open-arc progress ring — no needle, no knob hub. */
 const GAUGE_GLOW_PAD = 10;
+const GAUGE_ANIM_MS = 450;
+
+function useAnimatedValue(target: number, durationMs = GAUGE_ANIM_MS): number {
+  const [display, setDisplay] = useState(target);
+  const displayRef = useRef(target);
+  const mountedRef = useRef(false);
+
+  useEffect(() => {
+    if (!mountedRef.current) {
+      mountedRef.current = true;
+      displayRef.current = target;
+      setDisplay(target);
+      return;
+    }
+
+    const from = displayRef.current;
+    if (Math.abs(from - target) < 0.05) {
+      displayRef.current = target;
+      setDisplay(target);
+      return;
+    }
+
+    let raf = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / durationMs);
+      const eased = 1 - (1 - t) ** 3;
+      const next = from + (target - from) * eased;
+      displayRef.current = next;
+      setDisplay(next);
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, durationMs]);
+
+  return display;
+}
 
 function DialArc({
   value,
@@ -307,6 +356,7 @@ function DialArc({
       />
       {clamped > 0 && (
         <path
+          className="gauge-arc-fill"
           d={arcPath(cx, cy, r, start, end)}
           fill="none"
           stroke={color}
@@ -339,14 +389,15 @@ export function CircularGauge({
 }) {
   const px = size === 'sm' ? 56 : 72;
   const stroke = size === 'sm' ? 4 : 5;
-  const color = gaugeTone(value);
+  const animated = useAnimatedValue(value);
+  const color = gaugeTone(animated);
   const readout =
     detail ??
     (formatValue ? (
-      formatValue(value)
+      formatValue(animated)
     ) : (
       <>
-        {Math.round(value)}
+        {Math.round(animated)}
         {unit ? <span className="text-[0.65em] opacity-70">{unit}</span> : null}
       </>
     ));
@@ -354,7 +405,7 @@ export function CircularGauge({
   return (
     <div className="flex flex-col items-center overflow-visible">
       <div className="gauge-face relative overflow-visible rounded-full">
-        <DialArc value={value} size={px} strokeWidth={stroke} color={color} />
+        <DialArc value={animated} size={px} strokeWidth={stroke} color={color} />
         <div
           className="pointer-events-none absolute flex flex-col items-center justify-center px-2"
           style={{inset: GAUGE_GLOW_PAD}}
@@ -364,9 +415,9 @@ export function CircularGauge({
           </span>
           <span
             className={cn(
-              'font-ui mt-0.5 font-semibold leading-none text-ink',
+              'gauge-readout font-ui mt-0.5 font-semibold leading-none text-ink tabular-nums',
               size === 'sm' ? 'text-sm' : 'text-base',
-              detail && 'mt-1 flex flex-col items-center gap-0.5 text-[10px] font-medium',
+              detail && 'mt-1 flex flex-col items-center gap-0.5 text-[10px] font-medium'
             )}
           >
             {readout}
@@ -397,6 +448,99 @@ export function BacklitButton({
   );
 }
 
+/** Stepped rotary for discrete hardware filters (e.g. log level). */
+export function RotaryKnob({
+  value,
+  steps,
+  onChange,
+  label,
+  size = 'sm',
+}: {
+  value: number;
+  steps: number;
+  onChange: (value: number) => void;
+  label?: string;
+  size?: 'sm' | 'md';
+}) {
+  const clamped = Math.max(0, Math.min(steps - 1, value));
+  const px = size === 'sm' ? 28 : 36;
+  const ring = size === 'sm' ? 40 : 50;
+  // Sweep from ~-120° to +120° across steps
+  const stepAngle = (i: number) => (steps <= 1 ? 0 : -120 + (240 * i) / (steps - 1));
+  const angle = stepAngle(clamped);
+  const dragRef = useRef<{startY: number; startValue: number} | null>(null);
+  const movedRef = useRef(false);
+
+  const setFromDelta = (deltaY: number) => {
+    const next = Math.max(
+      0,
+      Math.min(steps - 1, dragRef.current!.startValue + Math.round(deltaY / -18))
+    );
+    if (next !== clamped) onChange(next);
+  };
+
+  return (
+    <div className="flex flex-col items-center">
+      <div className="knob-wrap relative shrink-0" style={{width: ring, height: ring}}>
+        <div className="knob-marks pointer-events-none absolute inset-0" aria-hidden>
+          {Array.from({length: steps}, (_, i) => (
+            <span
+              key={i}
+              className={cn('knob-mark', i === clamped && 'knob-mark-active')}
+              style={{transform: `rotate(${stepAngle(i)}deg)`}}
+            />
+          ))}
+        </div>
+        <button
+          type="button"
+          aria-label={label ?? 'Filter'}
+          aria-valuemin={0}
+          aria-valuemax={steps - 1}
+          aria-valuenow={clamped}
+          className="knob absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 cursor-grab rounded-full active:cursor-grabbing"
+          style={{width: px, height: px}}
+          onPointerDown={(e) => {
+            e.currentTarget.setPointerCapture(e.pointerId);
+            dragRef.current = {startY: e.clientY, startValue: clamped};
+            movedRef.current = false;
+          }}
+          onPointerMove={(e) => {
+            if (!dragRef.current) return;
+            const dy = e.clientY - dragRef.current.startY;
+            if (Math.abs(dy) > 4) movedRef.current = true;
+            setFromDelta(dy);
+          }}
+          onPointerUp={() => {
+            dragRef.current = null;
+          }}
+          onPointerCancel={() => {
+            dragRef.current = null;
+          }}
+          onClick={() => {
+            if (movedRef.current) {
+              movedRef.current = false;
+              return;
+            }
+            onChange((clamped + 1) % steps);
+          }}
+        >
+          <span
+            className="knob-face absolute inset-0 rounded-full"
+            style={{transform: `rotate(${angle}deg)`}}
+          >
+            <span className="knob-tick" aria-hidden />
+          </span>
+        </button>
+      </div>
+      {label && (
+        <span className="font-ui text-[8px] uppercase tracking-[0.18em] text-ink-faint">
+          {label}
+        </span>
+      )}
+    </div>
+  );
+}
+
 /** Red master power rocker for ALL SYSTEMS. */
 export function MasterPower({
   on,
@@ -416,15 +560,15 @@ export function MasterPower({
       onCheckedChange={() => onToggle()}
       onClick={(e) => e.stopPropagation()}
       className={cn(
-        'rocker-housing rocker-danger font-ui relative flex h-[4.5rem] w-[5.25rem] flex-col rounded-md p-1.5 text-[10px] font-bold tracking-wide data-disabled:opacity-40',
-        on ? 'rocker-on' : 'rocker-off',
+        'rocker-housing rocker-danger font-ui relative flex h-18 w-21 flex-col rounded-md p-1.5 text-[10px] font-bold tracking-wide data-disabled:opacity-40',
+        on ? 'rocker-on' : 'rocker-off'
       )}
     >
       <span className="rocker-body">
         <span
           className={cn(
             'rocker-face-on rocker-face-tall',
-            on ? 'rocker-segment-lit danger' : 'rocker-segment-raised',
+            on ? 'rocker-segment-lit danger' : 'rocker-segment-raised'
           )}
         >
           ON
@@ -432,7 +576,7 @@ export function MasterPower({
         <span
           className={cn(
             'rocker-face-off font-ui text-[8px] uppercase tracking-wider',
-            on ? 'rocker-segment-raised' : 'rocker-segment-sunk',
+            on ? 'rocker-segment-raised' : 'rocker-segment-sunk'
           )}
         >
           All Systems
@@ -499,7 +643,7 @@ export function TerminalScreen({
 }) {
   return (
     <div className={`crt-frame mx-2 mb-2 ${className}`}>
-      <div className="crt bezel-recessed flex h-full flex-col overflow-hidden rounded-xl border border-[#000]">
+      <div className="crt bezel-recessed flex h-full flex-col overflow-hidden rounded-xl border border-black">
         <div className="relative z-10 flex-1 overflow-y-auto p-6 text-[11px] leading-relaxed text-glow-info">
           {children}
         </div>
@@ -526,29 +670,12 @@ export function NavItem({
 }) {
   return (
     <Button
-      variant="ghost"
+      variant="icon"
       onClick={onClick}
       aria-current={active ? 'page' : undefined}
-      className={cn(
-        'font-ui relative flex w-full items-center justify-start gap-3 rounded-md px-3 py-2.5 text-left text-sm',
-        active
-          ? 'bg-amber/12 text-amber text-glow-amber hover:not-data-disabled:text-amber'
-          : 'text-ink-dim hover:not-data-disabled:bg-panel-raised/50 hover:not-data-disabled:text-ink',
-      )}
+      className="nav-push"
     >
-      {active && (
-        <span
-          className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-amber"
-          style={{boxShadow: '0 0 8px var(--color-amber)'}}
-          aria-hidden
-        />
-      )}
-      <span
-        className={cn(
-          'w-4 shrink-0 text-center',
-          active && 'drop-shadow-[0_0_6px_var(--color-amber)]',
-        )}
-      >
+      <span className="nav-push-icon" aria-hidden>
         {icon}
       </span>
       {label}
@@ -556,32 +683,109 @@ export function NavItem({
   );
 }
 
+const AGENT_WAVE_W = 120;
+const AGENT_WAVE_H = 24;
+const AGENT_WAVE_MID = 12;
+const AGENT_WAVE_SAMPLES = 56;
+
+function nextAgentSample(prev: number): number {
+  const roll = Math.random();
+  if (roll < 0.07) return AGENT_WAVE_MID - (5 + Math.random() * 9);
+  if (roll < 0.12) return AGENT_WAVE_MID + (4 + Math.random() * 8);
+  if (roll < 0.2) return AGENT_WAVE_MID + (Math.random() - 0.5) * 5;
+  if (roll < 0.28) return AGENT_WAVE_MID + (prev - AGENT_WAVE_MID) * 0.55;
+  return AGENT_WAVE_MID + (prev - AGENT_WAVE_MID) * 0.25 + (Math.random() - 0.5) * 1.4;
+}
+
+function agentSamplesToPoints(samples: number[]): string {
+  const last = Math.max(samples.length - 1, 1);
+  return samples
+    .map((y, i) => {
+      const x = (i / last) * AGENT_WAVE_W;
+      const clamped = Math.min(AGENT_WAVE_H - 1, Math.max(1, y));
+      return `${x.toFixed(1)},${clamped.toFixed(1)}`;
+    })
+    .join(' ');
+}
+
 export function AgentStatus({online, label}: {online: boolean; label?: string}) {
+  const [wavePoints, setWavePoints] = useState(() =>
+    agentSamplesToPoints(Array.from({length: AGENT_WAVE_SAMPLES}, () => AGENT_WAVE_MID))
+  );
+
+  useEffect(() => {
+    if (!online) return;
+    const samples = Array.from({length: AGENT_WAVE_SAMPLES}, () => AGENT_WAVE_MID);
+    const id = window.setInterval(() => {
+      samples.push(nextAgentSample(samples[samples.length - 1] ?? AGENT_WAVE_MID));
+      samples.shift();
+      setWavePoints(agentSamplesToPoints(samples));
+    }, 55);
+    return () => window.clearInterval(id);
+  }, [online]);
+
   return (
-    <div className="bezel-recessed rounded-lg px-3 py-3">
-      <div className="flex items-center gap-2.5 text-[10px] text-ink-dim">
+    <div className="bezel-recessed rounded-lg px-3 py-2.5">
+      <div className="flex items-center gap-2">
         <Led status={online ? 'healthy' : 'failed'} pulse={online} ring />
-        <span className="font-ui uppercase tracking-wider">
+        <span
+          className={cn(
+            'font-ui min-w-0 flex-1 truncate text-[10px] uppercase tracking-[0.16em]',
+            online ? 'text-phosphor text-glow' : 'text-ink-dim'
+          )}
+        >
           {label ?? (online ? 'Agent Running' : 'Agent Offline')}
         </span>
+        <span
+          className={cn(
+            'font-ui shrink-0 text-[8px] uppercase tracking-[0.18em]',
+            online ? 'text-phosphor/70' : 'text-danger/70'
+          )}
+        >
+          {online ? 'Live' : 'Down'}
+        </span>
       </div>
-      {online && (
-        <div className="mt-2.5 overflow-hidden">
-          <svg viewBox="0 0 120 24" className="waveform-track h-6 w-[130%]" aria-hidden>
+      <div className="crt-well mt-2 overflow-hidden rounded-sm px-1.5 py-1.5">
+        {online ? (
+          <svg
+            viewBox={`0 0 ${AGENT_WAVE_W} ${AGENT_WAVE_H}`}
+            preserveAspectRatio="none"
+            className="block h-5 w-full"
+            aria-hidden
+          >
             <polyline
-              points="0,14 8,14 12,14 16,3 20,21 24,7 28,17 32,12 40,12 44,2 48,22 52,9 56,14 64,14 68,5 72,19 76,10 80,14 88,14 92,2 96,22 100,8 104,14 112,14 116,6 120,16"
+              points={wavePoints}
               fill="none"
               stroke="var(--color-phosphor)"
-              strokeWidth={1.75}
+              strokeWidth={1.6}
               strokeLinejoin="round"
+              strokeLinecap="round"
               style={{
                 filter:
                   'drop-shadow(0 0 3px var(--color-phosphor)) drop-shadow(0 0 8px var(--color-phosphor))',
               }}
             />
           </svg>
-        </div>
-      )}
+        ) : (
+          <svg
+            viewBox="0 0 80 24"
+            preserveAspectRatio="none"
+            className="block h-5 w-full"
+            aria-hidden
+          >
+            <line
+              x1="0"
+              y1="12"
+              x2="80"
+              y2="12"
+              stroke="var(--color-danger)"
+              strokeWidth={1.25}
+              strokeOpacity={0.35}
+              strokeDasharray="3 4"
+            />
+          </svg>
+        )}
+      </div>
     </div>
   );
 }
@@ -631,48 +835,62 @@ export function ProjectModule({
     );
   }
 
+  const projectStatus: RunStatus | 'idle' = busy ? 'starting' : on ? 'healthy' : 'idle';
+
   return (
-    <div className="module-face bezel-raised flex flex-col rounded-lg p-1.5">
-      <Screw className="top-2 left-2" />
-      <Screw className="top-2 right-2" />
-      <Screw className="bottom-2 left-2" />
-      <Screw className="bottom-2 right-2" />
+    <div className="bezel-raised flex flex-col rounded-lg p-1.5">
       <div className="bezel-recessed flex flex-1 flex-col overflow-visible rounded-md bg-bezel">
-        <div className="flex items-start justify-between gap-2 border-b border-panel-edge px-4 py-3">
+        <div className="flex items-start justify-between gap-3 border-b border-panel-edge px-4 py-3">
           <Button
             variant="ghost"
             onClick={onClick}
-            className="min-w-0 flex-1 items-start justify-start px-0 py-0 text-left hover:not-data-disabled:text-ink"
+            className="flex min-w-0 flex-1 items-start justify-start px-0 py-0 text-left hover:not-data-disabled:text-ink"
           >
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="font-ui text-sm font-semibold uppercase tracking-wide text-ink">
-                  {name}
-                </span>
-                {favorite && <span className="text-amber">★</span>}
+              <div className="flex items-center gap-2.5">
+                <Led status={projectStatus} pulse={busy} ring={!!on || !!busy} />
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="font-ui text-[15px] font-semibold uppercase tracking-[0.08em] leading-none text-ink">
+                    {name}
+                  </span>
+                  {favorite && <span className="text-amber">★</span>}
+                </div>
               </div>
-              {path && <div className="mt-0.5 truncate text-[10px] text-ink-faint">{path}</div>}
+              {path && (
+                <div className="mt-1.5 truncate pl-5 text-[10px] leading-tight text-ink-faint">
+                  {path}
+                </div>
+              )}
             </div>
           </Button>
           {onToggle != null && on != null && (
-            <RockerToggle on={on} busy={busy} onToggle={onToggle} />
+            <RockerToggle on={on} busy={busy} disabled={busy} onToggle={onToggle} />
           )}
         </div>
 
-        <div className="flex flex-1 flex-col gap-3 p-4">
+        <div className="flex flex-1 flex-col">
           {services.length > 0 && (
-            <ul className="space-y-1.5">
+            <ul className="space-y-2 px-4 py-3">
               {services.map((svc) => (
-                <li key={svc.name} className="flex items-center gap-2 text-[11px]">
+                <li key={svc.name} className="flex items-center gap-2.5 text-[12px] text-ink-dim">
                   <Led status={svc.status} pulse={svc.pulse} ring />
-                  <span className="flex-1 truncate">{svc.name}</span>
-                  <span className="flex gap-1">
-                    {svc.ports?.map((p) => (
-                      <Chip key={p} tone="phosphor">
-                        :{p}
-                      </Chip>
-                    ))}
-                  </span>
+                  <span className="min-w-0 flex-1 truncate">{svc.name}</span>
+                  {svc.ports && svc.ports.length > 0 && (
+                    <span className="flex shrink-0 gap-1">
+                      {svc.ports.map((p) => (
+                        <a
+                          key={p}
+                          href={`http://localhost:${p}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="rounded outline-none hover:brightness-125 focus-visible:ring-1 focus-visible:ring-phosphor"
+                        >
+                          <Chip tone="phosphor">:{p}</Chip>
+                        </a>
+                      ))}
+                    </span>
+                  )}
                 </li>
               ))}
             </ul>
@@ -681,10 +899,12 @@ export function ProjectModule({
           {children}
 
           {metrics && (
-            <div className="mt-auto flex justify-around overflow-visible border-t border-panel-edge px-1 pt-3">
+            <div className="mt-auto flex justify-around overflow-visible border-t border-panel-edge px-2 py-3">
               {metrics.cpu != null && <CircularGauge size="sm" value={metrics.cpu} label="CPU" />}
               {metrics.mem != null && <CircularGauge size="sm" value={metrics.mem} label="MEM" />}
-              {metrics.disk != null && <CircularGauge size="sm" value={metrics.disk} label="DISK" />}
+              {metrics.disk != null && (
+                <CircularGauge size="sm" value={metrics.disk} label="DISK" />
+              )}
             </div>
           )}
         </div>
@@ -710,6 +930,39 @@ export type ControlStripNotification = {
   tone?: 'phosphor' | 'amber' | 'danger' | 'dim';
   time?: string;
 };
+
+/** Decorative radial vent grille for the branding plate. */
+function VentGrill({className = ''}: {className?: string}) {
+  const gradId = useId();
+  return (
+    <svg viewBox="0 0 48 48" className={cn('h-11 w-11 shrink-0', className)} aria-hidden="true">
+      <defs>
+        <radialGradient id={gradId} cx="42%" cy="38%" r="62%">
+          <stop offset="0%" stopColor="#1a1a1a" />
+          <stop offset="55%" stopColor="#0c0c0c" />
+          <stop offset="100%" stopColor="#050505" />
+        </radialGradient>
+      </defs>
+      <circle cx="24" cy="24" r="22" fill={`url(#${gradId})`} stroke="#000" strokeWidth="1" />
+      {Array.from({length: 12}, (_, i) => (
+        <rect
+          key={i}
+          x="21.5"
+          y="5"
+          width="5"
+          height="11"
+          rx="2.5"
+          fill="#030303"
+          stroke="rgba(255,255,255,0.04)"
+          strokeWidth="0.5"
+          transform={`rotate(${i * 30} 24 24)`}
+        />
+      ))}
+      <circle cx="24" cy="24" r="6" fill="#141414" stroke="#000" strokeWidth="1" />
+      <circle cx="24" cy="24" r="2.5" fill="#0a0a0a" />
+    </svg>
+  );
+}
 
 export function ControlStrip({
   masterOn,
@@ -738,21 +991,17 @@ export function ControlStrip({
       : 'var(--color-ink-faint)';
 
   return (
-    <div className="bezel-raised mt-2 rounded-lg p-2">
-      <Screw className="top-2 left-2" />
-      <Screw className="top-2 right-2" />
-      <Screw className="bottom-2 left-2" />
-      <Screw className="bottom-2 right-2" />
-      <div className="bezel-recessed rounded-md bg-bezel p-4">
-        <div className="flex flex-wrap items-center gap-6">
-          <div className="flex items-center gap-3">
+    <div className="bezel-raised rounded-lg p-2">
+      <div className="bezel-recessed rounded-md bg-bezel px-4 py-1">
+        <div className="flex flex-wrap items-stretch gap-6">
+          <div className="flex items-center gap-3 self-center">
             <MasterPower on={masterOn} onToggle={onMasterToggle} />
             <span className="font-ui text-[9px] uppercase tracking-widest text-ink-faint">
               Master Power
             </span>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 self-center">
             {actions.map((a) => (
               <BacklitButton key={a.label} tone={a.tone} onClick={a.onClick}>
                 {a.label}
@@ -760,14 +1009,14 @@ export function ControlStrip({
             ))}
           </div>
 
-          <div className="flex flex-1 flex-wrap justify-center gap-5">
+          <div className="flex flex-1 flex-wrap items-center justify-center gap-5 self-center">
             {gauges.map((g) => (
               <CircularGauge key={g.label} value={g.value} label={g.label} unit={g.unit} />
             ))}
           </div>
 
           {notifications.length > 0 && (
-            <ul className="min-w-[140px] space-y-1 text-[10px]">
+            <ul className="min-w-[140px] space-y-1 self-center text-[10px]">
               {notifications.map((n, i) => (
                 <li key={i} className="flex items-start gap-1.5">
                   <Led
@@ -790,11 +1039,21 @@ export function ControlStrip({
             </ul>
           )}
 
-          {version && (
-            <span className="font-ui ml-auto text-[10px] uppercase tracking-wider text-ink-faint">
-              v{version}
-            </span>
-          )}
+          <div className="relative ml-auto flex shrink-0 self-stretch">
+            <div className="bezel-recessed relative flex h-full min-w-[240px] items-center gap-3 rounded-md px-4 py-2">
+              <Screw className="top-1.5 left-1.5" />
+              <Screw className="top-1.5 right-1.5" />
+              <Screw className="bottom-1.5 left-1.5" />
+              <Screw className="bottom-1.5 right-1.5" />
+              <VentGrill className="h-full max-h-20 w-auto" />
+              <div className="pr-1">
+                <div className="font-ui text-[11px] font-semibold tracking-[0.12em] text-ink">
+                  CONTROL{version ? ` v${version}` : ''}
+                </div>
+                <div className="mt-0.5 text-[10px] text-ink-dim">Stay in control.</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

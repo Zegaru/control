@@ -64,7 +64,7 @@ export function App() {
               </div>
             </div>
 
-            <nav className="flex flex-col gap-1.5">
+            <nav className="nav-bank" aria-label="Main">
               {NAV.map((item) => {
                 const active =
                   view.kind === item.key || (item.key === 'projects' && view.kind === 'project');
