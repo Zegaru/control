@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useQueries, useQuery, useQueryClient} from '@tanstack/react-query';
 import type {ActionWithRun, ContainerInfo, ProjectTree, RunStatus} from '@control/shared';
 import {isActiveStatus} from '@control/shared';
@@ -57,6 +57,20 @@ export function Dashboard({
     mem: number[];
     disk: number[];
   }>({cpu: [], mem: [], disk: []});
+  const projectListRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = projectListRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      if (el.scrollWidth <= el.clientWidth) return;
+      e.preventDefault();
+      el.scrollLeft += e.deltaY;
+    };
+    el.addEventListener('wheel', onWheel, {passive: false});
+    return () => el.removeEventListener('wheel', onWheel);
+  }, []);
 
   const projects = useQuery({queryKey: ['projects'], queryFn: api.listProjects});
   const health = useQuery({queryKey: ['health'], queryFn: api.health, refetchInterval: 5000});
@@ -486,7 +500,10 @@ export function Dashboard({
         </div>
       )}
 
-      <div className="flex-1 grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
+      <div
+        ref={projectListRef}
+        className="flex min-h-0 flex-1 gap-4 overflow-x-auto overflow-y-hidden"
+      >
         {(projects.data ?? []).map((p) => {
           const tree = treeData.find((t) => t.id === p.id);
           const activeActions = tree
@@ -506,22 +523,25 @@ export function Dashboard({
           const metrics = activeCount > 0 ? {cpu: pm?.cpu ?? 0, mem: pm?.memory ?? 0} : undefined;
 
           return (
-            <ProjectModule
-              key={p.id}
-              name={p.name}
-              path={p.rootPath}
-              favorite={p.favorite}
-              on={activeCount > 0}
-              busy={busy}
-              onClick={() => onOpenProject(p.id)}
-              onToggle={tree ? () => void toggleProject(tree) : undefined}
-              services={tree ? buildServices(tree, p.id) : []}
-              metrics={metrics}
-            />
+            <div key={p.id} className="flex w-72 shrink-0 flex-col self-stretch">
+              <ProjectModule
+                name={p.name}
+                path={p.rootPath}
+                favorite={p.favorite}
+                on={activeCount > 0}
+                busy={busy}
+                onClick={() => onOpenProject(p.id)}
+                onToggle={tree ? () => void toggleProject(tree) : undefined}
+                services={tree ? buildServices(tree, p.id) : []}
+                metrics={metrics}
+              />
+            </div>
           );
         })}
 
-        <ProjectModule variant="add" onClick={() => setAdding(true)} />
+        <div className="flex w-72 shrink-0 flex-col self-stretch">
+          <ProjectModule variant="add" onClick={() => setAdding(true)} />
+        </div>
       </div>
 
       <ControlStrip

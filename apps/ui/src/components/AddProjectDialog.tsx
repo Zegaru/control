@@ -1,7 +1,11 @@
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
 import {api, ApiError} from '../api.js';
 import {Button, TextInput} from './ui.js';
+
+function isTauri(): boolean {
+  return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+}
 
 export function AddProjectDialog({onClose}: {onClose: () => void}) {
   const qc = useQueryClient();
@@ -9,6 +13,25 @@ export function AddProjectDialog({onClose}: {onClose: () => void}) {
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [canBrowse, setCanBrowse] = useState(false);
+
+  useEffect(() => {
+    setCanBrowse(isTauri());
+  }, []);
+
+  const browse = async () => {
+    try {
+      const {open} = await import('@tauri-apps/plugin-dialog');
+      const selected = await open({
+        directory: true,
+        multiple: false,
+        title: 'Select project folder',
+      });
+      if (typeof selected === 'string') setPath(selected);
+    } catch {
+      setError('Folder picker unavailable');
+    }
+  };
 
   const submit = async () => {
     if (!path.trim()) return;
@@ -36,12 +59,20 @@ export function AddProjectDialog({onClose}: {onClose: () => void}) {
         </h2>
         <label className="mb-3 block">
           <span className="mb-1 block text-xs text-ink-dim">Folder path</span>
-          <TextInput
-            autoFocus
-            value={path}
-            onChange={(e) => setPath(e.target.value)}
-            placeholder="C:\Users\you\Documents\Projects\my-app"
-          />
+          <div className="flex gap-2">
+            <TextInput
+              autoFocus
+              className="min-w-0 flex-1"
+              value={path}
+              onChange={(e) => setPath(e.target.value)}
+              placeholder="C:\Users\you\Documents\Projects\my-app"
+            />
+            {canBrowse && (
+              <Button variant="ghost" type="button" onClick={browse} className="shrink-0">
+                Browse…
+              </Button>
+            )}
+          </div>
         </label>
         <label className="mb-4 block">
           <span className="mb-1 block text-xs text-ink-dim">Name (optional)</span>

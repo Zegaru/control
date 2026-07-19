@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api.js'
 import { Chip, Led, Panel, Button, TextInput } from '../components/kit.js'
 import { ActionRow } from '../components/ActionRow.js'
+import { AddActionDialog } from '../components/AddActionDialog.js'
 
 export function ProjectDetail({
   projectId,
@@ -16,6 +17,9 @@ export function ProjectDetail({
   const qc = useQueryClient()
   const [showSecondary, setShowSecondary] = useState(false)
   const [claimInput, setClaimInput] = useState('')
+  const [addingCommand, setAddingCommand] = useState<
+    { moduleId: string } | { projectId: string } | null
+  >(null)
   const tree = useQuery({ queryKey: ['tree', projectId], queryFn: () => api.projectTree(projectId) })
 
   const rescan = useMutation({
@@ -129,46 +133,78 @@ export function ProjectDetail({
         </div>
       </Panel>
 
-      {p.modules.map((mod) => {
-        const primary = mod.actions.filter((a) => !a.hidden && a.primary)
-        const secondary = mod.actions.filter((a) => !a.hidden && !a.primary)
-        return (
-          <Panel
-            key={mod.id}
-            title={mod.relPath === '' ? `${mod.name} (root)` : mod.relPath}
-            right={
-              <div className="flex gap-1">
-                {mod.detectedStacks.map((s) => (
-                  <Chip key={s.kind}>{s.kind}</Chip>
-                ))}
-              </div>
-            }
-          >
-            <div className="space-y-2">
-              {primary.length === 0 && secondary.length === 0 && (
-                <p className="text-sm text-ink-faint">No actions detected.</p>
-              )}
-              {primary.map((a) => (
-                <ActionRow key={a.id} action={a} onOpenRun={onOpenRun} />
-              ))}
+      {addingCommand && (
+        <AddActionDialog
+          {...('moduleId' in addingCommand
+            ? { moduleId: addingCommand.moduleId }
+            : { projectId: addingCommand.projectId })}
+          onClose={() => setAddingCommand(null)}
+        />
+      )}
 
-              {secondary.length > 0 && (
-                <>
-                  <Button
-                    variant="ghost"
-                    onClick={() => setShowSecondary((v) => !v)}
-                    className="mt-2 px-0 py-0 text-[11px] uppercase tracking-wider text-ink-faint hover:not-data-disabled:text-ink-dim"
-                  >
-                    {showSecondary ? '▾' : '▸'} {secondary.length} tasks (build, test, lint…)
-                  </Button>
-                  {showSecondary &&
-                    secondary.map((a) => <ActionRow key={a.id} action={a} onOpenRun={onOpenRun} />)}
-                </>
-              )}
-            </div>
-          </Panel>
-        )
-      })}
+      {p.modules.length === 0 ? (
+        <Panel title="Commands">
+          <p className="mb-3 text-sm text-ink-faint">
+            No stack markers found. Add custom commands to run from this project root.
+          </p>
+          <Button
+            variant="ghost"
+            onClick={() => setAddingCommand({ projectId })}
+            className="rounded border border-panel-edge px-3 py-1.5"
+          >
+            + Add command
+          </Button>
+        </Panel>
+      ) : (
+        p.modules.map((mod) => {
+          const primary = mod.actions.filter((a) => !a.hidden && a.primary)
+          const secondary = mod.actions.filter((a) => !a.hidden && !a.primary)
+          return (
+            <Panel
+              key={mod.id}
+              title={mod.relPath === '' ? `${mod.name} (root)` : mod.relPath}
+              right={
+                <div className="flex gap-1">
+                  {mod.detectedStacks.map((s) => (
+                    <Chip key={s.kind}>{s.kind}</Chip>
+                  ))}
+                </div>
+              }
+            >
+              <div className="space-y-2">
+                {primary.length === 0 && secondary.length === 0 && (
+                  <p className="text-sm text-ink-faint">No actions detected.</p>
+                )}
+                {primary.map((a) => (
+                  <ActionRow key={a.id} action={a} onOpenRun={onOpenRun} />
+                ))}
+
+                {secondary.length > 0 && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      onClick={() => setShowSecondary((v) => !v)}
+                      className="mt-2 px-0 py-0 text-[11px] uppercase tracking-wider text-ink-faint hover:not-data-disabled:text-ink-dim"
+                    >
+                      {showSecondary ? '▾' : '▸'} {secondary.length} tasks (build, test, lint…)
+                    </Button>
+                    {showSecondary &&
+                      secondary.map((a) => <ActionRow key={a.id} action={a} onOpenRun={onOpenRun} />)}
+                  </>
+                )}
+
+                <Button
+                  variant="ghost"
+                  onClick={() => setAddingCommand({ moduleId: mod.id })}
+                  className="mt-2 px-0 py-0 text-[11px] uppercase tracking-wider text-ink-faint hover:not-data-disabled:text-phosphor"
+                >
+                  + Add command
+                </Button>
+              </div>
+            </Panel>
+          )
+        })
+      )}
     </div>
   )
 }

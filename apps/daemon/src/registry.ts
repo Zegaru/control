@@ -321,14 +321,110 @@ export function patchModule(id: string, body: PatchModuleBody): Module {
   }
 }
 
-export function createAction(body: CreateActionBody): Action {
-  const mod = db.select().from(schema.modules).where(eq(schema.modules.id, body.moduleId)).get()
+function ensureRootModule(projectId: string): string {
+  const project = db.select().from(schema.projects).where(eq(schema.projects.id, projectId)).get()
+  if (!project) throw new HttpError(404, 'Project not found')
+
+  const existing = db
+    .select()
+    .from(schema.modules)
+    .where(and(eq(schema.modules.projectId, projectId), eq(schema.modules.relPath, '')))
+    .get()
+  if (existing) return existing.id
+
+  const id = newId('mod')
+  db.insert(schema.modules)
+    .values({
+      id,
+      projectId,
+      relPath: '',
+      name: project.name,
+      detectedStacks: [],
+      hidden: false,
+    })
+    .run()
+  return id
+}
+
+function parseCreateActionBody(input: unknown): CreateActionBody {
+  if (typeof input !== 'object' || input === null) throw new HttpError(400, 'Invalid request body')
+  const raw = input as Record<string, unknown>
+
+  const name = typeof raw.name === 'string' ? raw.name.trim() : ''
+  const command = typeof raw.command === 'string' ? raw.command.trim() : ''
+  if (!name) throw new HttpError(400, 'name is required')
+  if (!command) throw new HttpError(400, 'command is required')
+
+  const moduleId = typeof raw.moduleId === 'string' ? raw.moduleId : undefined
+  const projectId = typeof raw.projectId === 'string' ? raw.projectId : undefined
+  if (Boolean(moduleId) === Boolean(projectId)) {
+    throw new HttpError(400, 'Provide exactly one of moduleId or projectId')
+  }
+
+  let portHint: number | null | undefined
+  if (raw.portHint === null || raw.portHint === undefined) {
+    portHint = raw.portHint ?? undefined
+  } else if (typeof raw.portHint === 'number' && Number.isInteger(raw.portHint) && raw.portHint > 0) {
+    portHint = raw.portHint
+  } else {
+    throw new HttpError(400, 'portHint must be a positive integer')
+  }
+
+  let healthUrl: string | null | undefined
+  if (raw.healthUrl === null || raw.healthUrl === undefined) {
+    healthUrl = raw.healthUrl ?? undefined
+  } else if (typeof raw.healthUrl === 'string') {
+    try {
+      healthUrl = new URL(raw.healthUrl).toString()
+    } catch {
+      throw new HttpError(400, 'healthUrl must be a valid URL')
+    }
+  } else {
+    throw new HttpError(400, 'healthUrl must be a valid URL')
+  }
+
+  let envOverrides: Record<string, string> | null | undefined
+  if (raw.envOverrides === null || raw.envOverrides === undefined) {
+    envOverrides = raw.envOverrides ?? undefined
+  } else if (typeof raw.envOverrides === 'object') {
+    envOverrides = {}
+    for (const [k, v] of Object.entries(raw.envOverrides as Record<string, unknown>)) {
+      if (typeof v === 'string') envOverrides[k] = v
+    }
+  } else {
+    throw new HttpError(400, 'envOverrides must be an object')
+  }
+
+  const cwd =
+    raw.cwd === null || raw.cwd === undefined
+      ? raw.cwd ?? undefined
+      : typeof raw.cwd === 'string'
+        ? raw.cwd
+        : (() => {
+            throw new HttpError(400, 'cwd must be a string')
+          })()
+
+  return {
+    ...(moduleId ? { moduleId } : { projectId: projectId! }),
+    name,
+    command,
+    ...(cwd !== undefined ? { cwd } : {}),
+    ...(portHint !== undefined ? { portHint } : {}),
+    ...(healthUrl !== undefined ? { healthUrl } : {}),
+    ...(envOverrides !== undefined ? { envOverrides } : {}),
+  }
+}
+
+export function createAction(input: unknown): Action {
+  const body = parseCreateActionBody(input)
+  const moduleId = body.moduleId ?? ensureRootModule(body.projectId!)
+  const mod = db.select().from(schema.modules).where(eq(schema.modules.id, moduleId)).get()
   if (!mod) throw new HttpError(404, 'Module not found')
   const id = newId('act')
   db.insert(schema.actions)
     .values({
       id,
-      moduleId: body.moduleId,
+      moduleId,
       naturalKey: `custom:${id}`,
       name: body.name,
       command: body.command,

@@ -211,6 +211,7 @@ fn kill_daemon(app: &AppHandle) {
 fn main() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, None))
+        .plugin(tauri_plugin_dialog::init())
         .manage(DaemonState(Mutex::new(None)))
         .setup(|app| {
             let handle = app.handle();

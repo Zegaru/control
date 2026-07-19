@@ -236,15 +236,21 @@ export const patchModuleBodySchema = z.object({
 })
 export type PatchModuleBody = z.infer<typeof patchModuleBodySchema>
 
-export const createActionBodySchema = z.object({
-  moduleId: z.string(),
-  name: z.string().min(1),
-  command: z.string().min(1),
-  cwd: z.string().nullable().optional(),
-  portHint: z.number().int().positive().nullable().optional(),
-  healthUrl: z.string().url().nullable().optional(),
-  envOverrides: z.record(z.string()).nullable().optional(),
-})
+export const createActionBodySchema = z
+  .object({
+    moduleId: z.string().optional(),
+    /** When no module exists yet (e.g. unscanned project), creates a root module. */
+    projectId: z.string().optional(),
+    name: z.string().min(1),
+    command: z.string().min(1),
+    cwd: z.string().nullable().optional(),
+    portHint: z.number().int().positive().nullable().optional(),
+    healthUrl: z.string().url().nullable().optional(),
+    envOverrides: z.record(z.string()).nullable().optional(),
+  })
+  .refine((b) => Boolean(b.moduleId) !== Boolean(b.projectId), {
+    message: 'Provide exactly one of moduleId or projectId',
+  })
 export type CreateActionBody = z.infer<typeof createActionBodySchema>
 
 export const patchActionBodySchema = z.object({

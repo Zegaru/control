@@ -827,7 +827,7 @@ export function ProjectModule({
       <Button
         variant="ghost"
         onClick={onClick}
-        className="bezel-raised flex min-h-[200px] w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-panel-edge text-ink-faint hover:not-data-disabled:border-phosphor-dim hover:not-data-disabled:text-phosphor"
+        className="bezel-raised flex h-full min-h-[200px] w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-panel-edge text-ink-faint hover:not-data-disabled:border-phosphor-dim hover:not-data-disabled:text-phosphor"
       >
         <span className="text-3xl">+</span>
         <span className="font-ui text-[11px] uppercase tracking-wider">Add Project</span>
@@ -838,7 +838,7 @@ export function ProjectModule({
   const projectStatus: RunStatus | 'idle' = busy ? 'starting' : on ? 'healthy' : 'idle';
 
   return (
-    <div className="bezel-raised flex flex-col rounded-lg p-1.5">
+    <div className="bezel-raised flex h-full flex-col rounded-lg p-1.5">
       <div className="bezel-recessed flex flex-1 flex-col overflow-visible rounded-md bg-bezel">
         <div className="flex items-start justify-between gap-3 border-b border-panel-edge px-4 py-3">
           <Button

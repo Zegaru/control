@@ -52,6 +52,23 @@ export class ApiError extends Error {
   }
 }
 
+export function formatApiError(err: unknown): string {
+  if (err instanceof ApiError) {
+    const issues = (err.detail as { issues?: Array<{ path: (string | number)[]; message: string }> })
+      ?.issues
+    if (issues?.length) {
+      return issues
+        .map((i) => {
+          const field = i.path.length ? i.path.join('.') : 'request'
+          return `${field}: ${i.message}`
+        })
+        .join('; ')
+    }
+    return err.message
+  }
+  return err instanceof Error ? err.message : 'Request failed'
+}
+
 export const api = {
   health: () => req<{ ok: boolean; version: string }>('/health'),
   hostMetrics: () => req<HostMetrics>('/host/metrics'),

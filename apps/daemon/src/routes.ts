@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { Hono } from 'hono'
 import {
-  createActionBodySchema,
   createGroupBodySchema,
   createProjectBodySchema,
   patchActionBodySchema,
@@ -94,8 +93,7 @@ api.patch('/modules/:id', async (c) => {
 })
 
 api.post('/actions', async (c) => {
-  const body = createActionBodySchema.parse(await c.req.json())
-  return c.json(createAction(body), 201)
+  return c.json(createAction(await c.req.json()), 201)
 })
 
 api.patch('/actions/:id', async (c) => {

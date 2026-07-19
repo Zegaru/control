@@ -1,7 +1,10 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "CONTROL shell capabilities. The main window navigates to the daemon-served UI, which talks to the daemon over its own HTTP/WS — it does not use Tauri IPC. Tray + autostart are driven from Rust, so no JS permissions are required here.",
+  "description": "CONTROL shell capabilities. The main window navigates to the daemon-served UI at 127.0.0.1:4400. Tray + autostart are driven from Rust; dialog:allow-open lets the UI open a native folder picker when adding a project.",
   "windows": ["main"],
-  "permissions": ["core:default"]
+  "remote": {
+    "urls": ["http://127.0.0.1:4400/*"]
+  },
+  "permissions": ["core:default", "dialog:allow-open"]
 }

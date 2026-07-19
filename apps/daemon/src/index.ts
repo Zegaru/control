@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs'
+import type { Server } from 'node:http'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 import { serve } from '@hono/node-server'
@@ -38,7 +39,23 @@ if (existsSync(uiDist)) {
   app.get('/*', serveStatic({ path: join(uiDist, 'index.html') }))
 }
 
+let httpServer: Server | undefined
+let shuttingDown = false
+
+function shutdown(): void {
+  if (shuttingDown) return
+  shuttingDown = true
+  if (httpServer) {
+    httpServer.close(() => process.exit(0))
+    // Force-exit if close hangs (open keep-alive sockets).
+    setTimeout(() => process.exit(0), 1500).unref()
+    return
+  }
+  process.exit(0)
+}
+
 async function main(): Promise<void> {
+  console.log(`[control] starting daemon on ${HOST}:${PORT}…`)
   await reconcileRuns()
   startHostMetrics()
   startProjectMetrics()
@@ -48,9 +65,24 @@ async function main(): Promise<void> {
     console.log(`  → http://${HOST}:${info.port}`)
     console.log(`  → ws://${HOST}:${info.port}/ws\n`)
   })
+  httpServer = server as unknown as Server
 
-  attachWebSocket(server as unknown as import('node:http').Server)
+  server.on('error', (err: NodeJS.ErrnoException) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`\n[control] Port ${PORT} is already in use on ${HOST}.`)
+      console.error('  Another CONTROL daemon may be running (Tauri app or a stale node process).')
+      console.error('  Quit the tray app or stop the other process, then restart.\n')
+    } else {
+      console.error('[control] server error', err)
+    }
+    process.exit(1)
+  })
+
+  attachWebSocket(server as unknown as Server)
   void watchDockerEvents()
+
+  process.on('SIGTERM', shutdown)
+  process.on('SIGINT', shutdown)
 }
 
 main().catch((err) => {
