@@ -1,27 +1,31 @@
-import { useId, type ReactNode } from 'react'
-import type { RunStatus } from '@control/shared'
+import {useId, type ReactNode} from 'react';
+import type {RunStatus} from '@control/shared';
 
 export function statusColor(status: RunStatus | 'idle'): string {
   switch (status) {
     case 'healthy':
-      return 'var(--color-phosphor)'
+      return 'var(--color-phosphor)';
     case 'running':
-      return 'var(--color-phosphor-dim)'
+      return 'var(--color-phosphor-dim)';
     case 'starting':
-      return 'var(--color-amber)'
+      return 'var(--color-amber)';
     case 'unhealthy':
     case 'adopted':
-      return 'var(--color-amber)'
+      return 'var(--color-amber)';
     case 'failed':
     case 'killed':
-      return 'var(--color-danger)'
+      return 'var(--color-danger)';
     default:
-      return 'var(--color-ink-faint)'
+      return 'var(--color-ink-faint)';
   }
 }
 
 export function statusLabel(status: RunStatus | 'idle'): string {
-  return status.toUpperCase()
+  return status.toUpperCase();
+}
+
+export function Screw({className = ''}: {className?: string}) {
+  return <div className={`screw ${className}`} aria-hidden="true" />;
 }
 
 export function Led({
@@ -29,18 +33,20 @@ export function Led({
   pulse,
   ring,
 }: {
-  status: RunStatus | 'idle'
-  pulse?: boolean
-  ring?: boolean
+  status: RunStatus | 'idle';
+  pulse?: boolean;
+  ring?: boolean;
 }) {
-  const color = statusColor(status)
+  const color = statusColor(status);
   return (
     <span
-      className={`led inline-block h-2.5 w-2.5 shrink-0 rounded-full ${ring ? 'led-ring' : ''} ${pulse ? 'animate-pulse' : ''}`}
-      style={{ backgroundColor: color, color }}
+      className={`led inline-block h-2.5 w-2.5 shrink-0 rounded-full ${ring ? 'led-ring' : ''} ${
+        pulse ? 'animate-pulse' : ''
+      }`}
+      style={{backgroundColor: color, color}}
       aria-label={statusLabel(status)}
     />
-  )
+  );
 }
 
 export function Panel({
@@ -49,28 +55,44 @@ export function Panel({
   children,
   className = '',
   crt,
+  footer,
 }: {
-  title?: string
-  right?: ReactNode
-  children: ReactNode
-  className?: string
-  crt?: boolean
+  title?: string;
+  right?: ReactNode;
+  children: ReactNode;
+  className?: string;
+  crt?: boolean;
+  footer?: ReactNode;
 }) {
   return (
-    <section className={`bezel-raised overflow-hidden rounded-lg ${className}`}>
-      {title && (
-        <header className="font-ui flex items-center justify-between border-b border-[var(--color-panel-edge)] bg-[var(--color-bezel)] px-4 py-2">
-          <h2 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--color-ink-dim)]">
-            {title}
-          </h2>
-          {right}
-        </header>
-      )}
-      <div className={crt ? 'crt-frame' : 'p-4'}>
-        <div className={crt ? 'crt bezel-recessed rounded-md p-4' : ''}>{children}</div>
+    <section className={`bezel-raised overflow-hidden rounded-xl p-5 flex flex-col ${className}`}>
+      <Screw className="top-2 left-2" />
+      <Screw className="top-2 right-2" />
+      <Screw className="bottom-2 left-2" />
+      <Screw className="bottom-2 right-2" />
+
+      <div className="bezel-recessed flex flex-1 min-h-0 flex-col overflow-hidden rounded-2xl bg-[var(--color-bezel)]">
+        <div className={`flex-1 h-full ${crt ? 'crt-frame p-0' : 'p-4'}`}>
+          <div className="bezel-recessed h-full rounded-2xl bg-gray-900 p-4">
+            <div className={crt ? 'crt bezel-recessed border-0! h-full rounded-2xl p-6' : 'h-full'}>
+              <div className="relative z-10 h-full">
+                {title && (
+                  <header className="font-ui flex items-center justify-between py-2">
+                    <h2 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--color-ink-dim)]">
+                      {title}
+                    </h2>
+                    {right}
+                  </header>
+                )}
+                {children}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+      {footer}
     </section>
-  )
+  );
 }
 
 /** Chunky on/off rocker. `on` reflects running state; `busy` shows amber. */
@@ -81,60 +103,68 @@ export function RockerToggle({
   disabled,
   labels = ['ON', 'OFF'],
 }: {
-  on: boolean
-  busy?: boolean
-  onToggle: () => void
-  disabled?: boolean
-  labels?: [string, string]
+  on: boolean;
+  busy?: boolean;
+  onToggle: () => void;
+  disabled?: boolean;
+  labels?: [string, string];
 }) {
-  const glow = busy ? 'var(--color-amber)' : on ? 'var(--color-phosphor)' : 'transparent'
+  const glow = busy ? 'var(--color-amber)' : on ? 'var(--color-phosphor)' : 'transparent';
   return (
     <button
       onClick={(e) => {
-        e.stopPropagation()
-        onToggle()
+        e.stopPropagation();
+        onToggle();
       }}
       disabled={disabled}
       aria-pressed={on}
       className="rocker-housing font-ui relative flex h-14 w-16 flex-col overflow-hidden rounded-md p-0.5 text-[10px] font-bold disabled:opacity-40"
-      style={{ boxShadow: `inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -2px 4px rgba(0,0,0,0.5), 0 0 14px -2px ${glow}` }}
+      style={{
+        boxShadow: `inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -2px 4px rgba(0,0,0,0.5), 0 0 14px -2px ${glow}`,
+      }}
     >
       <span
-        className={`flex flex-1 items-center justify-center rounded-sm transition-colors ${on ? `rocker-segment-on text-black ${busy ? 'busy' : ''}` : 'text-[var(--color-ink-faint)]'}`}
+        className={`flex flex-1 items-center justify-center rounded-sm transition-colors ${
+          on
+            ? `rocker-segment-on text-black ${busy ? 'busy' : ''}`
+            : 'text-[var(--color-ink-faint)]'
+        }`}
       >
         {labels[0]}
       </span>
       <span
-        className={`mt-0.5 flex flex-1 items-center justify-center rounded-sm transition-colors ${!on ? 'rocker-segment-off text-[var(--color-ink)]' : 'text-[var(--color-ink-faint)]'}`}
+        className={`mt-0.5 flex flex-1 items-center justify-center rounded-sm transition-colors ${
+          !on ? 'rocker-segment-off text-[var(--color-ink)]' : 'text-[var(--color-ink-faint)]'
+        }`}
       >
         {labels[1]}
       </span>
     </button>
-  )
+  );
 }
 
 export function Chip({
   children,
   tone = 'default',
 }: {
-  children: ReactNode
-  tone?: 'default' | 'phosphor' | 'amber' | 'info'
+  children: ReactNode;
+  tone?: 'default' | 'phosphor' | 'amber' | 'info';
 }) {
   const toneCls =
     tone === 'phosphor'
       ? 'border-[var(--color-phosphor-dim)] text-[var(--color-phosphor)] bg-[rgba(125,252,154,0.06)]'
       : tone === 'amber'
-        ? 'border-[var(--color-amber)] text-[var(--color-amber)] bg-[rgba(245,179,74,0.06)]'
-        : tone === 'info'
-          ? 'border-[var(--color-info)] text-[var(--color-info)] bg-[rgba(94,184,255,0.06)]'
-          : 'border-[var(--color-panel-edge)] text-[var(--color-ink-dim)] bg-[var(--color-bezel)]'
+      ? 'border-[var(--color-amber)] text-[var(--color-amber)] bg-[rgba(245,179,74,0.06)]'
+      : tone === 'info'
+      ? 'border-[var(--color-info)] text-[var(--color-info)] bg-[rgba(94,184,255,0.06)]'
+      : 'border-[var(--color-panel-edge)] text-[var(--color-ink-dim)] bg-[var(--color-bezel)]';
   return (
     <span
       className={`inline-flex items-center rounded px-2 py-0.5 text-[11px] font-medium shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] ${toneCls}`}
     >
       {children}
     </span>
-  )
+  );
 }
 
 export function SegmentCounter({
@@ -142,49 +172,49 @@ export function SegmentCounter({
   label,
   tone = 'phosphor',
 }: {
-  value: number | string
-  label: string
-  tone?: 'phosphor' | 'amber' | 'danger' | 'dim'
+  value: number | string;
+  label: string;
+  tone?: 'phosphor' | 'amber' | 'danger' | 'dim';
 }) {
   const color =
     tone === 'phosphor'
       ? 'var(--color-phosphor)'
       : tone === 'amber'
-        ? 'var(--color-amber)'
-        : tone === 'danger'
-          ? 'var(--color-danger)'
-          : 'var(--color-ink-faint)'
+      ? 'var(--color-amber)'
+      : tone === 'danger'
+      ? 'var(--color-danger)'
+      : 'var(--color-ink-faint)';
   const glowCls =
     tone === 'phosphor'
       ? 'text-glow'
       : tone === 'amber'
-        ? 'text-glow-amber'
-        : tone === 'danger'
-          ? 'text-glow-danger'
-          : ''
+      ? 'text-glow-amber'
+      : tone === 'danger'
+      ? 'text-glow-danger'
+      : '';
   return (
     <div className="bezel-recessed rounded-md px-4 py-3 text-center">
-      <div className={`text-3xl font-bold ${glowCls}`} style={{ color }}>
+      <div className={`text-3xl font-bold ${glowCls}`} style={{color}}>
         {value}
       </div>
       <div className="font-ui mt-1 text-[10px] uppercase tracking-widest text-[var(--color-ink-faint)]">
         {label}
       </div>
     </div>
-  )
+  );
 }
 
 function arcPath(cx: number, cy: number, r: number, startAngle: number, endAngle: number) {
   const start = {
     x: cx + r * Math.cos(startAngle),
     y: cy + r * Math.sin(startAngle),
-  }
+  };
   const end = {
     x: cx + r * Math.cos(endAngle),
     y: cy + r * Math.sin(endAngle),
-  }
-  const large = endAngle - startAngle > Math.PI ? 1 : 0
-  return `M ${start.x} ${start.y} A ${r} ${r} 0 ${large} 1 ${end.x} ${end.y}`
+  };
+  const large = endAngle - startAngle > Math.PI ? 1 : 0;
+  return `M ${start.x} ${start.y} A ${r} ${r} 0 ${large} 1 ${end.x} ${end.y}`;
 }
 
 function DialArc({
@@ -193,30 +223,30 @@ function DialArc({
   strokeWidth,
   color,
 }: {
-  value: number
-  size: number
-  strokeWidth: number
-  color: string
+  value: number;
+  size: number;
+  strokeWidth: number;
+  color: string;
 }) {
-  const gradId = useId().replace(/:/g, '')
-  const clamped = Math.max(0, Math.min(100, value))
-  const cx = size / 2
-  const cy = size / 2
-  const r = (size - strokeWidth) / 2 - 2
-  const start = Math.PI * 0.75
-  const sweep = Math.PI * 1.5
-  const end = start + (sweep * clamped) / 100
-  const ticks = Array.from({ length: 12 }, (_, i) => {
-    const a = start + (sweep * i) / 11
-    const inner = r - strokeWidth
-    const outer = r + 1
+  const gradId = useId().replace(/:/g, '');
+  const clamped = Math.max(0, Math.min(100, value));
+  const cx = size / 2;
+  const cy = size / 2;
+  const r = (size - strokeWidth) / 2 - 2;
+  const start = Math.PI * 0.75;
+  const sweep = Math.PI * 1.5;
+  const end = start + (sweep * clamped) / 100;
+  const ticks = Array.from({length: 12}, (_, i) => {
+    const a = start + (sweep * i) / 11;
+    const inner = r - strokeWidth;
+    const outer = r + 1;
     return {
       x1: cx + inner * Math.cos(a),
       y1: cy + inner * Math.sin(a),
       x2: cx + outer * Math.cos(a),
       y2: cy + outer * Math.sin(a),
-    }
-  })
+    };
+  });
 
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden>
@@ -245,7 +275,7 @@ function DialArc({
           stroke={color}
           strokeWidth={strokeWidth}
           strokeLinecap="round"
-          style={{ filter: `drop-shadow(0 0 4px ${color})` }}
+          style={{filter: `drop-shadow(0 0 4px ${color})`}}
         />
       )}
       <line
@@ -258,7 +288,7 @@ function DialArc({
         strokeLinecap="round"
       />
     </svg>
-  )
+  );
 }
 
 export function RotaryKnob({
@@ -266,21 +296,25 @@ export function RotaryKnob({
   label,
   size = 'sm',
 }: {
-  value: number
-  label: string
-  size?: 'sm' | 'md'
+  value: number;
+  label: string;
+  size?: 'sm' | 'md';
 }) {
-  const px = size === 'sm' ? 48 : 64
-  const stroke = size === 'sm' ? 3 : 4
+  const px = size === 'sm' ? 48 : 64;
+  const stroke = size === 'sm' ? 3 : 4;
   const tone =
-    value >= 85 ? 'var(--color-danger)' : value >= 60 ? 'var(--color-amber)' : 'var(--color-phosphor)'
+    value >= 85
+      ? 'var(--color-danger)'
+      : value >= 60
+      ? 'var(--color-amber)'
+      : 'var(--color-phosphor)';
   return (
     <div className="flex flex-col items-center gap-1">
       <div className="knob-face bezel-recessed relative rounded-full p-1">
         <DialArc value={value} size={px} strokeWidth={stroke} color={tone} />
         <span
           className="absolute inset-0 flex items-center justify-center text-[9px] font-bold"
-          style={{ color: tone }}
+          style={{color: tone}}
         >
           {Math.round(value)}
         </span>
@@ -289,7 +323,7 @@ export function RotaryKnob({
         {label}
       </span>
     </div>
-  )
+  );
 }
 
 export function CircularGauge({
@@ -297,19 +331,19 @@ export function CircularGauge({
   label,
   unit = '%',
 }: {
-  value: number
-  label: string
-  unit?: string
+  value: number;
+  label: string;
+  unit?: string;
 }) {
-  const px = 72
+  const px = 72;
   const tone =
-    value >= 85 ? 'var(--color-danger)' : value >= 60 ? 'var(--color-amber)' : 'var(--color-info)'
+    value >= 85 ? 'var(--color-danger)' : value >= 60 ? 'var(--color-amber)' : 'var(--color-info)';
   return (
     <div className="flex flex-col items-center gap-1">
       <div className="knob-face bezel-recessed relative rounded-full p-1.5">
         <DialArc value={value} size={px} strokeWidth={5} color={tone} />
         <span className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-sm font-bold" style={{ color: tone }}>
+          <span className="text-sm font-bold" style={{color: tone}}>
             {Math.round(value)}
             {unit}
           </span>
@@ -319,7 +353,7 @@ export function CircularGauge({
         {label}
       </span>
     </div>
-  )
+  );
 }
 
 export function BacklitButton({
@@ -329,47 +363,47 @@ export function BacklitButton({
   size = 'md',
   disabled,
 }: {
-  children: ReactNode
-  onClick?: () => void
-  tone?: 'default' | 'phosphor' | 'amber' | 'danger'
-  size?: 'sm' | 'md'
-  disabled?: boolean
+  children: ReactNode;
+  onClick?: () => void;
+  tone?: 'default' | 'phosphor' | 'amber' | 'danger';
+  size?: 'sm' | 'md';
+  disabled?: boolean;
 }) {
   const border =
     tone === 'phosphor'
       ? 'var(--color-phosphor-dim)'
       : tone === 'amber'
-        ? 'var(--color-amber)'
-        : tone === 'danger'
-          ? 'var(--color-danger)'
-          : 'var(--color-panel-edge)'
+      ? 'var(--color-amber)'
+      : tone === 'danger'
+      ? 'var(--color-danger)'
+      : 'var(--color-panel-edge)';
   const text =
     tone === 'phosphor'
       ? 'var(--color-phosphor)'
       : tone === 'amber'
-        ? 'var(--color-amber)'
-        : tone === 'danger'
-          ? 'var(--color-danger)'
-          : 'var(--color-ink-dim)'
+      ? 'var(--color-amber)'
+      : tone === 'danger'
+      ? 'var(--color-danger)'
+      : 'var(--color-ink-dim)';
   const glow =
     tone === 'phosphor'
       ? 'glow-phosphor'
       : tone === 'amber'
-        ? 'glow-amber'
-        : tone === 'danger'
-          ? 'glow-danger'
-          : ''
-  const pad = size === 'sm' ? 'px-3 py-1.5 text-[10px]' : 'px-4 py-2 text-[11px]'
+      ? 'glow-amber'
+      : tone === 'danger'
+      ? 'glow-danger'
+      : '';
+  const pad = size === 'sm' ? 'px-3 py-1.5 text-[10px]' : 'px-4 py-2 text-[11px]';
   return (
     <button
       onClick={onClick}
       disabled={disabled}
       className={`backlit-btn font-ui rounded uppercase tracking-widest font-semibold disabled:opacity-40 ${pad} ${glow}`}
-      style={{ borderColor: border, color: text }}
+      style={{borderColor: border, color: text}}
     >
       {children}
     </button>
-  )
+  );
 }
 
 /** Red master power rocker for ALL SYSTEMS. */
@@ -378,24 +412,28 @@ export function MasterPower({
   onToggle,
   disabled,
 }: {
-  on: boolean
-  onToggle: () => void
-  disabled?: boolean
+  on: boolean;
+  onToggle: () => void;
+  disabled?: boolean;
 }) {
-  const glow = on ? 'var(--color-danger-glow)' : 'transparent'
+  const glow = on ? 'var(--color-danger-glow)' : 'transparent';
   return (
     <button
       onClick={(e) => {
-        e.stopPropagation()
-        onToggle()
+        e.stopPropagation();
+        onToggle();
       }}
       disabled={disabled}
       aria-pressed={on}
       className="rocker-housing rocker-danger font-ui relative flex h-16 w-20 flex-col overflow-hidden rounded-md p-0.5 text-[9px] font-bold disabled:opacity-40"
-      style={{ boxShadow: `inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -2px 4px rgba(0,0,0,0.5), 0 0 16px -2px ${glow}` }}
+      style={{
+        boxShadow: `inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -2px 4px rgba(0,0,0,0.5), 0 0 16px -2px ${glow}`,
+      }}
     >
       <span
-        className={`flex flex-[2] items-center justify-center rounded-sm transition-colors ${on ? 'rocker-segment-on danger text-black' : 'text-[var(--color-ink-faint)]'}`}
+        className={`flex flex-[2] items-center justify-center rounded-sm transition-colors ${
+          on ? 'rocker-segment-on danger text-black' : 'text-[var(--color-ink-faint)]'
+        }`}
       >
         ON
       </span>
@@ -403,31 +441,23 @@ export function MasterPower({
         All Systems
       </span>
     </button>
-  )
+  );
 }
 
-export function Sparkline({
-  data,
-  label,
-  unit,
-}: {
-  data: number[]
-  label: string
-  unit?: string
-}) {
-  const w = 120
-  const h = 32
-  const max = Math.max(...data, 1)
-  const min = Math.min(...data, 0)
-  const range = max - min || 1
+export function Sparkline({data, label, unit}: {data: number[]; label: string; unit?: string}) {
+  const w = 120;
+  const h = 32;
+  const max = Math.max(...data, 1);
+  const min = Math.min(...data, 0);
+  const range = max - min || 1;
   const points = data
     .map((v, i) => {
-      const x = (i / Math.max(data.length - 1, 1)) * w
-      const y = h - ((v - min) / range) * (h - 4) - 2
-      return `${x},${y}`
+      const x = (i / Math.max(data.length - 1, 1)) * w;
+      const y = h - ((v - min) / range) * (h - 4) - 2;
+      return `${x},${y}`;
     })
-    .join(' ')
-  const latest = data[data.length - 1] ?? 0
+    .join(' ');
+  const latest = data[data.length - 1] ?? 0;
   return (
     <div className="bezel-recessed rounded-md px-3 py-2">
       <div className="font-ui mb-1 flex items-baseline justify-between text-[9px] uppercase tracking-wider text-[var(--color-ink-faint)]">
@@ -443,11 +473,11 @@ export function Sparkline({
           fill="none"
           stroke="var(--color-phosphor)"
           strokeWidth={1.5}
-          style={{ filter: 'drop-shadow(0 0 3px var(--color-phosphor))' }}
+          style={{filter: 'drop-shadow(0 0 3px var(--color-phosphor))'}}
         />
       </svg>
     </div>
-  )
+  );
 }
 
 export function TerminalScreen({
@@ -455,20 +485,24 @@ export function TerminalScreen({
   footer,
   className = '',
 }: {
-  children: ReactNode
-  footer?: ReactNode
-  className?: string
+  children: ReactNode;
+  footer?: ReactNode;
+  className?: string;
 }) {
   return (
-    <div className={`crt bezel-recessed overflow-hidden rounded-md ${className}`}>
-      <div className="max-h-64 overflow-y-auto p-3 text-[11px] leading-relaxed">{children}</div>
-      {footer && (
-        <div className="font-ui flex items-center gap-3 border-t border-[var(--color-panel-edge)] bg-[var(--color-bezel)] px-3 py-2 text-[10px] uppercase tracking-wider text-[var(--color-ink-faint)]">
-          {footer}
+    <div className={`crt-frame mx-2 mb-2 ${className}`}>
+      <div className="crt bezel-recessed flex h-full flex-col overflow-hidden rounded-xl border border-[#000]">
+        <div className="relative z-10 flex-1 overflow-y-auto p-6 text-[11px] leading-relaxed text-glow-info">
+          {children}
         </div>
-      )}
+        {footer && (
+          <div className="font-ui relative z-10 flex items-center gap-3 border-t border-[var(--color-panel-edge)] bg-[var(--color-bezel)]/80 px-4 py-3 text-[10px] uppercase tracking-wider text-[var(--color-ink-faint)] backdrop-blur-sm">
+            {footer}
+          </div>
+        )}
+      </div>
     </div>
-  )
+  );
 }
 
 export function NavItem({
@@ -477,10 +511,10 @@ export function NavItem({
   active,
   onClick,
 }: {
-  icon: ReactNode
-  label: string
-  active: boolean
-  onClick: () => void
+  icon: ReactNode;
+  label: string;
+  active: boolean;
+  onClick: () => void;
 }) {
   return (
     <button
@@ -494,21 +528,17 @@ export function NavItem({
       <span className="w-4 shrink-0 text-center">{icon}</span>
       {label}
     </button>
-  )
+  );
 }
 
-export function AgentStatus({
-  online,
-  label,
-}: {
-  online: boolean
-  label?: string
-}) {
+export function AgentStatus({online, label}: {online: boolean; label?: string}) {
   return (
     <div className="bezel-recessed rounded-md p-3">
       <div className="flex items-center gap-2 text-[10px] text-[var(--color-ink-faint)]">
         <Led status={online ? 'healthy' : 'failed'} pulse={online} ring />
-        <span className="font-ui uppercase tracking-wider">{label ?? (online ? 'Agent Running' : 'Agent Offline')}</span>
+        <span className="font-ui uppercase tracking-wider">
+          {label ?? (online ? 'Agent Running' : 'Agent Offline')}
+        </span>
       </div>
       {online && (
         <div className="mt-2 overflow-hidden">
@@ -518,21 +548,21 @@ export function AgentStatus({
               fill="none"
               stroke="var(--color-phosphor)"
               strokeWidth={1.5}
-              style={{ filter: 'drop-shadow(0 0 3px var(--color-phosphor))' }}
+              style={{filter: 'drop-shadow(0 0 3px var(--color-phosphor))'}}
             />
           </svg>
         </div>
       )}
     </div>
-  )
+  );
 }
 
 export type ProjectService = {
-  name: string
-  status: RunStatus | 'idle'
-  ports?: number[]
-  pulse?: boolean
-}
+  name: string;
+  status: RunStatus | 'idle';
+  ports?: number[];
+  pulse?: boolean;
+};
 
 export function ProjectModule({
   variant = 'default',
@@ -547,17 +577,17 @@ export function ProjectModule({
   metrics,
   children,
 }: {
-  variant?: 'default' | 'add'
-  name?: string
-  path?: string
-  on?: boolean
-  busy?: boolean
-  onToggle?: () => void
-  onClick?: () => void
-  favorite?: boolean
-  services?: ProjectService[]
-  metrics?: { cpu?: number; mem?: number; disk?: number }
-  children?: ReactNode
+  variant?: 'default' | 'add';
+  name?: string;
+  path?: string;
+  on?: boolean;
+  busy?: boolean;
+  onToggle?: () => void;
+  onClick?: () => void;
+  favorite?: boolean;
+  services?: ProjectService[];
+  metrics?: {cpu?: number; mem?: number; disk?: number};
+  children?: ReactNode;
 }) {
   if (variant === 'add') {
     return (
@@ -568,76 +598,84 @@ export function ProjectModule({
         <span className="text-3xl">+</span>
         <span className="font-ui text-[11px] uppercase tracking-wider">Add Project</span>
       </button>
-    )
+    );
   }
 
   return (
-    <div className="module-face bezel-raised flex flex-col rounded-lg">
-      <div className="flex items-start justify-between gap-2 border-b border-[var(--color-panel-edge)] px-4 py-3">
-        <button onClick={onClick} className="min-w-0 flex-1 text-left">
-          <div className="flex items-center gap-2">
-            <span className="font-ui text-sm font-semibold uppercase tracking-wide">{name}</span>
-            {favorite && <span style={{ color: 'var(--color-amber)' }}>★</span>}
-          </div>
-          {path && (
-            <div className="mt-0.5 truncate text-[10px] text-[var(--color-ink-faint)]">{path}</div>
+    <div className="module-face bezel-raised flex flex-col rounded-lg p-1.5">
+      <Screw className="top-2 left-2" />
+      <Screw className="top-2 right-2" />
+      <Screw className="bottom-2 left-2" />
+      <Screw className="bottom-2 right-2" />
+      <div className="bezel-recessed flex flex-1 flex-col overflow-hidden rounded-md bg-[var(--color-bezel)]">
+        <div className="flex items-start justify-between gap-2 border-b border-[var(--color-panel-edge)] px-4 py-3">
+          <button onClick={onClick} className="min-w-0 flex-1 text-left">
+            <div className="flex items-center gap-2">
+              <span className="font-ui text-sm font-semibold uppercase tracking-wide">{name}</span>
+              {favorite && <span style={{color: 'var(--color-amber)'}}>★</span>}
+            </div>
+            {path && (
+              <div className="mt-0.5 truncate text-[10px] text-[var(--color-ink-faint)]">
+                {path}
+              </div>
+            )}
+          </button>
+          {onToggle != null && on != null && (
+            <RockerToggle on={on} busy={busy} onToggle={onToggle} />
           )}
-        </button>
-        {onToggle != null && on != null && (
-          <RockerToggle on={on} busy={busy} onToggle={onToggle} />
-        )}
-      </div>
+        </div>
 
-      <div className="flex flex-1 flex-col gap-3 p-4">
-        {services.length > 0 && (
-          <ul className="space-y-1.5">
-            {services.map((svc) => (
-              <li key={svc.name} className="flex items-center gap-2 text-[11px]">
-                <Led status={svc.status} pulse={svc.pulse} ring />
-                <span className="flex-1 truncate">{svc.name}</span>
-                <span className="flex gap-1">
-                  {svc.ports?.map((p) => (
-                    <Chip key={p} tone="phosphor">
-                      :{p}
-                    </Chip>
-                  ))}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
+        <div className="flex flex-1 flex-col gap-3 p-4">
+          {services.length > 0 && (
+            <ul className="space-y-1.5">
+              {services.map((svc) => (
+                <li key={svc.name} className="flex items-center gap-2 text-[11px]">
+                  <Led status={svc.status} pulse={svc.pulse} ring />
+                  <span className="flex-1 truncate">{svc.name}</span>
+                  <span className="flex gap-1">
+                    {svc.ports?.map((p) => (
+                      <Chip key={p} tone="phosphor">
+                        :{p}
+                      </Chip>
+                    ))}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
 
-        {children}
+          {children}
 
-        {metrics && (
-          <div className="mt-auto flex justify-around border-t border-[var(--color-panel-edge)] pt-3">
-            {metrics.cpu != null && <RotaryKnob value={metrics.cpu} label="CPU" />}
-            {metrics.mem != null && <RotaryKnob value={metrics.mem} label="MEM" />}
-            {metrics.disk != null && <RotaryKnob value={metrics.disk} label="DISK" />}
-          </div>
-        )}
+          {metrics && (
+            <div className="mt-auto flex justify-around border-t border-[var(--color-panel-edge)] pt-3">
+              {metrics.cpu != null && <RotaryKnob value={metrics.cpu} label="CPU" />}
+              {metrics.mem != null && <RotaryKnob value={metrics.mem} label="MEM" />}
+              {metrics.disk != null && <RotaryKnob value={metrics.disk} label="DISK" />}
+            </div>
+          )}
+        </div>
       </div>
     </div>
-  )
+  );
 }
 
 export type ControlStripAction = {
-  label: string
-  tone?: 'default' | 'phosphor' | 'amber' | 'danger'
-  onClick: () => void
-}
+  label: string;
+  tone?: 'default' | 'phosphor' | 'amber' | 'danger';
+  onClick: () => void;
+};
 
 export type ControlStripGauge = {
-  label: string
-  value: number
-  unit?: string
-}
+  label: string;
+  value: number;
+  unit?: string;
+};
 
 export type ControlStripNotification = {
-  message: string
-  tone?: 'phosphor' | 'amber' | 'danger' | 'dim'
-  time?: string
-}
+  message: string;
+  tone?: 'phosphor' | 'amber' | 'danger' | 'dim';
+  time?: string;
+};
 
 export function ControlStrip({
   masterOn,
@@ -648,77 +686,93 @@ export function ControlStrip({
   version,
   network,
 }: {
-  masterOn: boolean
-  onMasterToggle: () => void
-  actions: ControlStripAction[]
-  gauges: ControlStripGauge[]
-  notifications?: ControlStripNotification[]
-  version?: string
-  network?: { up: string; down: string }
+  masterOn: boolean;
+  onMasterToggle: () => void;
+  actions: ControlStripAction[];
+  gauges: ControlStripGauge[];
+  notifications?: ControlStripNotification[];
+  version?: string;
+  network?: {up: string; down: string};
 }) {
   const notifColor = (tone?: string) =>
     tone === 'phosphor'
       ? 'var(--color-phosphor)'
       : tone === 'amber'
-        ? 'var(--color-amber)'
-        : tone === 'danger'
-          ? 'var(--color-danger)'
-          : 'var(--color-ink-faint)'
+      ? 'var(--color-amber)'
+      : tone === 'danger'
+      ? 'var(--color-danger)'
+      : 'var(--color-ink-faint)';
 
   return (
-    <div className="bezel-raised mt-6 rounded-lg p-4">
-      <div className="flex flex-wrap items-center gap-6">
-        <div className="flex items-center gap-3">
-          <MasterPower on={masterOn} onToggle={onMasterToggle} />
-          <span className="font-ui text-[9px] uppercase tracking-widest text-[var(--color-ink-faint)]">
-            Master Power
-          </span>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          {actions.map((a) => (
-            <BacklitButton key={a.label} tone={a.tone} onClick={a.onClick}>
-              {a.label}
-            </BacklitButton>
-          ))}
-        </div>
-
-        <div className="flex flex-1 flex-wrap justify-center gap-6">
-          {gauges.map((g) => (
-            <CircularGauge key={g.label} value={g.value} label={g.label} unit={g.unit} />
-          ))}
-        </div>
-
-        {network && (
-          <div className="bezel-recessed rounded-md px-3 py-2 text-[10px]">
-            <div className="font-ui mb-1 text-[9px] uppercase tracking-wider text-[var(--color-ink-faint)]">
-              Network
-            </div>
-            <div className="text-[var(--color-info)]">↑ {network.up}</div>
-            <div className="text-[var(--color-info)]">↓ {network.down}</div>
+    <div className="bezel-raised mt-6 rounded-lg p-2">
+      <Screw className="top-2 left-2" />
+      <Screw className="top-2 right-2" />
+      <Screw className="bottom-2 left-2" />
+      <Screw className="bottom-2 right-2" />
+      <div className="bezel-recessed rounded-md bg-[var(--color-bezel)] p-4">
+        <div className="flex flex-wrap items-center gap-6">
+          <div className="flex items-center gap-3">
+            <MasterPower on={masterOn} onToggle={onMasterToggle} />
+            <span className="font-ui text-[9px] uppercase tracking-widest text-[var(--color-ink-faint)]">
+              Master Power
+            </span>
           </div>
-        )}
 
-        {notifications.length > 0 && (
-          <ul className="min-w-[140px] space-y-1 text-[10px]">
-            {notifications.map((n, i) => (
-              <li key={i} className="flex items-start gap-1.5">
-                <Led status={n.tone === 'danger' ? 'failed' : n.tone === 'amber' ? 'starting' : n.tone === 'phosphor' ? 'healthy' : 'idle'} />
-                <span className="flex-1" style={{ color: notifColor(n.tone) }}>
-                  {n.message}
-                </span>
-                {n.time && <span className="text-[var(--color-ink-faint)]">{n.time}</span>}
-              </li>
+          <div className="flex flex-wrap gap-2">
+            {actions.map((a) => (
+              <BacklitButton key={a.label} tone={a.tone} onClick={a.onClick}>
+                {a.label}
+              </BacklitButton>
             ))}
-          </ul>
-        )}
+          </div>
 
-        {version && (
-          <span className="font-ui ml-auto text-[10px] uppercase tracking-wider text-[var(--color-ink-faint)]">
-            v{version}
-          </span>
-        )}
+          <div className="flex flex-1 flex-wrap justify-center gap-6">
+            {gauges.map((g) => (
+              <CircularGauge key={g.label} value={g.value} label={g.label} unit={g.unit} />
+            ))}
+          </div>
+
+          {network && (
+            <div className="bezel-recessed rounded-md px-3 py-2 text-[10px]">
+              <div className="font-ui mb-1 text-[9px] uppercase tracking-wider text-[var(--color-ink-faint)]">
+                Network
+              </div>
+              <div className="text-[var(--color-info)]">↑ {network.up}</div>
+              <div className="text-[var(--color-info)]">↓ {network.down}</div>
+            </div>
+          )}
+
+          {notifications.length > 0 && (
+            <ul className="min-w-[140px] space-y-1 text-[10px]">
+              {notifications.map((n, i) => (
+                <li key={i} className="flex items-start gap-1.5">
+                  <Led
+                    status={
+                      n.tone === 'danger'
+                        ? 'failed'
+                        : n.tone === 'amber'
+                        ? 'starting'
+                        : n.tone === 'phosphor'
+                        ? 'healthy'
+                        : 'idle'
+                    }
+                  />
+                  <span className="flex-1" style={{color: notifColor(n.tone)}}>
+                    {n.message}
+                  </span>
+                  {n.time && <span className="text-[var(--color-ink-faint)]">{n.time}</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {version && (
+            <span className="font-ui ml-auto text-[10px] uppercase tracking-wider text-[var(--color-ink-faint)]">
+              v{version}
+            </span>
+          )}
+        </div>
       </div>
     </div>
-  )
+  );
 }

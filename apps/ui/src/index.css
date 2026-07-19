@@ -33,9 +33,7 @@ body,
 
 body {
   margin: 0;
-  background:
-    radial-gradient(circle at 30% -10%, #1a1a1a 0%, transparent 55%),
-    var(--color-bezel);
+  background: radial-gradient(circle at 30% -10%, #1a1a1a 0%, transparent 55%), var(--color-bezel);
   color: var(--color-ink);
   font-family: var(--font-mono);
   -webkit-font-smoothing: antialiased;
@@ -49,51 +47,136 @@ body {
 .bezel-recessed {
   background: linear-gradient(180deg, #080808 0%, var(--color-panel) 40%, #111 100%);
   border: 1px solid #1a1a1a;
-  box-shadow:
-    inset 0 3px 10px rgba(0, 0, 0, 0.75),
-    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+  box-shadow: inset 0 3px 10px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.03),
     0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 /* Raised bezel — module frames, outer housing */
 .bezel-raised {
+  position: relative;
   background: linear-gradient(180deg, #1c1c1c 0%, var(--color-panel-raised) 30%, #121212 100%);
   border: 1px solid var(--color-panel-edge);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.4),
-    0 3px 12px rgba(0, 0, 0, 0.5),
-    0 1px 0 rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), inset 0 -1px 0 rgba(0, 0, 0, 0.4),
+    0 3px 12px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(0, 0, 0, 0.35);
 }
 
 /* CRT monitor housing */
 .crt-frame {
-  padding: 10px;
-  background: linear-gradient(180deg, #222 0%, #111 50%, #0a0a0a 100%);
-  border-bottom: 1px solid var(--color-panel-edge);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  padding: 16px;
+  background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 50%, #0f0f0f 100%);
+  /* border-bottom: 1px solid #000;   */
+  border-left: 1px solid #222;
+  border-radius: 16px;
+  box-shadow: inset 0 6px 12px rgba(0, 0, 0, 0.9), inset 0 -2px 0 rgba(255, 255, 255, 0.08),
+    0 4px 8px rgba(0, 0, 0, 0.6);
 }
 
 /* Subtle scanline texture on CRT-style panels */
 .crt {
-  background:
-    repeating-linear-gradient(
+  background: repeating-linear-gradient(
       0deg,
-      rgba(125, 252, 154, 0.03) 0px,
-      rgba(125, 252, 154, 0.03) 1px,
-      transparent 1px,
-      transparent 3px
+      rgba(125, 252, 154, 0.05) 0px,
+      rgba(125, 252, 154, 0.05) 2px,
+      transparent 2px,
+      transparent 4px
     ),
-    radial-gradient(ellipse at center, #0a120a 0%, var(--color-panel) 70%);
+    radial-gradient(ellipse at center, #111a11 0%, var(--color-panel) 80%);
+  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.95), inset 0 0 15px rgba(125, 252, 154, 0.08);
+  position: relative;
+}
+
+.crt::after {
+  content: ' ';
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+    linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  z-index: 2;
+  background-size: 100% 2px, 3px 100%;
+  pointer-events: none;
+}
+
+/* Hardware screws */
+.screw {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #444 0%, #222 50%, #111 100%);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.screw::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  background: radial-gradient(circle at center, #111 0%, #000 100%);
+  transform: translate(-50%, -50%) rotate(45deg);
+  clip-path: polygon(
+    40% 0,
+    60% 0,
+    60% 40%,
+    100% 40%,
+    100% 60%,
+    60% 60%,
+    60% 100%,
+    40% 100%,
+    40% 60%,
+    0 60%,
+    0 40%,
+    40% 40%
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Hardware screws */
+.screw {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #4a4a4a 0%, #2a2a2a 50%, #111 100%);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15), 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.screw::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  background: radial-gradient(circle at center, #111 0%, #000 100%);
+  transform: translate(-50%, -50%) rotate(45deg);
+  clip-path: polygon(
+    40% 0,
+    60% 0,
+    60% 40%,
+    100% 40%,
+    100% 60%,
+    60% 60%,
+    60% 100%,
+    40% 100%,
+    40% 60%,
+    0 60%,
+    0 40%,
+    40% 40%
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 /* Plastic rocker switch housing */
 .rocker-housing {
   background: linear-gradient(180deg, #2a2a2a 0%, #141414 50%, #0a0a0a 100%);
   border: 1px solid #3a3a3a;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    inset 0 -2px 4px rgba(0, 0, 0, 0.5),
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -2px 4px rgba(0, 0, 0, 0.5),
     0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
@@ -129,16 +212,12 @@ body {
 .backlit-btn {
   background: linear-gradient(180deg, #1a1a1a 0%, #0e0e0e 100%);
   border: 1px solid var(--color-panel-edge);
-  box-shadow:
-    inset 0 2px 5px rgba(0, 0, 0, 0.6),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.04);
   transition: transform 0.08s ease, box-shadow 0.08s ease;
 }
 
 .backlit-btn:hover:not(:disabled) {
-  box-shadow:
-    inset 0 2px 5px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06),
     0 0 10px -2px currentColor;
 }
 
@@ -150,9 +229,7 @@ body {
 /* Knob metal face */
 .knob-face {
   background: radial-gradient(circle at 35% 30%, #3a3a3a 0%, #1a1a1a 50%, #0a0a0a 100%);
-  box-shadow:
-    inset 0 2px 4px rgba(0, 0, 0, 0.5),
-    0 1px 0 rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 /* Project module rivets */
@@ -182,9 +259,7 @@ body {
 
 .led {
   position: relative;
-  box-shadow:
-    0 0 4px 1px currentColor,
-    0 0 10px 2px currentColor;
+  box-shadow: 0 0 4px 1px currentColor, 0 0 10px 2px currentColor;
 }
 
 .led::after {
@@ -197,10 +272,7 @@ body {
 }
 
 .led-ring {
-  box-shadow:
-    0 0 0 2px rgba(0, 0, 0, 0.55),
-    0 0 6px 2px currentColor,
-    0 0 14px 3px currentColor;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.55), 0 0 6px 2px currentColor, 0 0 14px 3px currentColor;
 }
 
 .text-glow {
