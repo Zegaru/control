@@ -89,7 +89,9 @@ export function App() {
             </div>
           </aside>
 
-          <main className="flex-1 overflow-y-auto pl-2 pr-1">
+          <main
+            className={`flex-1 min-h-0 pl-2 pr-1 ${view.kind === 'project' ? 'overflow-hidden' : 'overflow-y-auto'}`}
+          >
             {!daemonUp && (
               <div className="mb-4 rounded-md border border-danger bg-danger/10 px-4 py-3 text-sm text-danger">
                 Cannot reach the CONTROL daemon. Start it with <code>pnpm dev:daemon</code>.
