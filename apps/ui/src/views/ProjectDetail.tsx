@@ -82,7 +82,7 @@ export function ProjectDetail({
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <Button variant="ghost" onClick={onBack} className="mb-2 px-0 py-0 text-sm">
-              ← Projects
+              ← Overview
             </Button>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold">{p.name}</h1>

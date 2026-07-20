@@ -86,12 +86,10 @@ function buildRuntimeServices(
 }
 
 export function Dashboard({
-  projectsOnly,
   onOpenProject,
   onOpenRun,
   onOpenContainer,
 }: {
-  projectsOnly?: boolean;
   onOpenProject: (id: string) => void;
   onOpenRun: (runId: string) => void;
   onOpenContainer: (id: string) => void;
@@ -388,8 +386,7 @@ export function Dashboard({
 
   return (
     <div className="flex flex-col gap-2 h-full">
-      {!projectsOnly && (
-        <div className="grid grid-cols-8 gap-2">
+      <div className="grid grid-cols-8 gap-2">
           <Panel title="System Status" crt className="col-span-3 h-[440px]">
             <div className="mb-3 text-3xl font-bold text-phosphor text-glow">
               {counts.running + counts.starting}{' '}
@@ -567,8 +564,7 @@ export function Dashboard({
               )}
             </div>
           </Panel>
-        </div>
-      )}
+      </div>
 
       <div
         ref={projectListRef}

@@ -15,16 +15,14 @@ import {CommandPalette} from './components/CommandPalette.js';
 
 export type View =
   | {kind: 'overview'}
-  | {kind: 'projects'}
   | {kind: 'project'; projectId: string}
   | {kind: 'groups'}
   | {kind: 'docker'}
   | {kind: 'ports'}
   | {kind: 'settings'};
 
-const NAV: {key: View['kind']; label: string; icon: string}[] = [
+const NAV: {key: Exclude<View['kind'], 'project'>; label: string; icon: string}[] = [
   {key: 'overview', label: 'Overview', icon: '▦'},
-  {key: 'projects', label: 'Projects', icon: '▤'},
   {key: 'groups', label: 'Groups', icon: '⧉'},
   {key: 'docker', label: 'Docker', icon: '⬢'},
   {key: 'ports', label: 'Ports', icon: '⊟'},
@@ -68,14 +66,14 @@ export function App() {
             <nav className="nav-bank" aria-label="Main">
               {NAV.map((item) => {
                 const active =
-                  view.kind === item.key || (item.key === 'projects' && view.kind === 'project');
+                  view.kind === item.key || (item.key === 'overview' && view.kind === 'project');
                 return (
                   <NavItem
                     key={item.key}
                     icon={item.icon}
                     label={item.label}
                     active={active}
-                    onClick={() => setView({kind: item.key} as View)}
+                    onClick={() => setView({kind: item.key})}
                   />
                 );
               })}
@@ -105,18 +103,10 @@ export function App() {
                 onOpenContainer={setOpenContainerId}
               />
             )}
-            {view.kind === 'projects' && (
-              <Dashboard
-                projectsOnly
-                onOpenProject={(projectId) => setView({kind: 'project', projectId})}
-                onOpenRun={setOpenRunId}
-                onOpenContainer={setOpenContainerId}
-              />
-            )}
             {view.kind === 'project' && (
               <ProjectDetail
                 projectId={view.projectId}
-                onBack={() => setView({kind: 'projects'})}
+                onBack={() => setView({kind: 'overview'})}
                 onOpenRun={setOpenRunId}
               />
             )}
