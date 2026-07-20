@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { Environment, ProjectTree } from '@control/shared'
 import { api, formatApiError } from '../api.js'
-import { Button, Combobox, TextInput, fieldBase } from './ui.js'
+import { Button, Combobox, Modal, TextInput, fieldBase } from './ui.js'
 
 type TargetOption =
   | { type: 'action'; id: string; label: string }
@@ -33,16 +33,18 @@ function buildTargetOptions(
 }
 
 export function EnvironmentEditor({
+  open,
+  onOpenChange,
   projectId,
   tree,
   environment,
-  onClose,
   onSaved,
 }: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
   projectId: string
   tree: ProjectTree
   environment: Environment | null
-  onClose: () => void
   onSaved: () => void
 }) {
   const groups = useQuery({ queryKey: ['groups'], queryFn: () => api.listGroups() })
@@ -97,6 +99,7 @@ export function EnvironmentEditor({
       if (environment) await api.patchEnvironment(environment.id, body)
       else await api.createEnvironment(projectId, body)
       onSaved()
+      onOpenChange(false)
     } catch (err) {
       setError(formatApiError(err))
     } finally {
@@ -105,93 +108,94 @@ export function EnvironmentEditor({
   }
 
   const field = `${fieldBase} outline-none`
+  const title = environment ? 'Edit Environment' : 'Add Environment'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
-      <div
-        className="max-h-[85vh] w-[560px] overflow-y-auto rounded-lg border border-panel-edge bg-panel-raised p-5"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-widest text-ink-dim">
-          {environment ? 'Edit Environment' : 'Add Environment'}
-        </h2>
+    <Modal
+      open={open}
+      onOpenChange={onOpenChange}
+      title={title}
+      className="max-h-[85vh] w-[560px] overflow-y-auto p-5"
+    >
+      <h2 className="mb-4 text-sm font-semibold uppercase tracking-widest text-ink-dim">
+        {title}
+      </h2>
 
-        <div className="space-y-3">
-          <label className="block">
-            <span className="mb-1 block text-xs text-ink-dim">Name</span>
-            <TextInput
-              autoFocus
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="dev"
+      <div className="space-y-3">
+        <label className="block">
+          <span className="mb-1 block text-xs text-ink-dim">Name</span>
+          <TextInput
+            autoFocus
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="dev"
+          />
+        </label>
+
+        <label className="block">
+          <span className="mb-1 block text-xs text-ink-dim">Startup target</span>
+          {options.length === 0 ? (
+            <p className="text-xs text-ink-faint">Add a command or group first.</p>
+          ) : (
+            <Combobox
+              value={targetKey}
+              onValueChange={(v) => v && setTargetKey(v)}
+              placeholder="Search commands or groups…"
+              emptyMessage="No matching targets."
+              groups={[
+                ...(actionOptions.length > 0
+                  ? [
+                      {
+                        label: 'Commands',
+                        options: actionOptions.map((opt) => ({
+                          value: `${opt.type}:${opt.id}`,
+                          label: opt.label,
+                        })),
+                      },
+                    ]
+                  : []),
+                ...(groupOptions.length > 0
+                  ? [
+                      {
+                        label: 'Launch groups',
+                        options: groupOptions.map((opt) => ({
+                          value: `${opt.type}:${opt.id}`,
+                          label: opt.label,
+                        })),
+                      },
+                    ]
+                  : []),
+              ]}
             />
-          </label>
+          )}
+        </label>
 
-          <label className="block">
-            <span className="mb-1 block text-xs text-ink-dim">Startup target</span>
-            {options.length === 0 ? (
-              <p className="text-xs text-ink-faint">Add a command or group first.</p>
-            ) : (
-              <Combobox
-                value={targetKey}
-                onValueChange={(v) => v && setTargetKey(v)}
-                placeholder="Search commands or groups…"
-                emptyMessage="No matching targets."
-                groups={[
-                  ...(actionOptions.length > 0
-                    ? [
-                        {
-                          label: 'Commands',
-                          options: actionOptions.map((opt) => ({
-                            value: `${opt.type}:${opt.id}`,
-                            label: opt.label,
-                          })),
-                        },
-                      ]
-                    : []),
-                  ...(groupOptions.length > 0
-                    ? [
-                        {
-                          label: 'Launch groups',
-                          options: groupOptions.map((opt) => ({
-                            value: `${opt.type}:${opt.id}`,
-                            label: opt.label,
-                          })),
-                        },
-                      ]
-                    : []),
-                ]}
-              />
-            )}
-          </label>
-
-          <label className="block">
-            <span className="mb-1 block text-xs text-ink-dim">Env vars (KEY=value per line)</span>
-            <textarea
-              value={envText}
-              onChange={(e) => setEnvText(e.target.value)}
-              rows={4}
-              placeholder={'ASPNETCORE_ENVIRONMENT=Development\nDOTNET_ENVIRONMENT=Development'}
-              className={`${field} font-mono`}
-            />
-          </label>
-        </div>
-
-        {error && <p className="mt-3 text-xs text-danger">{error}</p>}
-
-        <div className="mt-5 flex justify-end gap-2">
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            onClick={save}
-            disabled={busy || !name.trim() || !targetKey || options.length === 0}
-            focusableWhenDisabled
-          >
-            {busy ? 'Saving…' : 'Save'}
-          </Button>
-        </div>
+        <label className="block">
+          <span className="mb-1 block text-xs text-ink-dim">Env vars (KEY=value per line)</span>
+          <textarea
+            value={envText}
+            onChange={(e) => setEnvText(e.target.value)}
+            rows={4}
+            placeholder={'ASPNETCORE_ENVIRONMENT=Development\nDOTNET_ENVIRONMENT=Development'}
+            className={`${field} font-mono`}
+          />
+        </label>
       </div>
-    </div>
+
+      {error && <p className="mt-3 text-xs text-danger">{error}</p>}
+
+      <div className="mt-5 flex justify-end gap-2">
+        <Button variant="ghost" onClick={() => onOpenChange(false)}>
+          Cancel
+        </Button>
+        <Button
+          onClick={save}
+          disabled={busy || !name.trim() || !targetKey || options.length === 0}
+          focusableWhenDisabled
+        >
+          {busy ? 'Saving…' : 'Save'}
+        </Button>
+      </div>
+    </Modal>
   )
 }

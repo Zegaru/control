@@ -1,6 +1,8 @@
-import type {ComponentProps} from 'react';
+import type {ComponentProps, ReactNode} from 'react';
 import {Button as BaseButton} from '@base-ui/react/button';
 import {Combobox as BaseCombobox} from '@base-ui/react/combobox';
+import {Dialog} from '@base-ui/react/dialog';
+import {Drawer} from '@base-ui/react/drawer';
 import {Input as BaseInput} from '@base-ui/react/input';
 import {Select as BaseSelect} from '@base-ui/react/select';
 import {cn} from '../lib/cn.js';
@@ -54,10 +56,14 @@ function buttonClassName({
     return cn(mechBase, sizeCls[size], mechToneCls[tone], focus, disabled, className);
   }
 
+  const softPress =
+    'transition-[transform,opacity] duration-100 ease-out active:not-data-disabled:scale-[0.97] active:not-data-disabled:opacity-85';
+
   if (variant === 'icon') {
     return cn(
       'inline-flex items-center justify-center rounded p-1 text-ink-faint select-none',
       'hover:not-data-disabled:text-ink',
+      softPress,
       focus,
       disabled,
       className,
@@ -68,6 +74,7 @@ function buttonClassName({
     return cn(
       'rounded px-3 py-1.5 text-xs text-ink-dim select-none',
       'hover:not-data-disabled:text-ink',
+      softPress,
       focus,
       disabled,
       className,
@@ -449,5 +456,128 @@ export function Combobox({
         </BaseCombobox.Positioner>
       </BaseCombobox.Portal>
     </BaseCombobox.Root>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Side drawer (Base UI Drawer)
+// ---------------------------------------------------------------------------
+
+export type SideDrawerProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onOpenChangeComplete?: (open: boolean) => void;
+  /** Accessible drawer name (screen readers). */
+  title: string;
+  /** Visual header content on the left. */
+  header: ReactNode;
+  headerRight?: ReactNode;
+  children: ReactNode;
+};
+
+/** Right-edge log drawer with swipe-to-dismiss. */
+export function SideDrawer({
+  open,
+  onOpenChange,
+  onOpenChangeComplete,
+  title,
+  header,
+  headerRight,
+  children,
+}: SideDrawerProps) {
+  return (
+    <Drawer.Root
+      open={open}
+      onOpenChange={onOpenChange}
+      onOpenChangeComplete={onOpenChangeComplete}
+      swipeDirection="right"
+    >
+      <Drawer.Portal>
+        <Drawer.Backdrop className="control-drawer-backdrop" />
+        <Drawer.Viewport className="control-drawer-viewport">
+          <Drawer.Popup className="control-drawer-popup">
+            <header className="flex shrink-0 items-center justify-between border-b border-panel-edge px-4 py-3">
+              <Drawer.Title className="flex min-w-0 flex-1 items-center gap-2 text-sm font-semibold">
+                <span className="sr-only">{title}</span>
+                {header}
+              </Drawer.Title>
+              <div className="flex shrink-0 items-center gap-2">
+                {headerRight}
+                <Drawer.Close
+                  render={<Button variant="icon" className="px-2 text-lg text-ink-dim" />}
+                  aria-label="Close"
+                >
+                  ✕
+                </Drawer.Close>
+              </div>
+            </header>
+            <Drawer.Content className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              {children}
+            </Drawer.Content>
+          </Drawer.Popup>
+        </Drawer.Viewport>
+      </Drawer.Portal>
+    </Drawer.Root>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Modal (Base UI Dialog)
+// ---------------------------------------------------------------------------
+
+export type ModalVariant = 'center' | 'palette';
+
+export type ModalProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onOpenChangeComplete?: (open: boolean) => void;
+  title?: ReactNode;
+  variant?: ModalVariant;
+  className?: string;
+  children: ReactNode;
+};
+
+/** Centered or palette dialog with enter/exit motion. */
+export function Modal({
+  open,
+  onOpenChange,
+  onOpenChangeComplete,
+  title,
+  variant = 'center',
+  className,
+  children,
+}: ModalProps) {
+  const z = variant === 'palette' ? 'z-[60]' : 'z-50';
+
+  return (
+    <Dialog.Root
+      open={open}
+      onOpenChange={onOpenChange}
+      onOpenChangeComplete={onOpenChangeComplete}
+    >
+      <Dialog.Portal>
+        <Dialog.Backdrop className={cn('control-modal-backdrop', z)} />
+        <Dialog.Viewport
+          className={cn(
+            'control-modal-viewport',
+            z,
+            variant === 'palette' && 'control-modal-viewport--palette',
+          )}
+        >
+          <Dialog.Popup
+            className={cn(
+              'control-modal-popup border border-panel-edge bg-panel-raised',
+              variant === 'center' ? 'rounded-lg' : 'overflow-hidden rounded-lg',
+              className,
+            )}
+          >
+            {title != null && (
+              <Dialog.Title className="sr-only">{title}</Dialog.Title>
+            )}
+            {children}
+          </Dialog.Popup>
+        </Dialog.Viewport>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

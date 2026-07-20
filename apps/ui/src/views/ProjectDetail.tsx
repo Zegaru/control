@@ -325,10 +325,13 @@ export function ProjectDetail({
 
       {editingEnv != null && (
         <EnvironmentEditor
+          open
           projectId={projectId}
           tree={p}
           environment={editingEnv === 'new' ? null : editingEnv}
-          onClose={() => setEditingEnv(null)}
+          onOpenChange={(open) => {
+            if (!open) setEditingEnv(null)
+          }}
           onSaved={() => {
             setEditingEnv(null)
             invalidateTree()
@@ -338,10 +341,13 @@ export function ProjectDetail({
 
       {addingCommand && (
         <AddActionDialog
+          open
           {...('moduleId' in addingCommand
             ? { moduleId: addingCommand.moduleId }
             : { projectId: addingCommand.projectId })}
-          onClose={() => setAddingCommand(null)}
+          onOpenChange={(open) => {
+            if (!open) setAddingCommand(null)
+          }}
         />
       )}
     </div>

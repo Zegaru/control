@@ -2,8 +2,19 @@ import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {api} from '../api.js';
 import {LogPanel} from './LogPanel.js';
 import {Led, statusLabel, Button} from './kit.js';
+import {SideDrawer} from './ui.js';
 
-export function RunDrawer({runId, onClose}: {runId: string; onClose: () => void}) {
+export function RunDrawer({
+  open,
+  runId,
+  onOpenChange,
+  onOpenChangeComplete,
+}: {
+  open: boolean;
+  runId: string;
+  onOpenChange: (open: boolean) => void;
+  onOpenChangeComplete?: (open: boolean) => void;
+}) {
   const qc = useQueryClient();
   const runs = useQuery({queryKey: ['runs'], queryFn: api.activeRuns});
   const run = runs.data?.find((r) => r.id === runId);
@@ -14,11 +25,15 @@ export function RunDrawer({runId, onClose}: {runId: string; onClose: () => void}
   };
 
   return (
-    <div className="fixed inset-y-0 right-0 z-40 flex w-[640px] max-w-[90vw] flex-col border-l border-panel-edge bg-panel shadow-2xl">
-      <header className="flex items-center justify-between border-b border-panel-edge px-4 py-3">
-        <div className="flex items-center gap-2">
+    <SideDrawer
+      open={open}
+      onOpenChange={onOpenChange}
+      onOpenChangeComplete={onOpenChangeComplete}
+      title={`Run ${runId.slice(0, 12)}`}
+      header={
+        <>
           <Led status={run?.status ?? 'idle'} pulse={run?.status === 'starting'} />
-          <span className="text-sm font-semibold">Run {runId.slice(0, 12)}</span>
+          <span>Run {runId.slice(0, 12)}</span>
           <span className="text-[10px] uppercase tracking-wider text-ink-faint">
             {statusLabel(run?.status ?? 'idle')}
           </span>
@@ -33,30 +48,31 @@ export function RunDrawer({runId, onClose}: {runId: string; onClose: () => void}
               :{p} ↗
             </a>
           ))}
-        </div>
-        <div className="flex items-center gap-2">
-          {run && (
-            <>
-              <Button
-                variant="ghost"
-                onClick={() => stop(false)}
-                className="rounded border border-panel-edge px-2 py-1"
-              >
-                Stop
-              </Button>
-              <Button variant="danger" onClick={() => stop(true)} className="px-2 py-1">
-                Force Kill
-              </Button>
-            </>
-          )}
-          <Button variant="icon" onClick={onClose} className="px-2 text-lg text-ink-dim">
-            ✕
-          </Button>
-        </div>
-      </header>
-      <div className="flex-1 overflow-hidden bg-[#0b0d0a] p-2">
+        </>
+      }
+      headerRight={
+        run ? (
+          <>
+            <Button
+              variant="ghost"
+              onClick={() => stop(false)}
+              className="rounded border border-panel-edge px-2 py-1"
+            >
+              Stop
+            </Button>
+            <Button variant="danger" onClick={() => stop(true)} className="px-2 py-1">
+              Force Kill
+            </Button>
+          </>
+        ) : undefined
+      }
+    >
+      <div
+        className="flex-1 overflow-hidden bg-[#0b0d0a] p-2"
+        data-base-ui-swipe-ignore
+      >
         <LogPanel runId={runId} />
       </div>
-    </div>
+    </SideDrawer>
   );
 }

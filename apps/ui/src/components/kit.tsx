@@ -505,6 +505,11 @@ export function BacklitButton({
   );
 }
 
+/** Soft resistance past a boundary (Apple rubber-band). */
+function rubberband(overshoot: number, dimension: number, constant = 0.55): number {
+  return (overshoot * dimension * constant) / (dimension + constant * Math.abs(overshoot));
+}
+
 /** Stepped rotary for discrete hardware filters (e.g. log level). */
 export function RotaryKnob({
   value,
@@ -526,17 +531,36 @@ export function RotaryKnob({
   const ring = size === 'sm' ? 40 : 50;
   // Sweep from ~-120° to +120° across steps
   const stepAngle = (i: number) => (steps <= 1 ? 0 : -120 + (240 * i) / (steps - 1));
-  const angle = stepAngle(clamped);
   const dragRef = useRef<{startY: number; startValue: number} | null>(null);
   const movedRef = useRef(false);
+  const [dragStep, setDragStep] = useState<number | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const displayStep = dragStep ?? clamped;
+  const angle = stepAngle(
+    displayStep < 0
+      ? rubberband(displayStep, steps)
+      : displayStep > steps - 1
+        ? steps - 1 + rubberband(displayStep - (steps - 1), steps)
+        : displayStep,
+  );
 
   const setFromDelta = (deltaY: number) => {
-    if (disabled) return;
-    const next = Math.max(
-      0,
-      Math.min(steps - 1, dragRef.current!.startValue + Math.round(deltaY / -18))
-    );
-    if (next !== clamped) onChange(next);
+    if (disabled || !dragRef.current) return;
+    const raw = dragRef.current.startValue + deltaY / -18;
+    setDragStep(raw);
+    const snapped = Math.max(0, Math.min(steps - 1, Math.round(raw)));
+    if (snapped !== clamped) onChange(snapped);
+  };
+
+  const endDrag = () => {
+    if (dragRef.current && dragStep != null) {
+      const snapped = Math.max(0, Math.min(steps - 1, Math.round(dragStep)));
+      if (snapped !== clamped) onChange(snapped);
+    }
+    dragRef.current = null;
+    setDragStep(null);
+    setIsDragging(false);
   };
 
   return (
@@ -568,6 +592,7 @@ export function RotaryKnob({
             e.currentTarget.setPointerCapture(e.pointerId);
             dragRef.current = {startY: e.clientY, startValue: clamped};
             movedRef.current = false;
+            setIsDragging(true);
           }}
           onPointerMove={(e) => {
             if (!dragRef.current || disabled) return;
@@ -575,12 +600,8 @@ export function RotaryKnob({
             if (Math.abs(dy) > 4) movedRef.current = true;
             setFromDelta(dy);
           }}
-          onPointerUp={() => {
-            dragRef.current = null;
-          }}
-          onPointerCancel={() => {
-            dragRef.current = null;
-          }}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
           onClick={() => {
             if (disabled) return;
             if (movedRef.current) {
@@ -591,7 +612,7 @@ export function RotaryKnob({
           }}
         >
           <span
-            className="knob-face absolute inset-0 rounded-full"
+            className={cn('knob-face absolute inset-0 rounded-full', isDragging && 'knob-face-dragging')}
             style={{transform: `rotate(${angle}deg)`}}
           >
             <span className="knob-tick" aria-hidden />

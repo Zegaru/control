@@ -114,8 +114,11 @@ export function GroupsView() {
 
       {editing && (
         <GroupEditor
+          open
           group={editing === 'new' ? null : editing}
-          onClose={() => setEditing(null)}
+          onOpenChange={(open) => {
+            if (!open) setEditing(null)
+          }}
           onSaved={() => {
             setEditing(null)
             refresh()

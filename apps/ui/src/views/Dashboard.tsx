@@ -646,7 +646,7 @@ export function Dashboard({
         version={health.data?.version}
       />
 
-      {adding && <AddProjectDialog onClose={() => setAdding(false)} />}
+      <AddProjectDialog open={adding} onOpenChange={setAdding} />
     </div>
   );
 }

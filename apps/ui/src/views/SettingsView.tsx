@@ -94,7 +94,7 @@ export function SettingsView() {
   };
 
   return (
-    <div className="mx-auto grid max-w-4xl gap-4 lg:grid-cols-2">
+    <div className="grid max-w-4xl gap-4 lg:grid-cols-2">
       <h1 className="sr-only">Settings</h1>
 
       <Panel title="Scanner · Ignore">
@@ -124,7 +124,9 @@ export function SettingsView() {
                   className="group inline-flex items-center gap-1.5 rounded border border-panel-edge bg-bezel px-2 py-0.5 font-mono text-[11px] text-ink-dim hover:border-danger/50 hover:text-danger"
                 >
                   {g}
-                  <span className="font-ui text-[9px] text-ink-faint group-hover:text-danger">×</span>
+                  <span className="font-ui text-[9px] text-ink-faint group-hover:text-danger">
+                    ×
+                  </span>
                 </button>
               ))
             )}
@@ -143,13 +145,18 @@ export function SettingsView() {
               placeholder="node_modules · **/.cache · *.tmp"
               className="min-w-0 flex-1 font-mono text-xs"
             />
-            <Button variant="primary" size="sm" disabled={!draftGlob.trim() || patch.isPending} onClick={addGlob}>
+            <Button
+              variant="primary"
+              size="sm"
+              disabled={!draftGlob.trim() || patch.isPending}
+              onClick={addGlob}
+            >
               Add
             </Button>
           </div>
           <p className="text-[11px] leading-relaxed text-ink-faint">
-            Exact folder names or simple globs (<code>*</code>, <code>**</code>). Click a tag to eject it
-            from the bank. Re-scan projects to apply.
+            Exact folder names or simple globs (<code>*</code>, <code>**</code>). Click a tag to
+            eject it from the bank. Re-scan projects to apply.
           </p>
         </div>
       </Panel>
@@ -200,8 +207,8 @@ export function SettingsView() {
           </div>
 
           <p className="text-[11px] leading-relaxed text-ink-faint">
-            Turn the dial to set how many finished runs stay on disk. Older log files are purged when
-            a run ends or when you change this value. Active runs are never deleted.
+            Turn the dial to set how many finished runs stay on disk. Older log files are purged
+            when a run ends or when you change this value. Active runs are never deleted.
           </p>
         </div>
       </Panel>
@@ -210,7 +217,9 @@ export function SettingsView() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-center gap-3">
             <Led
-              status={!inShell ? 'idle' : autostartBusy ? 'starting' : autostartOn ? 'healthy' : 'idle'}
+              status={
+                !inShell ? 'idle' : autostartBusy ? 'starting' : autostartOn ? 'healthy' : 'idle'
+              }
               pulse={autostartBusy}
               ring={inShell && (autostartOn || autostartBusy)}
             />

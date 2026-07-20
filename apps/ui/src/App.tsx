@@ -32,8 +32,20 @@ const NAV: {key: Exclude<View['kind'], 'project'>; label: string; icon: string}[
 export function App() {
   const [view, setView] = useState<View>({kind: 'overview'});
   const [openRunId, setOpenRunId] = useState<string | null>(null);
+  const [runDrawerOpen, setRunDrawerOpen] = useState(false);
   const [openContainerId, setOpenContainerId] = useState<string | null>(null);
+  const [containerDrawerOpen, setContainerDrawerOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+
+  const openRun = (id: string) => {
+    setOpenRunId(id);
+    setRunDrawerOpen(true);
+  };
+
+  const openContainer = (id: string) => {
+    setOpenContainerId(id);
+    setContainerDrawerOpen(true);
+  };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -99,31 +111,44 @@ export function App() {
             {view.kind === 'overview' && (
               <Dashboard
                 onOpenProject={(projectId) => setView({kind: 'project', projectId})}
-                onOpenRun={setOpenRunId}
-                onOpenContainer={setOpenContainerId}
+                onOpenRun={openRun}
+                onOpenContainer={openContainer}
               />
             )}
             {view.kind === 'project' && (
               <ProjectDetail
                 projectId={view.projectId}
                 onBack={() => setView({kind: 'overview'})}
-                onOpenRun={setOpenRunId}
+                onOpenRun={openRun}
               />
             )}
             {view.kind === 'groups' && <GroupsView />}
-            {view.kind === 'docker' && <DockerView onOpenContainer={setOpenContainerId} />}
-            {view.kind === 'ports' && <PortsView onOpenRun={setOpenRunId} />}
+            {view.kind === 'docker' && <DockerView onOpenContainer={openContainer} />}
+            {view.kind === 'ports' && <PortsView onOpenRun={openRun} />}
             {view.kind === 'settings' && <SettingsView />}
           </main>
 
-          {openRunId && <RunDrawer runId={openRunId} onClose={() => setOpenRunId(null)} />}
-          {openContainerId && (
-            <ContainerDrawer
-              containerId={openContainerId}
-              onClose={() => setOpenContainerId(null)}
+          {openRunId && (
+            <RunDrawer
+              open={runDrawerOpen}
+              runId={openRunId}
+              onOpenChange={setRunDrawerOpen}
+              onOpenChangeComplete={(isOpen) => {
+                if (!isOpen) setOpenRunId(null);
+              }}
             />
           )}
-          {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
+          {openContainerId && (
+            <ContainerDrawer
+              open={containerDrawerOpen}
+              containerId={openContainerId}
+              onOpenChange={setContainerDrawerOpen}
+              onOpenChangeComplete={(isOpen) => {
+                if (!isOpen) setOpenContainerId(null);
+              }}
+            />
+          )}
+          <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
         </div>
       </div>
     </SocketProvider>

@@ -52,7 +52,7 @@ export function ActionRow({
 
   return (
     <div className="flex items-center gap-3 rounded-md border border-panel-edge bg-panel px-3 py-2">
-      {editing && <ActionEditor action={action} onClose={() => setEditing(false)} />}
+      <ActionEditor open={editing} onOpenChange={setEditing} action={action} />
       <Led status={status} pulse={busy} />
       <Button
         variant="ghost"
