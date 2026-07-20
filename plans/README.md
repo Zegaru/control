@@ -17,7 +17,16 @@ These plans cover **all** vetted audit findings (correctness, security, perf, te
 | 007 | Tauri shell: adopt existing daemon; sane Quit/Restart | P2 | M | — | DONE |
 | 008 | Refresh DESIGN/README/UI design docs to match M0–M6 | P2 | S | — | DONE |
 | 009 | AGENTS.md + lint/format + GitHub Actions CI | P2 | M | 001 | DONE |
-| 010 | Direction spikes: env files, PTY attach, detection, ports | P3 | L | 008, 001 | TODO |
+| 010 | Direction spikes: env files, PTY attach, detection, ports | P3 | L | 008, 001 | DONE |
+
+## Direction spikes (`plans/spikes/`)
+
+| Spike | Recommendation |
+|-------|----------------|
+| [env-files](spikes/env-files.md) | Ship next (plan 011) |
+| [pty-attach](spikes/pty-attach.md) | Defer until after env files |
+| [detection-markers](spikes/detection-markers.md) | First PR: `.claude/launch.json` |
+| [cross-platform-ports](spikes/cross-platform-ports.md) | Defer; parser tests first |
 
 Status values: `TODO` | `IN PROGRESS` | `DONE` | `BLOCKED` (one-line reason) | `REJECTED` (one-line rationale)
 
