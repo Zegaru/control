@@ -775,19 +775,27 @@ function agentSamplesToPoints(samples: number[]): string {
 }
 
 export function AgentStatus({online, label}: {online: boolean; label?: string}) {
-  const [wavePoints, setWavePoints] = useState(() =>
-    agentSamplesToPoints(Array.from({length: AGENT_WAVE_SAMPLES}, () => AGENT_WAVE_MID))
-  );
+  const waveRef = useRef<SVGPolylineElement>(null);
 
   useEffect(() => {
     if (!online) return;
     const samples = Array.from({length: AGENT_WAVE_SAMPLES}, () => AGENT_WAVE_MID);
-    const id = window.setInterval(() => {
-      samples.push(nextAgentSample(samples[samples.length - 1] ?? AGENT_WAVE_MID));
-      samples.shift();
-      setWavePoints(agentSamplesToPoints(samples));
-    }, 55);
-    return () => window.clearInterval(id);
+    let frame = 0;
+    let lastTick = 0;
+
+    const tick = (now: number) => {
+      if (now - lastTick >= 55) {
+        lastTick = now;
+        samples.push(nextAgentSample(samples[samples.length - 1] ?? AGENT_WAVE_MID));
+        samples.shift();
+        waveRef.current?.setAttribute('points', agentSamplesToPoints(samples));
+      }
+      frame = requestAnimationFrame(tick);
+    };
+
+    waveRef.current?.setAttribute('points', agentSamplesToPoints(samples));
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
   }, [online]);
 
   return (
@@ -820,7 +828,10 @@ export function AgentStatus({online, label}: {online: boolean; label?: string}) 
             aria-hidden
           >
             <polyline
-              points={wavePoints}
+              ref={waveRef}
+              points={agentSamplesToPoints(
+                Array.from({length: AGENT_WAVE_SAMPLES}, () => AGENT_WAVE_MID)
+              )}
               fill="none"
               stroke="var(--color-phosphor)"
               strokeWidth={1.6}
