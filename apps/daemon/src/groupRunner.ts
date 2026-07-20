@@ -45,6 +45,6 @@ async function waitForStep(
 export function stopGroup(group: Group): void {
   for (const step of [...group.steps].reverse()) {
     const run = getActiveRun(step.actionId)
-    if (run && supervisor.isLive(run.id)) supervisor.stop(run.id)
+    if (run) supervisor.stop(run.id)
   }
 }

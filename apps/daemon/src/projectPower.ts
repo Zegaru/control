@@ -48,7 +48,7 @@ export async function stopProjectPower(projectId: string): Promise<void> {
         const run = env.targetId
           ? tree.modules.flatMap((m) => m.actions).find((a) => a.id === env.targetId)?.activeRun
           : null
-        if (run && supervisor.isLive(run.id)) supervisor.stop(run.id)
+        if (run) supervisor.stop(run.id)
       } else {
         const group = getGroup(env.targetId)
         if (group) stopGroup(group)
@@ -57,9 +57,7 @@ export async function stopProjectPower(projectId: string): Promise<void> {
   } else {
     for (const action of projectPowerTargets(tree)) {
       const run = action.activeRun
-      if (run && isActiveStatus(run.status) && supervisor.isLive(run.id)) {
-        supervisor.stop(run.id)
-      }
+      if (run && isActiveStatus(run.status)) supervisor.stop(run.id)
     }
   }
 

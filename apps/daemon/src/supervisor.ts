@@ -4,13 +4,15 @@ import pty from 'node-pty'
 import treeKill from 'tree-kill'
 import { eq } from 'drizzle-orm'
 import type { Action, Run, RunStatus } from '@control/shared'
+import { isActiveStatus } from '@control/shared'
 import { db, schema } from './db/index.js'
-import { getAction, resolveActionCwd } from './registry.js'
+import { getAction, getRun, resolveActionCwd } from './registry.js'
 import { LOGS_DIR } from './config.js'
 import { bus } from './events.js'
 import { newId } from './ids.js'
 import { RingBuffer } from './ringBuffer.js'
 import { isHttpHealthy, isPortListening } from './health.js'
+import { pidAlive } from './pid.js'
 import { pruneRunsForAction } from './settings.js'
 
 const isWin = process.platform === 'win32'
@@ -116,25 +118,62 @@ class Supervisor {
   /** Graceful stop (Ctrl-C, wait, then tree-kill) or immediate force kill. */
   stop(runId: string, force = false): boolean {
     const handle = this.handles.get(runId)
-    if (!handle || !handle.proc) return false
-    handle.stopping = true
-    const pid = handle.proc.pid
+    if (handle?.proc) {
+      handle.stopping = true
+      const pid = handle.proc.pid
 
-    if (force) {
-      this.forceKill(pid)
+      if (force) {
+        this.forceKill(pid)
+        return true
+      }
+
+      try {
+        handle.proc.write('\x03')
+      } catch {
+        /* ignore — proc may already be gone */
+      }
+      setTimeout(() => {
+        if (this.handles.has(runId)) this.forceKill(pid)
+      }, GRACEFUL_STOP_MS)
       return true
     }
 
-    // Best-effort graceful: send Ctrl-C, then escalate to a tree-kill.
-    try {
-      handle.proc.write('\x03')
-    } catch {
-      /* ignore — proc may already be gone */
+    return this.stopAdopted(runId)
+  }
+
+  /** Stop a run re-attached after daemon restart (no in-memory PTY handle). */
+  private stopAdopted(runId: string): boolean {
+    const run = getRun(runId)
+    if (!run || !isActiveStatus(run.status)) return false
+    if (run.pid == null) return false
+
+    if (!pidAlive(run.pid)) {
+      this.finalizeAdopted(runId, run, 'exited')
+      return true
     }
-    setTimeout(() => {
-      if (this.handles.has(runId)) this.forceKill(pid)
-    }, GRACEFUL_STOP_MS)
+
+    treeKill(run.pid, 'SIGKILL', () => {
+      this.finalizeAdopted(runId, run, 'killed')
+    })
     return true
+  }
+
+  private finalizeAdopted(runId: string, run: Run, status: RunStatus): void {
+    db.update(schema.runs)
+      .set({ status, exitCode: null, exitedAt: Date.now() })
+      .where(eq(schema.runs.id, runId))
+      .run()
+    bus.emitEvent({
+      type: 'run.status',
+      runId,
+      actionId: run.actionId,
+      status,
+      ports: run.ports ?? [],
+      exitCode: null,
+      ...this.actionLabels(run.actionId),
+    })
+    bus.emitEvent({ type: 'ports.changed' })
+    if (run.actionId) pruneRunsForAction(run.actionId)
   }
 
   getLogSnapshot(runId: string): string | null {

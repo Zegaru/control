@@ -9,7 +9,7 @@ These plans cover **all** vetted audit findings (correctness, security, perf, te
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
 | 001 | Add Vitest verification baseline + characterization tests | P1 | M | — | DONE |
-| 002 | Make adopted runs stoppable; tighten reconcile (PID required) | P1 | M | 001 | TODO |
+| 002 | Make adopted runs stoppable; tighten reconcile (PID required) | P1 | M | 001 | DONE |
 | 003 | Duplicate-start guard, `unhealthy` demotion, fail group waits | P1 | M | 001 | TODO |
 | 004 | Loopback bind, healthUrl allowlist, scoped container log WS | P1 | M | 001 | TODO |
 | 005 | Cached metrics HTTP + AgentStatus without 55ms React churn | P2 | S | — | TODO |
