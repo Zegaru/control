@@ -1,0 +1,38 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.4/schema.json",
+  "files": {
+    "includes": [
+      "apps/daemon/src/**/*.ts",
+      "apps/ui/src/**/*.{ts,tsx}",
+      "packages/shared/src/**/*.ts",
+      "scripts/**/*.mjs"
+    ]
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": false,
+      "correctness": {
+        "preset": "recommended"
+      },
+      "suspicious": {
+        "recommended": false
+      },
+      "a11y": {
+        "recommended": false
+      },
+      "style": {
+        "recommended": false
+      },
+      "complexity": {
+        "recommended": false
+      }
+    }
+  },
+  "assist": {
+    "enabled": false
+  },
+  "formatter": {
+    "enabled": false
+  }
+}

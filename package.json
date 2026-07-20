@@ -15,9 +15,11 @@
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
+    "lint": "biome check .",
     "start": "pnpm --filter @control/daemon start"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.4",
     "concurrently": "^9.1.0",
     "typescript": "^5.6.3",
     "vitest": "^4.1.10"

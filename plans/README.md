@@ -16,7 +16,7 @@ These plans cover **all** vetted audit findings (correctness, security, perf, te
 | 006 | Coalesce Overview host/Docker sampling; narrow WS/SQL storms | P2 | L | 005, 001 | DONE |
 | 007 | Tauri shell: adopt existing daemon; sane Quit/Restart | P2 | M | — | DONE |
 | 008 | Refresh DESIGN/README/UI design docs to match M0–M6 | P2 | S | — | DONE |
-| 009 | AGENTS.md + lint/format + GitHub Actions CI | P2 | M | 001 | TODO |
+| 009 | AGENTS.md + lint/format + GitHub Actions CI | P2 | M | 001 | DONE |
 | 010 | Direction spikes: env files, PTY attach, detection, ports | P3 | L | 008, 001 | TODO |
 
 Status values: `TODO` | `IN PROGRESS` | `DONE` | `BLOCKED` (one-line reason) | `REJECTED` (one-line rationale)

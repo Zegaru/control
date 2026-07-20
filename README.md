@@ -4,7 +4,7 @@ One UI to see and manage every dev server across your projects — host processe
 and Docker stacks alike. A local-first daemon owns process supervision;
 a React SPA is a thin client over it, so closing the UI never kills your servers.
 
-See [DESIGN.md](./DESIGN.md) for the full design & requirements.
+See [DESIGN.md](./DESIGN.md) for the full design & requirements. Agent/CI conventions: [AGENTS.md](./AGENTS.md).
 
 ## Status
 
@@ -49,6 +49,7 @@ pnpm dev:daemon       # daemon only
 pnpm dev:ui           # UI dev server only (proxies /api + /ws to :4400)
 pnpm typecheck        # all packages
 pnpm test             # vitest characterization suite
+pnpm lint             # biome check
 ```
 
 Production single-origin mode: `pnpm --filter @control/ui build` then

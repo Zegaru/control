@@ -85,7 +85,9 @@ export function attachWebSocket(server: Server): void {
 
     ws.on('close', () => {
       logSubs.delete(ws)
-      containerStreams.get(ws)?.forEach((stop) => stop())
+      containerStreams.get(ws)?.forEach((stop) => {
+        stop()
+      })
       containerStreams.delete(ws)
     })
   })
