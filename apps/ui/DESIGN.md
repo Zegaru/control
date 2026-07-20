@@ -8,7 +8,7 @@ Industrial skeuomorphic UI for a local dev command center. Dark rack-mounted har
 2. **Depth over flatness** — use inset highlights, deep recess shadows, and bezel gradients. Active elements glow.
 3. **Monospace for data** — logs, ports, timestamps, metrics use `--font-mono`. Labels and chrome use `--font-ui` (uppercase, tracked).
 4. **Rack module layout** — sidebar nav | top CRT row | project card row | bottom control strip.
-5. **Conservative behavior** — decorative hardware (knobs, master power) are visual shells until wired to real metrics/actions.
+5. **Rack module layout** — sidebar nav | top CRT row | project card row | bottom control strip. Host/project CPU and memory gauges on Overview are wired to daemon metrics APIs.
 
 ## Tokens
 
@@ -142,4 +142,4 @@ import {
 - [x] Migrate active runs list to `TerminalScreen` row format
 - [x] Replace project card buttons with `ProjectModule`
 - [x] Mount `ControlStrip` at bottom of overview
-- [ ] Wire real CPU/mem/disk metrics into knobs and gauges
+- [x] Wire real CPU/mem metrics into Overview gauges (`api.hostMetrics` / `api.projectMetrics`)

@@ -1,4 +1,4 @@
-# Switchboard (working name) — Design & Requirements
+# CONTROL — Design & Requirements
 
 
 
@@ -6,7 +6,7 @@ A local-first dev server manager: one UI to see every dev server you have runnin
 
 
 
-Status: design complete, not started. Companion decisions were made in conversation (2026-07-18): all-TypeScript stack, daemon + web UI architecture, own the process-supervision layer (thin), delegate container state to the Docker API.
+Status: **implemented through M6** (see [README.md](./README.md) Status). Former working name: Switchboard. Stack: TypeScript daemon + React UI + optional Tauri shell (`apps/shell`).
 
 
 
@@ -66,7 +66,7 @@ Two long-lived pieces plus an optional future shell:
 
 │  - process supervisor   │                                └──────────────────┘
 
-│  - docker bridge        │        (later: same UI inside a Tauri tray shell)
+│  - docker bridge        │        Tauri tray shell (`apps/shell`) → same UI
 
 │  - port map             │
 
@@ -82,7 +82,7 @@ Two long-lived pieces plus an optional future shell:
 
 - Daemon serves the built SPA itself in production mode (one port, no CORS pain); in dev the SPA runs on Vite with a proxy.
 
-- **Optional M6**: Tauri shell whose webview points at the daemon, adding tray icon + autostart. No logic moves into the shell.
+- **M6 (shipped)**: Tauri shell (`apps/shell`) whose webview points at the daemon, adding tray icon + autostart. No business logic in the shell.
 
 
 
@@ -92,9 +92,11 @@ Two long-lived pieces plus an optional future shell:
 
 ```
 
-apps/daemon/      # Node service: Hono/Fastify + WS, supervisor, scanner, docker bridge
+apps/daemon/      # Node service: Hono + WS, supervisor, scanner, docker bridge
 
-apps/ui/          # Vite + React + Tailwind + TanStack Router/Query + xterm.js
+apps/ui/          # Vite + React + Tailwind + TanStack Query + xterm.js
+
+apps/shell/       # Tauri desktop shell (tray, autostart, daemon spawn/adopt)
 
 packages/shared/  # Zod schemas + TS types shared by daemon and UI (API contracts)
 

@@ -1,7 +1,7 @@
 # CONTROL — Local Dev Command Center
 
 One UI to see and manage every dev server across your projects — host processes
-and (soon) Docker stacks alike. A local-first daemon owns process supervision;
+and Docker stacks alike. A local-first daemon owns process supervision;
 a React SPA is a thin client over it, so closing the UI never kills your servers.
 
 See [DESIGN.md](./DESIGN.md) for the full design & requirements.
