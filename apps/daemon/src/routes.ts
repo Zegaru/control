@@ -22,6 +22,7 @@ import {
   deleteGroup,
   deleteProject,
   getAction,
+  getActiveRun,
   getGroup,
   getProjectTree,
   getRun,
@@ -147,6 +148,20 @@ api.post('/actions/:id/start', async (c) => {
   if (!action) throw new HttpError(404, 'Action not found')
 
   const force = c.req.query('force') === 'true'
+  const existing = getActiveRun(action.id)
+  if (existing && !force) {
+    return c.json(
+      {
+        error: 'already_running',
+        runId: existing.id,
+        message: 'Action already has an active run',
+      },
+      409,
+    )
+  }
+  if (existing && force) {
+    supervisor.stop(existing.id, true)
+  }
   if (action.portHint && !force && (await claimedPorts()).has(action.portHint)) {
     return c.json(
       { error: 'port_conflict', port: action.portHint, message: `Port ${action.portHint} is already in use` },

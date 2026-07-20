@@ -12,6 +12,7 @@ import { bus } from './events.js'
 import { newId } from './ids.js'
 import { RingBuffer } from './ringBuffer.js'
 import { isHttpHealthy, isPortListening } from './health.js'
+import { HEALTH_GRACE_MS, nextHealthStatus } from './healthStatus.js'
 import { pidAlive } from './pid.js'
 import { pruneRunsForAction } from './settings.js'
 
@@ -254,6 +255,9 @@ class Supervisor {
       return
     }
 
+    const watchStartedAt = Date.now()
+    const hadHealthSignals = !!(action.portHint || action.healthUrl)
+
     handle.healthTimer = setInterval(async () => {
       if (!this.handles.has(handle.runId)) return
       let portUp = false
@@ -267,11 +271,10 @@ class Supervisor {
       let healthy = portUp || !action.portHint
       if (action.healthUrl) healthy = await isHttpHealthy(action.healthUrl)
 
-      if (healthy) {
-        this.setStatus(handle.runId, 'healthy', handle.proc?.pid ?? null)
-      } else if (portUp) {
-        // Port open but HTTP not yet 2xx — running, not verified healthy.
-        this.setStatus(handle.runId, 'running', handle.proc?.pid ?? null)
+      const graceElapsed = Date.now() - watchStartedAt >= HEALTH_GRACE_MS
+      const next = nextHealthStatus({ healthy, portUp, hadHealthSignals, graceElapsed })
+      if (next) {
+        this.setStatus(handle.runId, next, handle.proc?.pid ?? null)
       }
     }, HEALTH_POLL_MS)
   }
