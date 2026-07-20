@@ -12,8 +12,8 @@ import { bus } from './events.js'
  * Docker bridge. Containers give us state, health, ports, and log streams for
  * free (dockerode → Engine API), so compose stacks are observed here rather
  * than supervised as host processes (DESIGN §6). CONTROL never runs
- * `docker compose up` through this file — that stays a CLI action; this layer
- * is pure observability over whatever containers exist.
+ * `docker compose up` through this file — that stays a CLI action. Stop of
+ * project-attributed containers (project power OFF) goes through dockerode.
  */
 
 let client: Docker | null = null
@@ -140,6 +140,23 @@ export async function listContainers(
       createdAt: c.Created * 1000,
     }
   })
+}
+
+/** Gracefully stop containers by id. Missing/already-stopped ids are ignored. */
+export async function stopContainers(containerIds: string[]): Promise<void> {
+  if (containerIds.length === 0) return
+  const status = await getDockerStatus()
+  if (!status.available) return
+
+  await Promise.all(
+    containerIds.map(async (id) => {
+      try {
+        await getClient().getContainer(id).stop({ t: 10 })
+      } catch {
+        /* already stopped or gone */
+      }
+    }),
+  )
 }
 
 /** One-shot resource usage for running containers (CPU % host-scale, RSS bytes). */

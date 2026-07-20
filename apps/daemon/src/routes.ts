@@ -98,8 +98,8 @@ api.post('/projects/:id/power/start', async (c) => {
   return c.json({ ok: true })
 })
 
-api.post('/projects/:id/power/stop', (c) => {
-  stopProjectPower(c.req.param('id'))
+api.post('/projects/:id/power/stop', async (c) => {
+  await stopProjectPower(c.req.param('id'))
   return c.json({ ok: true })
 })
 

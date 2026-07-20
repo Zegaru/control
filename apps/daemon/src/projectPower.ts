@@ -1,6 +1,8 @@
 import { isActiveStatus, resolveDashboardEnvironmentId } from '@control/shared'
+import { listContainers, stopContainers } from './docker.js'
 import { startGroup, stopGroup } from './groupRunner.js'
 import {
+  buildComposeProjectMatcher,
   getAction,
   getActiveRun,
   getEnvironment,
@@ -36,28 +38,43 @@ export async function startProjectPower(projectId: string): Promise<void> {
   }
 }
 
-export function stopProjectPower(projectId: string): void {
+export async function stopProjectPower(projectId: string): Promise<void> {
   const tree = getProjectTree(projectId)
   const activeEnvironmentId = resolveDashboardEnvironmentId(tree)
   if (activeEnvironmentId) {
     const env = getEnvironment(activeEnvironmentId)
-    if (!env || env.projectId !== projectId) return
-    if (env.targetType === 'action') {
-      const run = env.targetId ? tree.modules.flatMap((m) => m.actions).find((a) => a.id === env.targetId)?.activeRun : null
-      if (run && supervisor.isLive(run.id)) supervisor.stop(run.id)
-      return
+    if (env && env.projectId === projectId) {
+      if (env.targetType === 'action') {
+        const run = env.targetId
+          ? tree.modules.flatMap((m) => m.actions).find((a) => a.id === env.targetId)?.activeRun
+          : null
+        if (run && supervisor.isLive(run.id)) supervisor.stop(run.id)
+      } else {
+        const group = getGroup(env.targetId)
+        if (group) stopGroup(group)
+      }
     }
-    const group = getGroup(env.targetId)
-    if (group) stopGroup(group)
-    return
+  } else {
+    for (const action of projectPowerTargets(tree)) {
+      const run = action.activeRun
+      if (run && isActiveStatus(run.status) && supervisor.isLive(run.id)) {
+        supervisor.stop(run.id)
+      }
+    }
   }
 
-  for (const action of projectPowerTargets(tree)) {
-    const run = action.activeRun
-    if (run && isActiveStatus(run.status) && supervisor.isLive(run.id)) {
-      supervisor.stop(run.id)
-    }
-  }
+  // Infra scripts (e.g. compose up -d) exit after starting containers, so the
+  // supervisor has nothing left to kill — stop attributed containers directly.
+  const matcher = buildComposeProjectMatcher()
+  const containers = await listContainers(matcher)
+  const ids = containers
+    .filter(
+      (c) =>
+        c.projectId === projectId &&
+        (c.state === 'running' || c.state === 'paused' || c.state === 'restarting'),
+    )
+    .map((c) => c.id)
+  await stopContainers(ids)
 }
 
 export function isProjectPowerOn(projectId: string): boolean {

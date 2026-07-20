@@ -277,6 +277,8 @@ export function Dashboard({
           .filter((a) => a.favorite)
           .some((a) => a.activeRun && isActiveStatus(a.activeRun.status));
       }
+      // Compose/infra scripts exit after `up -d`; containers still mean power ON.
+      if (runningContainers.some((c) => c.projectId === tree.id)) powerRunning = true;
 
       const dir = powerRunning ? 'off' : 'on';
       setPendingToggle((p) => ({...p, [tree.id]: dir}));
@@ -298,10 +300,10 @@ export function Dashboard({
         }
       }
     },
-    [invalidate, pendingToggle]
+    [invalidate, pendingToggle, runningContainers]
   );
 
-  // Clear stop-pending once the project's action runs are no longer active.
+  // Clear stop-pending once action runs and project containers are gone.
   useEffect(() => {
     const offIds = Object.entries(pendingToggle)
       .filter(([, dir]) => dir === 'off')
@@ -311,9 +313,11 @@ export function Dashboard({
     const settled = offIds.filter((id) => {
       const tree = treeData.find((t) => t.id === id);
       if (!tree) return true;
-      return !tree.modules.some((m) =>
+      const actionsLive = tree.modules.some((m) =>
         m.actions.some((a) => a.activeRun && isActiveStatus(a.activeRun.status))
       );
+      const containersLive = runningContainers.some((c) => c.projectId === id);
+      return !actionsLive && !containersLive;
     });
     if (settled.length === 0) return;
 
@@ -322,7 +326,7 @@ export function Dashboard({
       for (const id of settled) delete next[id];
       return next;
     });
-  }, [pendingToggle, treeData]);
+  }, [pendingToggle, treeData, runningContainers]);
 
   const toggleService = useCallback(
     async (svc: ProjectService) => {
