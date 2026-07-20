@@ -1,30 +1,20 @@
 import os from 'node:os'
 import {eq} from 'drizzle-orm'
-import {execa} from 'execa'
 import type {ProjectMetricsSnapshot} from '@control/shared'
 import {db, schema} from './db/index.js'
 import {buildComposeProjectMatcher, getAction, listActiveRuns} from './registry.js'
 import {getContainerStatsBatch, listContainers} from './docker.js'
+import {loadHostProcesses, type HostProcRow} from './hostProcessSnapshot.js'
+import {pidAlive} from './pid.js'
 
-type ProcRow = {id: number; parentId: number; ws: number; cpu: number}
+type ProcRow = HostProcRow
 
 const SAMPLE_MS = 2000
-const PROC_CACHE_MS = 2000
 
 let latest: ProjectMetricsSnapshot = {at: Date.now(), projects: {}}
 let timer: NodeJS.Timeout | null = null
 let prevCpuByPid: Map<number, number> | null = null
 let prevSampleAt = 0
-let procCache: {at: number; rows: ProcRow[]} | null = null
-
-function pidAlive(pid: number): boolean {
-  try {
-    process.kill(pid, 0)
-    return true
-  } catch (err) {
-    return (err as NodeJS.ErrnoException).code === 'EPERM'
-  }
-}
 
 function clampPct(n: number): number {
   return Math.round(Math.min(100, Math.max(0, n)))
@@ -43,55 +33,7 @@ function collectTree(rootPid: number, childrenOf: Map<number, number[]>): Set<nu
 }
 
 async function loadProcesses(): Promise<ProcRow[]> {
-  if (procCache && Date.now() - procCache.at < PROC_CACHE_MS) return procCache.rows
-
-  if (process.platform === 'win32') {
-    const cmd = [
-      'Get-CimInstance Win32_Process | ForEach-Object {',
-      '[pscustomobject]@{',
-      'Id=[int]$_.ProcessId;',
-      'ParentId=[int]$_.ParentProcessId;',
-      'WS=[int64]$_.WorkingSetSize;',
-      'Cpu=[int64]$_.KernelModeTime + [int64]$_.UserModeTime',
-      '}',
-      '} | ConvertTo-Json -Compress',
-    ].join(' ')
-    try {
-      const {stdout} = await execa('powershell.exe', ['-NoProfile', '-Command', cmd], {timeout: 12000})
-      const parsed = JSON.parse(stdout || '[]')
-      const rows: ProcRow[] = (Array.isArray(parsed) ? parsed : [parsed])
-        .filter((r) => r && typeof r.Id === 'number')
-        .map((r) => ({
-          id: r.Id,
-          parentId: r.ParentId ?? 0,
-          ws: Number(r.WS) || 0,
-          cpu: Number(r.Cpu) || 0,
-        }))
-      procCache = {at: Date.now(), rows}
-      return rows
-    } catch {
-      return []
-    }
-  }
-
-  try {
-    const {stdout} = await execa('ps', ['-eo', 'pid=', 'ppid=', 'rss=', 'pcpu='], {timeout: 5000})
-    const rows: ProcRow[] = []
-    for (const line of stdout.split('\n')) {
-      const parts = line.trim().split(/\s+/)
-      if (parts.length < 4) continue
-      const id = Number(parts[0])
-      const parentId = Number(parts[1])
-      const ws = Number(parts[2]) * 1024
-      const pcpu = Number(parts[3])
-      if (!Number.isFinite(id)) continue
-      rows.push({id, parentId, ws, cpu: pcpu})
-    }
-    procCache = {at: Date.now(), rows}
-    return rows
-  } catch {
-    return []
-  }
+  return loadHostProcesses()
 }
 
 function cpuPercentForTree(

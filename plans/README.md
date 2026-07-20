@@ -13,7 +13,7 @@ These plans cover **all** vetted audit findings (correctness, security, perf, te
 | 003 | Duplicate-start guard, `unhealthy` demotion, fail group waits | P1 | M | 001 | DONE |
 | 004 | Loopback bind, healthUrl allowlist, scoped container log WS | P1 | M | 001 | DONE |
 | 005 | Cached metrics HTTP + AgentStatus without 55ms React churn | P2 | S | — | DONE |
-| 006 | Coalesce Overview host/Docker sampling; narrow WS/SQL storms | P2 | L | 005, 001 | TODO |
+| 006 | Coalesce Overview host/Docker sampling; narrow WS/SQL storms | P2 | L | 005, 001 | DONE |
 | 007 | Tauri shell: adopt existing daemon; sane Quit/Restart | P2 | M | — | TODO |
 | 008 | Refresh DESIGN/README/UI design docs to match M0–M6 | P2 | S | — | TODO |
 | 009 | AGENTS.md + lint/format + GitHub Actions CI | P2 | M | 001 | TODO |

@@ -26,6 +26,7 @@ import { db, schema } from './db/index.js'
 import { newId } from './ids.js'
 import { scanProject } from './scanner.js'
 import { bus } from './events.js'
+import { indexActiveRuns } from './activeRuns.js'
 import { getSettings } from './settings.js'
 
 // --- row -> domain mappers -------------------------------------------------
@@ -97,6 +98,7 @@ function toRun(r: RunRow): Run {
 // --- projects --------------------------------------------------------------
 
 export function listProjects(): ProjectSummary[] {
+  const activeRuns = buildActiveRunMap()
   const rows = db.select().from(schema.projects).all()
   return rows.map((p) => {
     const moduleIds = db
@@ -108,7 +110,7 @@ export function listProjects(): ProjectSummary[] {
     const actionRows = moduleIds.length
       ? db.select().from(schema.actions).where(inArray(schema.actions.moduleId, moduleIds)).all()
       : []
-    const activeRunCount = actionRows.filter((a) => getActiveRun(a.id)).length
+    const activeRunCount = actionRows.filter((a) => activeRuns.has(a.id)).length
     return {
       ...toProject(p),
       actionCount: actionRows.length,
@@ -310,12 +312,13 @@ export function getProjectTree(projectId: string): ProjectTree {
   const project = db.select().from(schema.projects).where(eq(schema.projects.id, projectId)).get()
   if (!project) throw new HttpError(404, 'Project not found')
 
+  const activeRuns = buildActiveRunMap()
   const moduleRows = db.select().from(schema.modules).where(eq(schema.modules.projectId, projectId)).all()
   const modules: ModuleWithActions[] = moduleRows.map((m) => {
     const actionRows = db.select().from(schema.actions).where(eq(schema.actions.moduleId, m.id)).all()
     const actions: ActionWithRun[] = actionRows.map((a) => ({
       ...toAction(a),
-      activeRun: getActiveRun(a.id),
+      activeRun: activeRuns.get(a.id) ?? null,
     }))
     const mod: Module = {
       id: m.id,
@@ -519,6 +522,16 @@ export function resolveActionCwd(action: Action): string | null {
 }
 
 // --- runs ------------------------------------------------------------------
+
+export function buildActiveRunMap(): Map<string, Run> {
+  const rows = db
+    .select()
+    .from(schema.runs)
+    .where(inArray(schema.runs.status, ACTIVE_RUN_STATUSES as string[]))
+    .orderBy(desc(schema.runs.startedAt))
+    .all()
+  return indexActiveRuns(rows.map(toRun))
+}
 
 export function getActiveRun(actionId: string): Run | null {
   const row = db

@@ -45,6 +45,17 @@ export function useDaemonSocket(): {
   const logListeners = useRef<Map<string, Set<LogListener>>>(new Map())
   const containerListeners = useRef<Map<string, Set<LogListener>>>(new Map())
   const [events, setEvents] = useState<EventLogEntry[]>([])
+  const invalidateTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const scheduleRunInvalidation = useCallback(() => {
+    if (invalidateTimer.current) clearTimeout(invalidateTimer.current)
+    invalidateTimer.current = setTimeout(() => {
+      qc.invalidateQueries({ queryKey: ['runs'] })
+      qc.invalidateQueries({ queryKey: ['tree'] })
+      qc.invalidateQueries({ queryKey: ['projects'] })
+      invalidateTimer.current = null
+    }, 150)
+  }, [qc])
 
   const clearEvents = useCallback(() => setEvents([]), [])
 
@@ -79,10 +90,7 @@ export function useDaemonSocket(): {
               level: eventLevel(event.status),
             }
             setEvents((prev) => [entry, ...prev].slice(0, MAX_EVENTS))
-            qc.invalidateQueries({ queryKey: ['projects'] })
-            qc.invalidateQueries({ queryKey: ['runs'] })
-            qc.invalidateQueries({ queryKey: ['tree'] })
-            qc.invalidateQueries({ queryKey: ['ports'] })
+            scheduleRunInvalidation()
             break
           }
           case 'ports.changed':
@@ -117,9 +125,10 @@ export function useDaemonSocket(): {
 
     return () => {
       closed = true
+      if (invalidateTimer.current) clearTimeout(invalidateTimer.current)
       ws?.close()
     }
-  }, [qc])
+  }, [qc, scheduleRunInvalidation])
 
   const subscribeLogs = (runId: string, cb: LogListener) => {
     let set = logListeners.current.get(runId)

@@ -138,16 +138,34 @@ function parseHealth(status: string): ContainerHealth {
  * List containers. `mapProject` resolves a container's compose project label to
  * a registered CONTROL project id (best-effort; unmatched → null).
  */
+const LIST_TTL_MS = 1500
+let rawListCache: { at: number; raw: Docker.ContainerInfo[] } | null = null
+let rawListInFlight: Promise<Docker.ContainerInfo[]> | null = null
+
+async function fetchRawContainers(): Promise<Docker.ContainerInfo[]> {
+  if (rawListCache && Date.now() - rawListCache.at < LIST_TTL_MS) return rawListCache.raw
+  if (rawListInFlight) return rawListInFlight
+
+  rawListInFlight = getClient()
+    .listContainers({ all: true })
+    .then((raw) => {
+      rawListCache = { at: Date.now(), raw }
+      rawListInFlight = null
+      return raw
+    })
+    .catch((err) => {
+      rawListInFlight = null
+      lastError = err instanceof Error ? err.message : String(err)
+      return [] as Docker.ContainerInfo[]
+    })
+
+  return rawListInFlight
+}
+
 export async function listContainers(
   mapProject: (composeProject: string | null) => string | null,
 ): Promise<ContainerInfo[]> {
-  let raw: Docker.ContainerInfo[]
-  try {
-    raw = await getClient().listContainers({ all: true })
-  } catch (err) {
-    lastError = err instanceof Error ? err.message : String(err)
-    return []
-  }
+  const raw = await fetchRawContainers()
 
   return raw.map((c) => {
     const composeProject = c.Labels?.['com.docker.compose.project'] ?? null
