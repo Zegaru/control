@@ -14,11 +14,13 @@ import type {
   PatchEnvironmentBody,
   PatchGroupBody,
   PatchProjectBody,
+  PatchSettingsBody,
   PortOwner,
   Project,
   ProjectSummary,
   ProjectTree,
   Run,
+  Settings,
 } from '@control/shared'
 
 const BASE = '/api'
@@ -134,7 +136,12 @@ export const api = {
   ports: () => req<PortOwner[]>('/ports'),
 
   dockerStatus: () => req<DockerStatus>('/docker/status'),
+  startDocker: () => req<{ ok: boolean }>('/docker/start', { method: 'POST' }),
   containers: () => req<ContainerInfo[]>('/docker/containers'),
+
+  getSettings: () => req<Settings>('/settings'),
+  patchSettings: (body: PatchSettingsBody) =>
+    req<Settings>('/settings', { method: 'PATCH', body: JSON.stringify(body) }),
 }
 
 export type { ActionWithRun }

@@ -9,6 +9,7 @@ import {
   patchGroupBodySchema,
   patchModuleBodySchema,
   patchProjectBodySchema,
+  patchSettingsBodySchema,
   startWithEnvBodySchema,
 } from '@control/shared'
 import {
@@ -40,8 +41,9 @@ import { supervisor } from './supervisor.js'
 import { startGroup, stopGroup } from './groupRunner.js'
 import { startProjectPower, stopProjectPower } from './projectPower.js'
 import { claimedPorts, getPortMap } from './ports.js'
-import { getDockerStatus, listContainers } from './docker.js'
+import { getDockerStatus, listContainers, startDockerEngine } from './docker.js'
 import { buildComposeProjectMatcher } from './registry.js'
+import { getSettings, patchSettings } from './settings.js'
 import { version } from './version.js'
 import { sampleNow } from './hostMetrics.js'
 import { sampleProjectMetricsNow } from './projectMetrics.js'
@@ -221,9 +223,27 @@ api.get('/ports', async (c) => c.json(await getPortMap()))
 
 api.get('/docker/status', async (c) => c.json(await getDockerStatus()))
 
+api.post('/docker/start', async (c) => {
+  try {
+    await startDockerEngine()
+    return c.json({ ok: true })
+  } catch (err) {
+    throw new HttpError(500, err instanceof Error ? err.message : String(err))
+  }
+})
+
 api.get('/docker/containers', async (c) => {
   const matcher = buildComposeProjectMatcher()
   return c.json(await listContainers(matcher))
+})
+
+// --- settings --------------------------------------------------------------
+
+api.get('/settings', (c) => c.json(getSettings()))
+
+api.patch('/settings', async (c) => {
+  const body = patchSettingsBodySchema.parse(await c.req.json())
+  return c.json(patchSettings(body))
 })
 
 api.notFound((c) => c.json({error: 'not_found'}, 404))

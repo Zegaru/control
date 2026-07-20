@@ -26,6 +26,7 @@ import { db, schema } from './db/index.js'
 import { newId } from './ids.js'
 import { scanProject } from './scanner.js'
 import { bus } from './events.js'
+import { getSettings } from './settings.js'
 
 // --- row -> domain mappers -------------------------------------------------
 
@@ -196,7 +197,7 @@ export function rescanProject(projectId: string): void {
   const project = db.select().from(schema.projects).where(eq(schema.projects.id, projectId)).get()
   if (!project) throw new HttpError(404, 'Project not found')
 
-  const detected = scanProject(project.rootPath)
+  const detected = scanProject(project.rootPath, 4, getSettings().ignoreGlobs)
   const seenModuleIds = new Set<string>()
 
   for (const dm of detected) {
@@ -549,13 +550,14 @@ export function getRun(id: string): Run | null {
   return row ? toRun(row) : null
 }
 
-export function listRunsForAction(actionId: string, limit = 5): Run[] {
+export function listRunsForAction(actionId: string, limit?: number): Run[] {
+  const keep = limit ?? getSettings().logRetention
   return db
     .select()
     .from(schema.runs)
     .where(eq(schema.runs.actionId, actionId))
     .orderBy(desc(schema.runs.startedAt))
-    .limit(limit)
+    .limit(keep)
     .all()
     .map(toRun)
 }

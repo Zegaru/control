@@ -1,54 +1,116 @@
-import { useQuery } from '@tanstack/react-query'
-import type { ContainerHealth, ContainerInfo, ContainerState } from '@control/shared'
-import { api } from '../api.js'
-import { Chip, Led, Panel, Button } from '../components/kit.js'
+import {useEffect, useState} from 'react';
+import {useQuery} from '@tanstack/react-query';
+import type {ContainerHealth, ContainerInfo, ContainerState} from '@control/shared';
+import {api} from '../api.js';
+import {Chip, Led, Panel, Button, RockerToggle} from '../components/kit.js';
 
 function dockerLed(state: ContainerState, health: ContainerHealth) {
-  if (state !== 'running') return 'idle'
-  if (health === 'unhealthy') return 'unhealthy'
-  if (health === 'starting') return 'starting'
-  return 'healthy'
+  if (state !== 'running') return 'idle';
+  if (health === 'unhealthy') return 'unhealthy';
+  if (health === 'starting') return 'starting';
+  return 'healthy';
 }
 
-export function DockerView({ onOpenContainer }: { onOpenContainer: (id: string) => void }) {
-  const status = useQuery({ queryKey: ['docker-status'], queryFn: api.dockerStatus, refetchInterval: 5000 })
+export function DockerView({onOpenContainer}: {onOpenContainer: (id: string) => void}) {
+  const [launching, setLaunching] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
+
+  const status = useQuery({
+    queryKey: ['docker-status'],
+    queryFn: api.dockerStatus,
+    refetchInterval: launching ? 2000 : 5000,
+  });
   const containers = useQuery({
     queryKey: ['containers'],
     queryFn: api.containers,
     refetchInterval: 4000,
     enabled: status.data?.available ?? false,
-  })
-  const projects = useQuery({ queryKey: ['projects'], queryFn: api.listProjects })
+  });
+  const projects = useQuery({queryKey: ['projects'], queryFn: api.listProjects});
+
+  useEffect(() => {
+    if (status.data?.available) setLaunching(false);
+  }, [status.data?.available]);
+
+  const startDocker = () => {
+    if (launching) return;
+    setLaunching(true);
+    setStartError(null);
+    void api
+      .startDocker()
+      .then(() => status.refetch())
+      .catch((err: unknown) => {
+        setStartError(err instanceof Error ? err.message : String(err));
+        setLaunching(false);
+      });
+  };
 
   if (status.data && !status.data.available) {
     return (
-      <div className="max-w-2xl">
-        <h1 className="mb-3 text-xl font-bold">Docker</h1>
-        <Panel>
-          <div className="flex items-center gap-2 text-sm text-amber">
-            <Led status="failed" />
-            Docker is not reachable.
+      <div className="max-w-xl">
+        <h1 className="sr-only">Docker</h1>
+        <Panel title="Docker Engine">
+          <div className="flex flex-col gap-5 pt-1">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex min-w-0 items-center gap-3">
+                <Led
+                  status={launching ? 'starting' : 'failed'}
+                  pulse={launching}
+                  ring
+                />
+                <div>
+                  <div className="font-ui text-[13px] font-semibold uppercase tracking-[0.14em] text-ink">
+                    {launching ? 'Starting' : 'Offline'}
+                  </div>
+                  <div className="mt-0.5 font-ui text-[10px] uppercase tracking-[0.18em] text-ink-faint">
+                    {launching ? 'Waiting for engine pipe' : 'No connection to Docker Desktop'}
+                  </div>
+                </div>
+              </div>
+              <RockerToggle
+                on={false}
+                busy={launching}
+                disabled={launching}
+                onToggle={startDocker}
+              />
+            </div>
+
+            <div className="bezel-recessed rounded-md border border-panel-edge/60 px-3.5 py-3">
+              <div className="font-ui text-[9px] uppercase tracking-[0.22em] text-ink-faint">
+                Fault
+              </div>
+              <code className="mt-1.5 block break-all font-mono text-[11px] leading-relaxed text-amber">
+                {status.data.error}
+              </code>
+            </div>
+
+            <p className="text-sm leading-relaxed text-ink-dim">
+              {launching
+                ? 'Docker Desktop is launching — the engine can take up to a minute to come online.'
+                : 'Flip the rocker to start Docker Desktop. If you use a remote engine, set DOCKER_HOST instead.'}
+            </p>
+
+            {startError && (
+              <p className="rounded border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-danger">
+                {startError}
+              </p>
+            )}
           </div>
-          <p className="mt-2 text-xs text-ink-faint">{status.data.error}</p>
-          <p className="mt-3 text-sm text-ink-dim">
-            Start Docker Desktop (or set <code>DOCKER_HOST</code>) and this view will populate
-            automatically.
-          </p>
         </Panel>
       </div>
-    )
+    );
   }
 
-  const list = containers.data ?? []
+  const list = containers.data ?? [];
   // Group by mapped project; unmatched containers go into "Other".
-  const groups = new Map<string, ContainerInfo[]>()
+  const groups = new Map<string, ContainerInfo[]>();
   for (const c of list) {
-    const key = c.projectId ?? '__other__'
-    if (!groups.has(key)) groups.set(key, [])
-    groups.get(key)!.push(c)
+    const key = c.projectId ?? '__other__';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(c);
   }
   const nameFor = (id: string) =>
-    id === '__other__' ? 'Other / unmapped' : (projects.data?.find((p) => p.id === id)?.name ?? id)
+    id === '__other__' ? 'Other / unmapped' : projects.data?.find((p) => p.id === id)?.name ?? id;
 
   return (
     <div className="space-y-5">
@@ -112,5 +174,5 @@ export function DockerView({ onOpenContainer }: { onOpenContainer: (id: string) 
         </Panel>
       ))}
     </div>
-  )
+  );
 }

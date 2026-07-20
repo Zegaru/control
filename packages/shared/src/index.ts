@@ -326,6 +326,41 @@ export const startWithEnvBodySchema = z.object({
 })
 export type StartWithEnvBody = z.infer<typeof startWithEnvBodySchema>
 
+/** Default directory/file patterns skipped while scanning project trees. */
+export const DEFAULT_IGNORE_GLOBS = [
+  'node_modules',
+  '.git',
+  'dist',
+  'build',
+  '.next',
+  '.turbo',
+  '.cache',
+  'target',
+  '__pycache__',
+  '.venv',
+  'venv',
+  'vendor',
+  'coverage',
+] as const
+
+export const DEFAULT_LOG_RETENTION = 5
+
+export const settingsSchema = z.object({
+  ignoreGlobs: z.array(z.string().min(1)).default([...DEFAULT_IGNORE_GLOBS]),
+  /** Keep the last N run records (+ log files) per action. */
+  logRetention: z.number().int().min(1).max(50).default(DEFAULT_LOG_RETENTION),
+})
+export type Settings = z.infer<typeof settingsSchema>
+
+export const patchSettingsBodySchema = z.object({
+  ignoreGlobs: z.array(z.string().min(1)).optional(),
+  logRetention: z.number().int().min(1).max(50).optional(),
+})
+export type PatchSettingsBody = z.infer<typeof patchSettingsBodySchema>
+
+/** Stepped retention values for the Settings dial. */
+export const LOG_RETENTION_STEPS = [1, 3, 5, 10, 20, 50] as const
+
 // ---------------------------------------------------------------------------
 // WebSocket events (daemon -> UI)
 // ---------------------------------------------------------------------------

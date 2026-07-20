@@ -1,4 +1,6 @@
 import { Writable } from 'node:stream'
+import { spawn } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import Docker from 'dockerode'
 import type {
   ContainerHealth,
@@ -67,6 +69,40 @@ export async function getDockerStatus(): Promise<DockerStatus> {
     lastError = err instanceof Error ? err.message : String(err)
     return { available: false, error: lastError }
   }
+}
+
+function dockerDesktopWindowsPaths(): string[] {
+  const paths: string[] = []
+  for (const root of [process.env.ProgramFiles, process.env['ProgramFiles(x86)']]) {
+    if (root) paths.push(`${root}\\Docker\\Docker\\Docker Desktop.exe`)
+  }
+  paths.push('C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe')
+  return paths
+}
+
+/**
+ * Launch Docker Desktop (Windows/macOS) or `systemctl start docker` (Linux).
+ * Fire-and-forget — the engine may take tens of seconds to become reachable.
+ */
+export async function startDockerEngine(): Promise<void> {
+  const status = await getDockerStatus()
+  if (status.available) return
+
+  if (process.platform === 'win32') {
+    const exe = dockerDesktopWindowsPaths().find((p) => existsSync(p))
+    if (!exe) {
+      throw new Error('Docker Desktop not found. Install it or set DOCKER_HOST.')
+    }
+    spawn(exe, [], { detached: true, stdio: 'ignore', windowsHide: true }).unref()
+    return
+  }
+
+  if (process.platform === 'darwin') {
+    spawn('open', ['-a', 'Docker'], { detached: true, stdio: 'ignore' }).unref()
+    return
+  }
+
+  spawn('systemctl', ['start', 'docker'], { detached: true, stdio: 'ignore' }).unref()
 }
 
 function mapState(state: string): ContainerState {

@@ -8,6 +8,7 @@ import {ProjectDetail} from './views/ProjectDetail.js';
 import {PortsView} from './views/PortsView.js';
 import {DockerView} from './views/DockerView.js';
 import {GroupsView} from './views/GroupsView.js';
+import {SettingsView} from './views/SettingsView.js';
 import {RunDrawer} from './components/RunDrawer.js';
 import {ContainerDrawer} from './components/ContainerDrawer.js';
 import {CommandPalette} from './components/CommandPalette.js';
@@ -134,18 +135,5 @@ export function App() {
         </div>
       </div>
     </SocketProvider>
-  );
-}
-
-function SettingsView() {
-  return (
-    <div className="max-w-2xl">
-      <h1 className="mb-4 text-xl font-bold">Settings</h1>
-      <p className="text-sm text-ink-dim">
-        Scan roots, ignore globs, log retention, and daemon port live here in a later milestone. For
-        now the daemon binds <code>127.0.0.1:4400</code> and stores state in <code>~/.control</code>
-        .
-      </p>
-    </div>
   );
 }

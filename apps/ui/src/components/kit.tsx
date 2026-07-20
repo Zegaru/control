@@ -923,9 +923,9 @@ export function ProjectModule({
   const favoritesActive = activeEnvironmentId === null;
 
   return (
-    <div className="bezel-raised flex h-full flex-col rounded-lg p-1.5">
-      <div className="bezel-recessed flex flex-1 flex-col overflow-visible rounded-md bg-bezel">
-        <div className="flex items-start justify-between gap-3 border-b border-panel-edge px-4 py-3">
+    <div className="bezel-raised flex h-full min-h-0 flex-col rounded-lg p-1.5">
+      <div className="bezel-recessed flex min-h-0 flex-1 flex-col overflow-hidden rounded-md bg-bezel">
+        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-panel-edge px-4 py-3">
           <Button
             variant="ghost"
             onClick={onClick}
@@ -953,18 +953,20 @@ export function ProjectModule({
           )}
         </div>
 
-        <div className="flex flex-1 flex-col">
+        <div className="flex min-h-0 flex-1 flex-col">
           {environments.length > 0 && onSelectEnvironment && (
-            <EnvironmentToggleBank
-              environments={environments}
-              activeId={activeEnvironmentId}
-              showFavorites={!defaultEnvironmentId}
-              favoritesActive={favoritesActive}
-              onSelect={onSelectEnvironment}
-            />
+            <div className="shrink-0">
+              <EnvironmentToggleBank
+                environments={environments}
+                activeId={activeEnvironmentId}
+                showFavorites={!defaultEnvironmentId}
+                favoritesActive={favoritesActive}
+                onSelect={onSelectEnvironment}
+              />
+            </div>
           )}
           {services.length > 0 && (
-            <ul className="space-y-2 px-4 py-3">
+            <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto px-4 py-3">
               {services.map((svc) => {
                 const active =
                   svc.status !== 'idle' && isActiveStatus(svc.status);
@@ -1027,7 +1029,7 @@ export function ProjectModule({
           {children}
 
           {metrics && (
-            <div className="mt-auto flex justify-around overflow-visible border-t border-panel-edge px-2 py-3">
+            <div className="mt-auto flex shrink-0 justify-around overflow-visible border-t border-panel-edge px-2 py-3">
               {metrics.cpu != null && <CircularGauge size="sm" value={metrics.cpu} label="CPU" />}
               {metrics.mem != null && <CircularGauge size="sm" value={metrics.mem} label="MEM" />}
               {metrics.disk != null && (

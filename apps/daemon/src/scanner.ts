@@ -1,24 +1,49 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { basename, join, relative, sep } from 'node:path'
-import type { DetectedStack } from '@control/shared'
-
-const IGNORE_DIRS = new Set([
-  'node_modules',
-  '.git',
-  'dist',
-  'build',
-  '.next',
-  '.turbo',
-  '.cache',
-  'target',
-  '__pycache__',
-  '.venv',
-  'venv',
-  'vendor',
-  'coverage',
-])
+import { DEFAULT_IGNORE_GLOBS, type DetectedStack } from '@control/shared'
 
 const PRIMARY_RE = /^(dev|start|serve|watch|preview)(:|$)/i
+
+/** Convert a simple glob (`*`, `**`, `?`) into a RegExp. */
+function globToRegExp(glob: string): RegExp {
+  const normalized = glob.replace(/\\/g, '/')
+  let out = '^'
+  for (let i = 0; i < normalized.length; i++) {
+    const c = normalized[i]!
+    if (c === '*') {
+      if (normalized[i + 1] === '*') {
+        out += '.*'
+        i++
+        if (normalized[i + 1] === '/') i++
+      } else {
+        out += '[^/]*'
+      }
+    } else if (c === '?') {
+      out += '[^/]'
+    } else if ('.+^${}()|[]\\'.includes(c)) {
+      out += `\\${c}`
+    } else {
+      out += c
+    }
+  }
+  out += '$'
+  return new RegExp(out, 'i')
+}
+
+/** Match basename or posix-relative path against ignore patterns. */
+export function matchesIgnore(entryName: string, relPosix: string, patterns: string[]): boolean {
+  for (const raw of patterns) {
+    const p = raw.trim()
+    if (!p) continue
+    if (!p.includes('*') && !p.includes('?') && !p.includes('/')) {
+      if (entryName === p) return true
+      continue
+    }
+    const re = globToRegExp(p)
+    if (re.test(entryName) || re.test(relPosix)) return true
+  }
+  return false
+}
 
 export interface DetectedAction {
   naturalKey: string
@@ -194,8 +219,13 @@ function parseMakeTargets(makefilePath: string): string[] {
  * found by a bounded recursive marker-file walk (workspaces, mobile/, infra/…).
  * Descent stops at ignored dirs and nested git repos (those are other projects).
  */
-export function scanProject(rootPath: string, maxDepth = 4): DetectedModule[] {
+export function scanProject(
+  rootPath: string,
+  maxDepth = 4,
+  ignoreGlobs: readonly string[] = DEFAULT_IGNORE_GLOBS,
+): DetectedModule[] {
   const modules: DetectedModule[] = []
+  const patterns = [...ignoreGlobs]
   const rootModule = detectModuleAt(rootPath, rootPath)
   if (rootModule) modules.push(rootModule)
 
@@ -208,8 +238,9 @@ export function scanProject(rootPath: string, maxDepth = 4): DetectedModule[] {
       return
     }
     for (const entry of entries) {
-      if (IGNORE_DIRS.has(entry)) continue
       const full = join(dir, entry)
+      const relPosix = relative(rootPath, full).split(sep).join('/')
+      if (matchesIgnore(entry, relPosix, patterns)) continue
       let isDir = false
       try {
         isDir = statSync(full).isDirectory()

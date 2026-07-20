@@ -86,6 +86,13 @@ export const environments = sqliteTable('environments', {
   targetId: text('target_id').notNull(),
 })
 
+/** Singleton settings row (id is always 1). */
+export const settings = sqliteTable('settings', {
+  id: integer('id').primaryKey(),
+  ignoreGlobs: text('ignore_globs', { mode: 'json' }).notNull().$type<string[]>().default(sql`'[]'`),
+  logRetention: integer('log_retention').notNull().default(5),
+})
+
 /** Idempotent DDL run at boot (M0 uses this in place of drizzle-kit migrations). */
 export const CREATE_TABLES_SQL = `
 CREATE TABLE IF NOT EXISTS projects (
@@ -158,4 +165,10 @@ CREATE TABLE IF NOT EXISTS environments (
   target_id TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_environments_project ON environments(project_id);
+
+CREATE TABLE IF NOT EXISTS settings (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  ignore_globs TEXT NOT NULL DEFAULT '[]',
+  log_retention INTEGER NOT NULL DEFAULT 5
+);
 `

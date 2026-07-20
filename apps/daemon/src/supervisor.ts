@@ -11,6 +11,7 @@ import { bus } from './events.js'
 import { newId } from './ids.js'
 import { RingBuffer } from './ringBuffer.js'
 import { isHttpHealthy, isPortListening } from './health.js'
+import { pruneRunsForAction } from './settings.js'
 
 const isWin = process.platform === 'win32'
 const GRACEFUL_STOP_MS = 5000
@@ -257,17 +258,19 @@ class Supervisor {
       .where(eq(schema.runs.id, runId))
       .run()
     const ports = handle?.ports ?? []
+    const actionId = handle?.actionId ?? ''
     this.handles.delete(runId)
     bus.emitEvent({
       type: 'run.status',
       runId,
-      actionId: handle?.actionId ?? '',
+      actionId,
       status,
       ports,
       exitCode,
-      ...this.actionLabels(handle?.actionId ?? ''),
+      ...this.actionLabels(actionId),
     })
     bus.emitEvent({ type: 'ports.changed' })
+    if (actionId) pruneRunsForAction(actionId)
   }
 
   private setStatus(runId: string, status: RunStatus, pid: number | null): void {

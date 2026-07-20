@@ -572,7 +572,7 @@ export function Dashboard({
 
       <div
         ref={projectListRef}
-        className="flex min-h-0 flex-1 gap-4 overflow-x-auto overflow-y-hidden"
+        className="flex min-h-0 flex-1 gap-2 overflow-x-auto overflow-y-hidden"
       >
         {(projects.data ?? []).map((p) => {
           const tree = treeData.find((t) => t.id === p.id);
@@ -599,7 +599,7 @@ export function Dashboard({
             : [];
 
           return (
-            <div key={p.id} className="flex w-72 shrink-0 flex-col self-stretch">
+            <div key={p.id} className="flex w-72 min-h-0 shrink-0 flex-col self-stretch">
               <ProjectModule
                 name={p.name}
                 path={p.rootPath}
