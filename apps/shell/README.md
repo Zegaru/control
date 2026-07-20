@@ -15,7 +15,9 @@ terminal command.
   connections, then navigates the window to the daemon-served UI.
 - **Tray icon** — Open CONTROL, Restart daemon, Start on login (toggle), Quit.
   Closing the window hides to the tray; the daemon (and your servers) keep
-  running. "Quit" stops the daemon and exits.
+  running. If the shell **spawned** the daemon, Quit stops that child process.
+  If a daemon was **already running** on `:4400` (adopted at launch), Quit
+  exits the UI only and leaves the existing daemon running.
 - **Autostart on login** — via `tauri-plugin-autostart` (Windows registry Run
   key), toggled from the tray.
 

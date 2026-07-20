@@ -1,6 +1,7 @@
 // Hide the console window in release builds (this is a GUI app).
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use std::io::{Read, Write};
 use std::net::TcpStream;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
@@ -15,8 +16,13 @@ use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 const DAEMON_ORIGIN: &str = "http://127.0.0.1:4400";
 const DAEMON_ADDR: &str = "127.0.0.1:4400";
 
-/// Handle to the daemon process the shell spawns and supervises.
-struct DaemonState(Mutex<Option<Child>>);
+/// Handle to the daemon process the shell spawns, or an already-running instance.
+enum DaemonHandle {
+    Owned(Child),
+    External,
+}
+
+struct DaemonState(Mutex<Option<DaemonHandle>>);
 
 fn is_control_home(p: &Path) -> bool {
     p.join("apps").join("daemon").exists()
@@ -141,12 +147,42 @@ fn spawn_daemon(home: &Path) -> std::io::Result<Child> {
     cmd.spawn()
 }
 
+/// True when an existing CONTROL daemon is already listening and healthy.
+fn is_control_daemon_healthy() -> bool {
+    let addr = DAEMON_ADDR.parse().expect("valid addr");
+    let mut stream = match TcpStream::connect_timeout(&addr, Duration::from_millis(500)) {
+        Ok(s) => s,
+        Err(_) => return false,
+    };
+    let _ = stream.set_read_timeout(Some(Duration::from_millis(500)));
+    if stream
+        .write_all(
+            b"GET /api/health HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n",
+        )
+        .is_err()
+    {
+        return false;
+    }
+    let mut buf = [0u8; 512];
+    let Ok(n) = stream.read(&mut buf) else {
+        return false;
+    };
+    let text = String::from_utf8_lossy(&buf[..n]);
+    text.contains("\"ok\":true") || text.contains("\"ok\": true")
+}
+
 /// Block until the daemon accepts connections (~30s budget).
 fn wait_for_daemon() -> bool {
     let addr = DAEMON_ADDR.parse().expect("valid addr");
     for _ in 0..60 {
-        if TcpStream::connect_timeout(&addr, Duration::from_millis(500)).is_ok() {
+        if is_control_daemon_healthy() {
             return true;
+        }
+        if TcpStream::connect_timeout(&addr, Duration::from_millis(500)).is_ok() {
+            std::thread::sleep(Duration::from_millis(200));
+            if is_control_daemon_healthy() {
+                return true;
+            }
         }
         std::thread::sleep(Duration::from_millis(500));
     }
@@ -182,28 +218,31 @@ fn restart_daemon(app: &AppHandle) {
     let state = app.state::<DaemonState>();
     {
         let mut guard = state.0.lock().unwrap();
-        if let Some(mut child) = guard.take() {
-            let _ = child.kill();
+        if let Some(handle) = guard.take() {
+            if let DaemonHandle::Owned(mut child) = handle {
+                let _ = child.kill();
+            }
         }
     }
-    if let Some(home) = find_control_home(app) {
+    if is_control_daemon_healthy() {
+        *state.0.lock().unwrap() = Some(DaemonHandle::External);
+    } else if let Some(home) = find_control_home(app) {
         if let Ok(child) = spawn_daemon(&home) {
-            *state.0.lock().unwrap() = Some(child);
+            *state.0.lock().unwrap() = Some(DaemonHandle::Owned(child));
         }
     }
-    // Show the loading page again, then reload when the fresh daemon is up.
     if let Some(win) = app.get_webview_window("main") {
         let _ = win.eval("window.location.replace('index.html')");
     }
     load_when_ready(app);
 }
 
+/// Quit policy: kill only a shell-spawned daemon. An adopted external daemon
+/// keeps running so dev servers survive closing the tray UI.
 fn kill_daemon(app: &AppHandle) {
     let state = app.state::<DaemonState>();
-    // Take the child into an owned binding so the MutexGuard temporary drops
-    // before we use it (and before `state` goes out of scope).
-    let child = state.0.lock().unwrap().take();
-    if let Some(mut child) = child {
+    let handle = state.0.lock().unwrap().take();
+    if let Some(DaemonHandle::Owned(mut child)) = handle {
         let _ = child.kill();
     }
 }
@@ -216,9 +255,11 @@ fn main() {
         .setup(|app| {
             let handle = app.handle();
 
-            if let Some(home) = find_control_home(handle) {
+            if is_control_daemon_healthy() {
+                *app.state::<DaemonState>().0.lock().unwrap() = Some(DaemonHandle::External);
+            } else if let Some(home) = find_control_home(handle) {
                 if let Ok(child) = spawn_daemon(&home) {
-                    *app.state::<DaemonState>().0.lock().unwrap() = Some(child);
+                    *app.state::<DaemonState>().0.lock().unwrap() = Some(DaemonHandle::Owned(child));
                 }
             }
 
