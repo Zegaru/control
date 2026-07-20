@@ -14,10 +14,12 @@
     "dev:ui": "pnpm --filter @control/ui dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
+    "test": "vitest run",
     "start": "pnpm --filter @control/daemon start"
   },
   "devDependencies": {
     "concurrently": "^9.1.0",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "vitest": "^4.1.10"
   }
 }

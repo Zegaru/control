@@ -48,6 +48,7 @@ Run pieces individually:
 pnpm dev:daemon       # daemon only
 pnpm dev:ui           # UI dev server only (proxies /api + /ws to :4400)
 pnpm typecheck        # all packages
+pnpm test             # vitest characterization suite
 ```
 
 Production single-origin mode: `pnpm --filter @control/ui build` then
