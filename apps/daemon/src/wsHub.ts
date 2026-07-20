@@ -4,6 +4,9 @@ import { wsClientMessageSchema, type WsEvent } from '@control/shared'
 import { bus } from './events.js'
 import { supervisor } from './supervisor.js'
 import { streamContainerLogs } from './docker.js'
+import { listContainers } from './docker.js'
+import { buildComposeProjectMatcher } from './registry.js'
+import { canSubscribeContainer } from './containerSubscribe.js'
 
 /**
  * Fans daemon events out to connected UI clients. Each client subscribes to the
@@ -61,6 +64,9 @@ export function attachWebSocket(server: Server): void {
         const streams = containerStreams.get(ws)!
         if (streams.has(msg.containerId)) return
         try {
+          const matcher = buildComposeProjectMatcher()
+          const containers = await listContainers(matcher)
+          if (!canSubscribeContainer(msg.containerId, containers)) return
           const stop = await streamContainerLogs(msg.containerId, (chunk) => {
             if (ws.readyState === ws.OPEN) {
               ws.send(JSON.stringify({ type: 'container.log', containerId: msg.containerId, chunk }))

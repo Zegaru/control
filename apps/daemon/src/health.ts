@@ -1,4 +1,5 @@
 import net from 'node:net'
+import { isAllowedHealthUrl } from '@control/shared'
 
 /** True if something is accepting TCP connections on 127.0.0.1:port. */
 export function isPortListening(port: number, timeoutMs = 1000): Promise<boolean> {
@@ -21,6 +22,7 @@ export function isPortListening(port: number, timeoutMs = 1000): Promise<boolean
 
 /** True if healthUrl responds with a 2xx/3xx status within the timeout. */
 export async function isHttpHealthy(url: string, timeoutMs = 2000): Promise<boolean> {
+  if (!isAllowedHealthUrl(url)) return false
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
   try {

@@ -64,4 +64,5 @@ packages/shared/ Zod schemas + types shared across the API boundary
 ```
 
 Daemon state lives in `~/.control/` (SQLite db + per-run log files). Override the
-location with `CONTROL_DATA_DIR`, the port with `CONTROL_PORT`.
+location with `CONTROL_DATA_DIR`, the port with `CONTROL_PORT`, and the bind
+host with `CONTROL_HOST` (loopback only: `127.0.0.1`, `localhost`, or `::1`).

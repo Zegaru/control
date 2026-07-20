@@ -9,6 +9,34 @@ import { z } from 'zod'
 
 export const DEFAULT_DAEMON_PORT = 4400
 
+const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1', '0:0:0:0:0:0:0:1'])
+
+/** True when a bind host is restricted to local loopback (NFR-2). */
+export function isLoopbackHost(host: string): boolean {
+  return LOOPBACK_HOSTS.has(host.toLowerCase())
+}
+
+/** Health checks may only target local HTTP(S) endpoints. */
+export function isAllowedHealthUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url)
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false
+    if (parsed.username || parsed.password) return false
+    return isLoopbackHost(parsed.hostname)
+  } catch {
+    return false
+  }
+}
+
+const healthUrlFieldSchema = z
+  .string()
+  .url()
+  .nullable()
+  .optional()
+  .refine((value) => value == null || isAllowedHealthUrl(value), {
+    message: 'healthUrl must target localhost (127.0.0.1, localhost, or ::1)',
+  })
+
 // ---------------------------------------------------------------------------
 // Enums
 // ---------------------------------------------------------------------------
@@ -111,7 +139,7 @@ export const actionSchema = z.object({
   primary: z.boolean(),
   envOverrides: z.record(z.string()).nullable().optional(),
   portHint: z.number().int().positive().nullable().optional(),
-  healthUrl: z.string().url().nullable().optional(),
+  healthUrl: healthUrlFieldSchema,
 })
 export type Action = z.infer<typeof actionSchema>
 
@@ -273,7 +301,7 @@ export const createActionBodySchema = z
     command: z.string().min(1),
     cwd: z.string().nullable().optional(),
     portHint: z.number().int().positive().nullable().optional(),
-    healthUrl: z.string().url().nullable().optional(),
+    healthUrl: healthUrlFieldSchema,
     envOverrides: z.record(z.string()).nullable().optional(),
   })
   .refine((b) => Boolean(b.moduleId) !== Boolean(b.projectId), {
@@ -287,7 +315,7 @@ export const patchActionBodySchema = z.object({
   favorite: z.boolean().optional(),
   hidden: z.boolean().optional(),
   portHint: z.number().int().positive().nullable().optional(),
-  healthUrl: z.string().url().nullable().optional(),
+  healthUrl: healthUrlFieldSchema,
   envOverrides: z.record(z.string()).nullable().optional(),
 })
 export type PatchActionBody = z.infer<typeof patchActionBodySchema>
