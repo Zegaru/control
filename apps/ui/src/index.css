@@ -900,24 +900,6 @@ textarea,
   will-change: transform;
 }
 
-/* Brand plate impeller — pause freezes mid-turn; grille stays fixed in SVG */
-@keyframes vent-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.vent-impeller {
-  transform-box: view-box;
-  transform-origin: 24px 24px;
-  animation: vent-spin 6.5s linear infinite;
-  animation-play-state: paused;
-}
-
-.vent-impeller-on {
-  animation-play-state: running;
-}
-
 /* ---------------------------------------------------------------------------
    Overlay motion — Base UI Drawer / Dialog
    --------------------------------------------------------------------------- */
@@ -1062,11 +1044,6 @@ textarea,
   }
 
   .animate-pulse {
-    animation: none !important;
-  }
-
-  .vent-impeller,
-  .vent-impeller-on {
     animation: none !important;
   }
 
