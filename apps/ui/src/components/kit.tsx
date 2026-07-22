@@ -1,4 +1,4 @@
-import {useEffect, useId, useRef, useState, type ReactNode} from 'react';
+import {useEffect, useId, useRef, useState, type PointerEvent, type ReactNode} from 'react';
 import {Switch} from '@base-ui/react/switch';
 import {isActiveStatus, type RunStatus} from '@control/shared';
 import {cn} from '../lib/cn.js';
@@ -491,16 +491,80 @@ export function BacklitButton({
   tone = 'default',
   size = 'md',
   disabled,
+  /** Press-and-hold duration (ms) before `onClick` fires. Omit for instant click. */
+  holdMs,
 }: {
   children: ReactNode;
   onClick?: () => void;
   tone?: 'default' | 'phosphor' | 'amber' | 'danger';
   size?: 'sm' | 'md';
   disabled?: boolean;
+  holdMs?: number;
 }) {
+  const [holding, setHolding] = useState(false);
+  const timerRef = useRef<number | null>(null);
+  const firedRef = useRef(false);
+
+  const clearHold = () => {
+    if (timerRef.current != null) {
+      window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    setHolding(false);
+  };
+
+  useEffect(
+    () => () => {
+      if (timerRef.current != null) window.clearTimeout(timerRef.current);
+    },
+    [],
+  );
+
+  if (holdMs == null || holdMs <= 0) {
+    return (
+      <Button variant="backlit" tone={tone} size={size} disabled={disabled} onClick={onClick}>
+        {children}
+      </Button>
+    );
+  }
+
+  const startHold = (e: PointerEvent<HTMLButtonElement>) => {
+    if (disabled || e.button !== 0) return;
+    e.preventDefault();
+    firedRef.current = false;
+    setHolding(true);
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const ms = reduce ? Math.min(holdMs, 800) : holdMs;
+    timerRef.current = window.setTimeout(() => {
+      firedRef.current = true;
+      timerRef.current = null;
+      setHolding(false);
+      onClick?.();
+    }, ms);
+  };
+
+  const endHold = () => {
+    if (firedRef.current) return;
+    clearHold();
+  };
+
   return (
-    <Button variant="backlit" tone={tone} size={size} disabled={disabled} onClick={onClick}>
-      {children}
+    <Button
+      variant="backlit"
+      tone={tone}
+      size={size}
+      disabled={disabled}
+      className="hold-confirm-btn"
+      data-holding={holding ? '' : undefined}
+      title="Hold to confirm"
+      onPointerDown={startHold}
+      onPointerUp={endHold}
+      onPointerLeave={endHold}
+      onPointerCancel={endHold}
+      onClick={(e) => e.preventDefault()}
+    >
+      <span className="hold-confirm-fill" aria-hidden />
+      <span className="hold-confirm-label">{children}</span>
     </Button>
   );
 }
@@ -1079,6 +1143,9 @@ export type ControlStripAction = {
   label: string;
   tone?: 'default' | 'phosphor' | 'amber' | 'danger';
   onClick: () => void;
+  /** When set, requires press-and-hold before `onClick` (see BacklitButton `holdMs`). */
+  holdMs?: number;
+  disabled?: boolean;
 };
 
 export type ControlStripGauge = {
@@ -1165,7 +1232,13 @@ export function ControlStrip({
 
           <div className="flex flex-wrap gap-2 self-center">
             {actions.map((a) => (
-              <BacklitButton key={a.label} tone={a.tone} onClick={a.onClick}>
+              <BacklitButton
+                key={a.label}
+                tone={a.tone}
+                onClick={a.onClick}
+                holdMs={a.holdMs}
+                disabled={a.disabled}
+              >
                 {a.label}
               </BacklitButton>
             ))}

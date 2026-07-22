@@ -3,6 +3,7 @@ import {useQuery} from '@tanstack/react-query';
 import {api} from './api.js';
 import {SocketProvider} from './socket.js';
 import {AgentStatus, NavItem} from './components/kit.js';
+import {cn} from './lib/cn.js';
 import {Dashboard} from './views/Dashboard.js';
 import {ProjectDetail} from './views/ProjectDetail.js';
 import {PortsView} from './views/PortsView.js';
@@ -12,6 +13,37 @@ import {SettingsView} from './views/SettingsView.js';
 import {RunDrawer} from './components/RunDrawer.js';
 import {ContainerDrawer} from './components/ContainerDrawer.js';
 import {CommandPalette} from './components/CommandPalette.js';
+
+function DaemonBanner({show}: {show: boolean}) {
+  const [mounted, setMounted] = useState(show);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (show) {
+      setMounted(true);
+      const id = requestAnimationFrame(() => setOpen(true));
+      return () => cancelAnimationFrame(id);
+    }
+    setOpen(false);
+    const t = window.setTimeout(() => setMounted(false), 200);
+    return () => clearTimeout(t);
+  }, [show]);
+
+  if (!mounted) return null;
+
+  return (
+    <div
+      role="alert"
+      className={cn(
+        'mb-4 rounded-md border border-danger bg-danger/10 px-4 py-3 text-sm text-danger',
+        'transition-[opacity,transform] duration-200 ease-out motion-reduce:duration-150 motion-reduce:transition-opacity',
+        open ? 'translate-y-0 opacity-100' : '-translate-y-1 opacity-0',
+      )}
+    >
+      Cannot reach the CONTROL daemon. Start it with <code>pnpm dev:daemon</code>.
+    </div>
+  );
+}
 
 export type View =
   | {kind: 'overview'}
@@ -102,11 +134,7 @@ export function App() {
           <main
             className={`flex-1 min-h-0 pl-2 pr-1 ${view.kind === 'project' ? 'overflow-hidden' : 'overflow-y-auto'}`}
           >
-            {!daemonUp && (
-              <div className="mb-4 rounded-md border border-danger bg-danger/10 px-4 py-3 text-sm text-danger">
-                Cannot reach the CONTROL daemon. Start it with <code>pnpm dev:daemon</code>.
-              </div>
-            )}
+            <DaemonBanner show={!daemonUp} />
 
             {view.kind === 'overview' && (
               <Dashboard

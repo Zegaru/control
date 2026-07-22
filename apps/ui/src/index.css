@@ -448,6 +448,56 @@ body {
   color: var(--color-danger);
 }
 
+/* Hold-to-confirm fill — Stop All / Restart All */
+.hold-confirm-btn {
+  --hold-ms: 2000ms;
+  --hold-fill: color-mix(in srgb, var(--color-danger) 38%, transparent);
+  overflow: hidden;
+}
+
+.hold-confirm-btn.backlit-btn-amber {
+  --hold-fill: color-mix(in srgb, var(--color-amber) 38%, transparent);
+}
+
+.hold-confirm-fill {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: var(--hold-fill);
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path 200ms ease-out;
+  pointer-events: none;
+}
+
+.hold-confirm-btn[data-holding] .hold-confirm-fill {
+  clip-path: inset(0 0 0 0);
+  transition: clip-path var(--hold-ms) linear;
+}
+
+.hold-confirm-label {
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hold-confirm-btn {
+    --hold-ms: 800ms;
+  }
+}
+
+/* Event list ↔ log panel enter fade */
+.event-panel-fade {
+  opacity: 1;
+  transition: opacity 120ms ease-out;
+}
+
+@starting-style {
+  .event-panel-fade {
+    opacity: 0;
+  }
+}
+
 /* Nav pushbutton bank — interlocking illuminated selectors in a recessed channel. */
 .nav-bank {
   display: flex;
@@ -896,6 +946,10 @@ body {
 
   .waveform-track {
     animation: none !important;
+  }
+
+  .event-panel-fade {
+    transition-duration: 80ms;
   }
 }
 

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { Environment } from '@control/shared'
 import { api } from '../api.js'
 import { Chip, Panel, Button, TextInput } from '../components/kit.js'
+import { cn } from '../lib/cn.js'
 import { ActionRow } from '../components/ActionRow.js'
 import { AddActionDialog } from '../components/AddActionDialog.js'
 import { EnvironmentEditor } from '../components/EnvironmentEditor.js'
@@ -294,15 +295,34 @@ export function ProjectDetail({
                             <Button
                               variant="ghost"
                               onClick={() => setShowSecondary((v) => !v)}
+                              aria-expanded={showSecondary}
                               className="mt-2 block px-0 py-0 text-left text-[11px] uppercase tracking-wider text-ink-faint hover:not-data-disabled:text-ink-dim"
                             >
-                              {showSecondary ? '▾' : '▸'} {secondary.length} tasks (build, test,
-                              lint…)
+                              <span
+                                className={cn(
+                                  'mr-1 inline-block transition-transform duration-160 ease-out motion-reduce:transition-none',
+                                  showSecondary && 'rotate-90',
+                                )}
+                                aria-hidden
+                              >
+                                ▸
+                              </span>
+                              {secondary.length} tasks (build, test, lint…)
                             </Button>
-                            {showSecondary &&
-                              secondary.map((a) => (
-                                <ActionRow key={a.id} action={a} onOpenRun={onOpenRun} />
-                              ))}
+                            <div
+                              className={cn(
+                                'grid transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:duration-120 motion-reduce:transition-opacity',
+                                showSecondary
+                                  ? 'grid-rows-[1fr] opacity-100'
+                                  : 'pointer-events-none grid-rows-[0fr] opacity-0',
+                              )}
+                            >
+                              <div className="min-h-0 space-y-2 overflow-hidden">
+                                {secondary.map((a) => (
+                                  <ActionRow key={a.id} action={a} onOpenRun={onOpenRun} />
+                                ))}
+                              </div>
+                            </div>
                           </>
                         )}
 

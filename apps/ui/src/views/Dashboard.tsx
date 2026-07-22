@@ -511,57 +511,59 @@ export function Dashboard({
             }
           >
             <div className="flex-1 min-h-0 overflow-hidden">
-              {selectedRunId ? (
-                <div className="h-full overflow-hidden rounded-lg border border-[rgba(0,0,0,0.6)] bg-[#0b0d0a] p-1">
-                  <LogPanel runId={selectedRunId} />
-                </div>
-              ) : events.length === 0 ? (
-                <p className="text-ink-faint">No events yet.</p>
-              ) : filteredEvents.length === 0 ? (
-                <p className="text-ink-faint">No {logFilter} events.</p>
-              ) : (
-                <div className="h-full overflow-y-auto">
-                  <table className="w-full text-left">
-                    <tbody>
-                      {filteredEvents.map((row) => (
-                        <tr
-                          key={row.id}
-                          className="cursor-pointer border-b border-panel-edge/50 hover:bg-phosphor/4"
-                          onClick={() => setSelectedRunId(row.runId)}
-                        >
-                          <td className="py-1 pr-3 text-ink-faint">
-                            {new Date(row.at).toLocaleTimeString()}
-                          </td>
-                          <td className="py-1 pr-3 text-ink-dim">{row.project}</td>
-                          <td className="py-1 pr-3">{row.name}</td>
-                          <td className="py-1 pr-3">
-                            <span
-                              style={{
-                                color:
-                                  row.level === 'error'
-                                    ? 'var(--color-danger)'
-                                    : row.level === 'warn'
-                                    ? 'var(--color-amber)'
-                                    : 'var(--color-phosphor)',
-                              }}
-                            >
-                              {statusLabel(row.status)}
-                              {row.exitCode != null ? ` · exit ${row.exitCode}` : ''}
-                            </span>
-                          </td>
-                          <td className="py-1">
-                            {row.ports.map((p) => (
-                              <span key={p} className="mr-1 text-info">
-                                :{p}
+              <div key={selectedRunId ?? 'event-list'} className="event-panel-fade h-full min-h-0">
+                {selectedRunId ? (
+                  <div className="h-full overflow-hidden rounded-lg border border-[rgba(0,0,0,0.6)] bg-[#0b0d0a] p-1">
+                    <LogPanel runId={selectedRunId} />
+                  </div>
+                ) : events.length === 0 ? (
+                  <p className="text-ink-faint">No events yet.</p>
+                ) : filteredEvents.length === 0 ? (
+                  <p className="text-ink-faint">No {logFilter} events.</p>
+                ) : (
+                  <div className="h-full overflow-y-auto">
+                    <table className="w-full text-left">
+                      <tbody>
+                        {filteredEvents.map((row) => (
+                          <tr
+                            key={row.id}
+                            className="cursor-pointer border-b border-panel-edge/50 hover:bg-phosphor/4"
+                            onClick={() => setSelectedRunId(row.runId)}
+                          >
+                            <td className="py-1 pr-3 text-ink-faint">
+                              {new Date(row.at).toLocaleTimeString()}
+                            </td>
+                            <td className="py-1 pr-3 text-ink-dim">{row.project}</td>
+                            <td className="py-1 pr-3">{row.name}</td>
+                            <td className="py-1 pr-3">
+                              <span
+                                style={{
+                                  color:
+                                    row.level === 'error'
+                                      ? 'var(--color-danger)'
+                                      : row.level === 'warn'
+                                        ? 'var(--color-amber)'
+                                        : 'var(--color-phosphor)',
+                                }}
+                              >
+                                {statusLabel(row.status)}
+                                {row.exitCode != null ? ` · exit ${row.exitCode}` : ''}
                               </span>
-                            ))}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                            </td>
+                            <td className="py-1">
+                              {row.ports.map((p) => (
+                                <span key={p} className="mr-1 text-info">
+                                  :{p}
+                                </span>
+                              ))}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
             </div>
           </Panel>
       </div>
@@ -637,8 +639,20 @@ export function Dashboard({
         }}
         actions={[
           {label: 'Start All', tone: 'phosphor', onClick: () => void startFavorites()},
-          {label: 'Stop All', tone: 'danger', onClick: () => void stopAll()},
-          {label: 'Restart All', tone: 'amber', onClick: () => void restartFavorites()},
+          {
+            label: 'Stop All',
+            tone: 'danger',
+            holdMs: 2000,
+            disabled: !masterOn,
+            onClick: () => void stopAll(),
+          },
+          {
+            label: 'Restart All',
+            tone: 'amber',
+            holdMs: 2000,
+            disabled: !masterOn,
+            onClick: () => void restartFavorites(),
+          },
           {label: 'Health Check', onClick: () => invalidate()},
         ]}
         gauges={gauges}
