@@ -90,7 +90,7 @@ export function CommandPalette({
             <Led status={fa.action.activeRun?.status ?? 'idle'} />
             <span className="text-ink-faint">{fa.projectName} /</span>
             <span>{fa.action.name}</span>
-            <span className="ml-auto text-[10px] uppercase tracking-wider text-ink-faint">
+            <span className="ml-auto text-[12px] uppercase tracking-wider text-ink-faint">
               {fa.action.activeRun ? 'stop' : 'start'}
             </span>
           </li>

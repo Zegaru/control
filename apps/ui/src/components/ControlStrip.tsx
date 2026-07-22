@@ -130,7 +130,7 @@ function BrandTagline() {
   }, []);
 
   return (
-    <div className="relative mt-0.5 inline-grid text-[10px] text-ink-dim" aria-live="polite">
+    <div className="relative mt-0.5 inline-grid text-[12px] text-ink-dim" aria-live="polite">
       <span className="invisible col-start-1 row-start-1 whitespace-nowrap" aria-hidden="true">
         {LONGEST_TAGLINE}
       </span>
@@ -192,7 +192,7 @@ export function ControlStrip({
           <div className="flex shrink-0 items-center gap-3 overflow-visible">
             <MasterPower on={masterOn} onToggle={onMasterToggle} size={compact ? 'sm' : 'md'} />
             {!compact && (
-              <span className="font-ui text-[9px] uppercase tracking-widest text-ink-faint">
+              <span className="font-ui text-[12px] uppercase tracking-widest text-ink-faint">
                 Master Power
               </span>
             )}
@@ -244,7 +244,7 @@ export function ControlStrip({
                 <Screw className="bottom-1.5 right-1.5" />
                 <VentGrill className="h-18 w-18" />
                 <div className="pr-1">
-                  <div className="font-ui text-[11px] font-semibold tracking-[0.12em] text-ink">
+                  <div className="font-ui text-[12px] font-semibold tracking-[0.12em] text-ink">
                     CONTROL{version ? ` v${version}` : ''}
                   </div>
                   <BrandTagline />

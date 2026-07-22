@@ -119,7 +119,7 @@ export function GroupEditor({
           </li>
         ))}
         {steps.length === 0 && (
-          <li className="text-[11px] text-ink-faint">No steps yet. Add one below.</li>
+          <li className="text-[12px] text-ink-faint">No steps yet. Add one below.</li>
         )}
       </ol>
 

@@ -3,7 +3,7 @@ import {useQueryClient} from '@tanstack/react-query';
 import {GearSix, Star} from '@phosphor-icons/react';
 import type {ActionWithRun} from '@control/shared';
 import {api} from '../api.js';
-import {Chip, Led, statusLabel} from './kit.js';
+import {Chip, Led, statusColor, statusLabel} from './kit.js';
 import {Button} from './ui.js';
 import {ActionEditor} from './ActionEditor.js';
 
@@ -69,7 +69,10 @@ export function ActionRow({
       </Button>
 
       {!compact && (
-        <span className="w-16 shrink-0 text-right text-[10px] uppercase tracking-wider text-ink-faint">
+        <span
+          className="w-16 shrink-0 text-right text-[12px] uppercase tracking-wider"
+          style={{color: statusColor(status)}}
+        >
           {statusLabel(status)}
         </span>
       )}

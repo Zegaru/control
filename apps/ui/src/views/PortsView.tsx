@@ -32,7 +32,7 @@ export function PortsView({onOpenRun}: {onOpenRun: (runId: string) => void}) {
             aria-checked={showExternal}
             onClick={() => setShowExternal((v) => !v)}
             className={cn(
-              'font-ui flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-[10px] uppercase tracking-[0.14em]',
+              'font-ui flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-[12px] uppercase tracking-[0.14em]',
               showExternal
                 ? 'border-phosphor-dim/70 bg-phosphor/10 text-phosphor shadow-[0_0_12px_-4px_var(--color-phosphor)]'
                 : 'border-panel-edge bg-bezel text-ink-faint'
@@ -67,7 +67,7 @@ export function PortsView({onOpenRun}: {onOpenRun: (runId: string) => void}) {
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left font-ui text-[10px] uppercase tracking-wider text-ink-faint">
+                <tr className="text-left font-ui text-[12px] uppercase tracking-wider text-ink-faint">
                   <th className="pb-2">Port</th>
                   <th className="pb-2">Owner</th>
                   <th className="pb-2">Label</th>
@@ -85,7 +85,7 @@ export function PortsView({onOpenRun}: {onOpenRun: (runId: string) => void}) {
                     <td className="py-2">
                       {o.label ?? o.processName ?? '—'}
                       {projName(o.projectId) && (
-                        <span className="ml-2 text-[11px] text-phosphor-dim">
+                        <span className="ml-2 text-[12px] text-phosphor">
                           · {projName(o.projectId)}
                         </span>
                       )}

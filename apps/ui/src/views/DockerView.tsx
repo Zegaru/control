@@ -101,7 +101,7 @@ export function DockerView({onOpenContainer}: {onOpenContainer: (id: string) => 
                 <div className="font-ui text-[13px] font-semibold uppercase tracking-[0.14em] text-ink">
                   {engineLabel}
                 </div>
-                <div className="mt-0.5 font-ui text-[10px] uppercase tracking-[0.18em] text-ink-faint">
+                <div className="mt-0.5 font-ui text-[12px] uppercase tracking-[0.18em] text-ink-faint">
                   {engineHint}
                 </div>
               </div>
@@ -114,10 +114,10 @@ export function DockerView({onOpenContainer}: {onOpenContainer: (id: string) => 
           {!available && status.data && (
             <>
               <div className="bezel-recessed rounded-md border border-panel-edge/60 px-3.5 py-3">
-                <div className="font-ui text-[9px] uppercase tracking-[0.22em] text-ink-faint">
+                <div className="font-ui text-[12px] uppercase tracking-[0.22em] text-ink-faint">
                   Status
                 </div>
-                <code className="mt-1.5 block break-all font-mono text-[11px] leading-relaxed text-amber">
+                <code className="mt-1.5 block break-all font-mono text-[12px] leading-relaxed text-amber">
                   {status.data.error}
                 </code>
               </div>
@@ -161,7 +161,7 @@ export function DockerView({onOpenContainer}: {onOpenContainer: (id: string) => 
                         <Chip tone={c.health === 'healthy' ? 'phosphor' : 'amber'}>{c.health}</Chip>
                       )}
                     </div>
-                    <div className="truncate text-[11px] text-ink-faint">
+                    <div className="truncate text-[12px] text-ink-faint">
                       {c.image} · {c.status}
                     </div>
                   </div>
@@ -174,7 +174,7 @@ export function DockerView({onOpenContainer}: {onOpenContainer: (id: string) => 
                           href={`http://localhost:${p.publicPort}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="rounded border border-phosphor-dim px-2 py-0.5 text-[11px] text-phosphor"
+                          className="rounded border border-phosphor-dim px-2 py-0.5 text-[12px] text-phosphor"
                         >
                           :{p.publicPort}
                         </a>

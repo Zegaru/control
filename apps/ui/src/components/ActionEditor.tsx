@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { ActionWithRun } from '@control/shared'
 import { api } from '../api.js'
-import { statusLabel } from './kit.js'
+import { statusColor, statusLabel } from './kit.js'
 import { Button, Modal, TextInput } from './ui.js'
 
 /**
@@ -84,7 +84,7 @@ export function ActionEditor({
             className="font-mono"
           />
           {action.source === 'detected' && (
-            <span className="mt-1 block text-[10px] text-ink-faint">
+            <span className="mt-1 block text-[12px] text-ink-faint">
               Detected from the project. Your edits stay after a re-scan.
             </span>
           )}
@@ -119,14 +119,16 @@ export function ActionEditor({
       </div>
 
       <div className="mt-5">
-        <h3 className="mb-2 text-[10px] uppercase tracking-widest text-ink-faint">
+        <h3 className="mb-2 text-[12px] uppercase tracking-widest text-ink-faint">
           Recent runs
         </h3>
         {history.data && history.data.length > 0 ? (
           <div className="space-y-1">
             {history.data.map((r) => (
-              <div key={r.id} className="flex items-center gap-3 text-[11px] text-ink-dim">
-                <span className="w-16 uppercase">{statusLabel(r.status)}</span>
+              <div key={r.id} className="flex items-center gap-3 text-[12px] text-ink-dim">
+                <span className="w-16 uppercase" style={{ color: statusColor(r.status) }}>
+                  {statusLabel(r.status)}
+                </span>
                 <span>{new Date(r.startedAt).toLocaleTimeString()}</span>
                 {r.exitedAt && <span>· {Math.round((r.exitedAt - r.startedAt) / 1000)}s</span>}
                 {r.exitCode != null && <span>· exit {r.exitCode}</span>}
@@ -134,7 +136,7 @@ export function ActionEditor({
             ))}
           </div>
         ) : (
-          <p className="text-[11px] text-ink-faint">No runs yet.</p>
+          <p className="text-[12px] text-ink-faint">No runs yet.</p>
         )}
       </div>
 

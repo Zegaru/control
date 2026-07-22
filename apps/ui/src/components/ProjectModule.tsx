@@ -107,7 +107,7 @@ export function ProjectModule({
         className="bezel-raised flex h-full min-h-[200px] w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-panel-edge text-ink-faint hover:not-data-disabled:border-phosphor-dim hover:not-data-disabled:text-phosphor"
       >
         <span className="text-3xl">+</span>
-        <span className="font-ui text-[11px] uppercase tracking-wider">Add Project</span>
+        <span className="font-ui text-[12px] uppercase tracking-wider">Add Project</span>
       </Button>
     );
   }
@@ -125,16 +125,16 @@ export function ProjectModule({
             onClick={onClick}
             aria-label={name ? `Open ${name}` : 'Open project'}
             className={cn(
-              'group/header -my-0.5 min-h-0 min-w-0 flex-1 items-start justify-start rounded-sm px-2 py-2 text-left',
+              'group/header -my-0.5 min-h-0 min-w-0 flex-1 items-start justify-start rounded-sm px-1 py-1 text-left',
               'transition-[background-color,box-shadow,transform] duration-150 ease-out',
               'hover:not-data-disabled:bg-phosphor/6 hover:not-data-disabled:shadow-[inset_0_0_0_1px_rgba(125,252,154,0.14),inset_0_0_16px_rgba(125,252,154,0.05)]',
               'active:not-data-disabled:bg-phosphor/10 active:not-data-disabled:shadow-[inset_0_2px_10px_rgba(0,0,0,0.45)]'
             )}
           >
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <Led status={projectStatus} pulse={busy} ring={!!on || !!busy} />
-                <div className="flex min-w-0 items-center gap-2">
+                <div className="flex min-w-0 items-center gap-1">
                   {favorite && <Star size={14} weight="fill" className="text-amber" />}
                   <span className="font-ui text-[15px] font-semibold uppercase tracking-[0.08em] leading-none text-ink transition-colors duration-150 group-hover/header:text-phosphor group-active/header:text-phosphor-dim">
                     {name}
@@ -142,7 +142,7 @@ export function ProjectModule({
                 </div>
               </div>
               {path && (
-                <div className="mt-1.5 truncate pl-5 text-[10px] leading-tight text-ink-faint transition-colors duration-150 group-hover/header:text-ink-dim group-active/header:text-ink-dim">
+                <div className="mt-1 truncate pl-5 text-[12px] leading-tight text-ink-faint transition-colors duration-150 group-hover/header:text-ink-dim group-active/header:text-ink-dim">
                   {path}
                 </div>
               )}
@@ -193,7 +193,7 @@ export function ProjectModule({
                     >
                       {svc.name}
                       {svc.kind === 'group' && (
-                        <span className="ml-1.5 text-[9px] uppercase tracking-wider text-ink-faint">
+                        <span className="ml-1.5 text-[12px] uppercase tracking-wider text-ink-faint">
                           group
                         </span>
                       )}
@@ -222,7 +222,7 @@ export function ProjectModule({
                           e.stopPropagation();
                           onToggleService(svc);
                         }}
-                        className="shrink-0 px-2 py-0.5 text-[9px]"
+                        className="shrink-0 px-2 py-0.5 text-[12px]"
                       >
                         {active ? 'STOP' : 'START'}
                       </Button>

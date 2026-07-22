@@ -17,8 +17,8 @@
   --color-danger-glow: rgba(255, 95, 86, 0.55);
   --color-info: #5eb8ff;
   --color-ink: #d4d4d4;
-  --color-ink-dim: #8a8a8a;
-  --color-ink-faint: #807e7e;
+  --color-ink-dim: #b0b0b0;
+  --color-ink-faint: #a8a8a8;
 
   --font-mono: 'JetBrains Mono', 'SF Mono', 'Consolas', ui-monospace, monospace;
   --font-ui: 'Chakra Petch', 'Segoe UI', sans-serif;

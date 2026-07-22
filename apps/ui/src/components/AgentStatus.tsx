@@ -57,7 +57,7 @@ export function AgentStatus({online, label}: {online: boolean; label?: string}) 
         <Led status={online ? 'healthy' : 'failed'} pulse={online} ring />
         <span
           className={cn(
-            'font-ui min-w-0 flex-1 truncate text-[10px] uppercase tracking-[0.16em]',
+            'font-ui min-w-0 flex-1 truncate text-[12px] uppercase tracking-[0.16em]',
             online ? 'text-phosphor text-glow' : 'text-ink-dim'
           )}
         >
@@ -65,8 +65,8 @@ export function AgentStatus({online, label}: {online: boolean; label?: string}) 
         </span>
         <span
           className={cn(
-            'font-ui shrink-0 text-[8px] uppercase tracking-[0.18em]',
-            online ? 'text-phosphor/70' : 'text-danger/70'
+            'font-ui shrink-0 text-[12px] uppercase tracking-[0.18em]',
+            online ? 'text-phosphor' : 'text-danger'
           )}
         >
           {online ? 'Live' : 'Down'}

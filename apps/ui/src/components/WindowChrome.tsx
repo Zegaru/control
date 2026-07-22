@@ -34,7 +34,7 @@ export function WindowChrome() {
         className="window-drag-gutter flex min-w-0 flex-1 items-center px-3"
         onDoubleClick={toggleMaximize}
       >
-        <span className="font-ui text-[10px] uppercase tracking-[0.22em] text-ink-faint/70">
+        <span className="font-ui text-[10px] uppercase tracking-[0.22em] text-ink-faint">
           CONTROL
         </span>
       </div>

@@ -2,7 +2,7 @@ import {useQuery} from '@tanstack/react-query';
 import type {ContainerHealth, ContainerState} from '@control/shared';
 import {api} from '../api.js';
 import {LogPanel} from './LogPanel.js';
-import {Led} from './kit.js';
+import {Led, statusColor} from './kit.js';
 import {SideDrawer} from './ui.js';
 
 function dockerLed(state: ContainerState, health: ContainerHealth) {
@@ -40,7 +40,10 @@ export function ContainerDrawer({
         <>
           <Led status={c ? dockerLed(c.state, c.health) : 'idle'} pulse={c?.health === 'starting'} />
           <span className="truncate">{c?.name ?? containerId.slice(0, 12)}</span>
-          <span className="text-[10px] uppercase tracking-wider text-ink-faint">
+          <span
+            className="text-[12px] uppercase tracking-wider"
+            style={{color: statusColor(c ? dockerLed(c.state, c.health) : 'idle')}}
+          >
             {c?.status ?? ''}
           </span>
           {c?.ports
@@ -51,7 +54,7 @@ export function ContainerDrawer({
                 href={`http://localhost:${p.publicPort}`}
                 target="_blank"
                 rel="noreferrer"
-                className="rounded border border-phosphor-dim px-2 py-0.5 text-[11px] text-phosphor"
+                className="rounded border border-phosphor-dim px-2 py-0.5 text-[12px] text-phosphor"
               >
                 :{p.publicPort} ↗
               </a>

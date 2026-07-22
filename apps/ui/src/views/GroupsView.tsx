@@ -97,7 +97,7 @@ export function GroupsView() {
                       )}
                     </span>
                     {s.waitFor !== 'none' && (
-                      <span className="text-[10px] uppercase tracking-wider text-amber">
+                      <span className="text-[12px] uppercase tracking-wider text-amber">
                         then wait for {s.waitFor}
                       </span>
                     )}

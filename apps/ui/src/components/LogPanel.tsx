@@ -202,20 +202,20 @@ export function LogPanel({runId, containerId}: {runId?: string; containerId?: st
                   : 'Attach only works while this run is live'
               }
               onClick={toggleAttach}
-              className="px-2 py-0.5 text-[10px] uppercase tracking-wider"
+              className="px-2 py-0.5 uppercase tracking-wider"
             >
               {attached ? 'Attached' : 'Attach'}
             </Button>
             {attached ? (
-              <span className="text-[10px] text-phosphor">Click log pane, then type</span>
+              <span className="text-[12px] text-phosphor">Click log pane, then type</span>
             ) : (
-              <span className="text-[10px] text-ink-faint">
+              <span className="text-[12px] text-ink-faint">
                 Sends keys for prompts and Ctrl+C. Not a full shell.
               </span>
             )}
           </div>
           {attached ? (
-            <span className="text-[10px] text-amber">
+            <span className="text-[12px] text-amber">
               Many dev servers ignore keyboard input. Ctrl+C still interrupts unless text is
               selected.
             </span>

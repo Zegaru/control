@@ -1,7 +1,7 @@
 import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {api} from '../api.js';
 import {LogPanel} from './LogPanel.js';
-import {Led, statusLabel, Button} from './kit.js';
+import {Led, statusColor, statusLabel, Button} from './kit.js';
 import {SideDrawer} from './ui.js';
 
 export function RunDrawer({
@@ -34,7 +34,10 @@ export function RunDrawer({
         <>
           <Led status={run?.status ?? 'idle'} pulse={run?.status === 'starting'} />
           <span>Run {runId.slice(0, 12)}</span>
-          <span className="text-[10px] uppercase tracking-wider text-ink-faint">
+          <span
+            className="text-[12px] uppercase tracking-wider"
+            style={{color: statusColor(run?.status ?? 'idle')}}
+          >
             {statusLabel(run?.status ?? 'idle')}
           </span>
           {run?.ports.map((p) => (
@@ -43,7 +46,7 @@ export function RunDrawer({
               href={`http://localhost:${p}`}
               target="_blank"
               rel="noreferrer"
-              className="rounded border border-phosphor-dim px-2 py-0.5 text-[11px] text-phosphor"
+              className="rounded border border-phosphor-dim px-2 py-0.5 text-[12px] text-phosphor"
             >
               :{p} ↗
             </a>

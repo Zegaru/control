@@ -161,7 +161,7 @@ export function App() {
               <div className="font-ui text-2xl font-bold tracking-[0.18em] text-phosphor text-glow max-lg:text-lg max-lg:tracking-[0.14em]">
                 CONTROL
               </div>
-              <div className="font-ui mt-1.5 text-[10px] uppercase tracking-[0.2em] text-ink-faint max-lg:hidden">
+              <div className="font-ui mt-1.5 text-[12px] uppercase tracking-[0.2em] text-ink-faint max-lg:hidden">
                 Local Dev Command Center
               </div>
             </div>

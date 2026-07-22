@@ -103,7 +103,7 @@ export function SettingsView() {
               <div className="font-ui text-[12px] font-semibold uppercase tracking-[0.14em] text-ink">
                 Path Filters
               </div>
-              <div className="mt-0.5 font-ui text-[10px] uppercase tracking-[0.16em] text-ink-faint">
+              <div className="mt-0.5 font-ui text-[12px] uppercase tracking-[0.16em] text-ink-faint">
                 Skip these names / globs while scanning
               </div>
             </div>
@@ -119,7 +119,7 @@ export function SettingsView() {
                   type="button"
                   title={`Remove ${g}`}
                   onClick={() => removeGlob(g)}
-                  className="group inline-flex items-center gap-1.5 rounded border border-panel-edge bg-bezel px-2 py-0.5 font-mono text-[11px] text-ink-dim hover:border-danger/50 hover:text-danger"
+                  className="group inline-flex items-center gap-1.5 rounded border border-panel-edge bg-bezel px-2 py-0.5 font-mono text-[12px] text-ink-dim hover:border-danger/50 hover:text-danger"
                 >
                   {g}
                   <X size={10} className="text-ink-faint group-hover:text-danger" />
@@ -150,7 +150,7 @@ export function SettingsView() {
               Add
             </Button>
           </div>
-          <p className="text-[11px] leading-relaxed text-ink-faint">
+          <p className="text-[12px] leading-relaxed text-ink-faint">
             Exact folder names or simple globs (<code>*</code>, <code>**</code>). Click a tag to
             remove it. Re-scan projects to apply.
           </p>
@@ -166,7 +166,7 @@ export function SettingsView() {
                 <div className="font-ui text-[12px] font-semibold uppercase tracking-[0.14em] text-ink">
                   Keep Last
                 </div>
-                <div className="mt-0.5 font-ui text-[10px] uppercase tracking-[0.16em] text-ink-faint">
+                <div className="mt-0.5 font-ui text-[12px] uppercase tracking-[0.16em] text-ink-faint">
                   Run records &amp; log files per action
                 </div>
               </div>
@@ -186,7 +186,7 @@ export function SettingsView() {
 
           <div className="bezel-recessed flex items-end justify-between overflow-visible rounded-md border border-panel-edge/60 px-4 py-3.5">
             <div>
-              <div className="font-ui text-[9px] uppercase tracking-[0.22em] text-ink-faint">
+              <div className="font-ui text-[12px] uppercase tracking-[0.22em] text-ink-faint">
                 Dial Position
               </div>
               <div className="mt-1 font-mono text-3xl font-bold tabular-nums text-phosphor text-glow">
@@ -202,7 +202,7 @@ export function SettingsView() {
             </div>
           </div>
 
-          <p className="text-[11px] leading-relaxed text-ink-faint">
+          <p className="text-[12px] leading-relaxed text-ink-faint">
             Turn the dial to set how many finished runs stay on disk. Older log files are purged
             when a run ends or when you change this value. Active runs are never deleted.
           </p>
@@ -223,7 +223,7 @@ export function SettingsView() {
               <div className="font-ui text-[12px] font-semibold uppercase tracking-[0.14em] text-ink">
                 Start On Login
               </div>
-              <div className="mt-0.5 font-ui text-[10px] uppercase tracking-[0.16em] text-ink-faint">
+              <div className="mt-0.5 font-ui text-[12px] uppercase tracking-[0.16em] text-ink-faint">
                 {inShell
                   ? autostartOn
                     ? 'CONTROL launches with Windows'
@@ -235,7 +235,7 @@ export function SettingsView() {
 
           <div className="flex items-center gap-3 self-end overflow-visible sm:self-center">
             {!inShell && (
-              <span className="font-ui text-[10px] uppercase tracking-[0.16em] text-ink-faint">
+              <span className="font-ui text-[12px] uppercase tracking-[0.16em] text-ink-faint">
                 Desktop app only
               </span>
             )}
@@ -254,7 +254,7 @@ export function SettingsView() {
             {autostartError}
           </p>
         )}
-        <p className="mt-3 text-[11px] leading-relaxed text-ink-faint">
+        <p className="mt-3 text-[12px] leading-relaxed text-ink-faint">
           Same setting as the tray menu. Flip the rocker to turn login launch on or off.
         </p>
       </Panel>

@@ -439,7 +439,7 @@ export function Dashboard({
                 <SegmentCounter value={counts.failed} label="Failed" tone="danger" />
               </div>
               <div className="mt-2 border-t border-[rgba(125,252,154,0.12)] pt-2">
-                <div className="font-ui mb-1.5 text-[10px] uppercase tracking-[0.2em] text-ink-dim">
+                <div className="font-ui mb-1.5 text-[12px] uppercase tracking-[0.2em] text-ink-dim">
                   Resource Usage
                 </div>
                 <div className="grid grid-cols-3 gap-2">
@@ -450,7 +450,7 @@ export function Dashboard({
               </div>
               {activePorts.length > 0 && (
                 <div className="mt-2 border-t border-[rgba(125,252,154,0.12)] pt-2">
-                  <div className="font-ui mb-1.5 text-[10px] uppercase tracking-[0.2em] text-ink-dim">
+                  <div className="font-ui mb-1.5 text-[12px] uppercase tracking-[0.2em] text-ink-dim">
                     Active Ports
                   </div>
                   <div className="flex flex-wrap gap-1.5">
@@ -460,9 +460,7 @@ export function Dashboard({
                       </Chip>
                     ))}
                     {activePorts.length > 6 && (
-                      <span className="opacity-60">
-                        <Chip tone="phosphor">+{activePorts.length - 6}</Chip>
-                      </span>
+                      <Chip tone="phosphor">+{activePorts.length - 6}</Chip>
                     )}
                   </div>
                 </div>
@@ -471,7 +469,7 @@ export function Dashboard({
           </Panel>
 
           <Panel
-            className="min-h-0 max-lg:h-auto max-lg:min-h-[320px] lg:col-span-5 lg:h-full"
+            className="min-h-0 max-lg:h-auto lg:col-span-5 lg:h-full"
             title={
               selectedRunId && selectedEvent ? (
                 <div className="flex min-w-0 items-center gap-3">
@@ -481,7 +479,7 @@ export function Dashboard({
                       Back
                     </span>
                   </BacklitButton>
-                  <span className="flex min-w-0 flex-1 items-center gap-2 text-[10px] uppercase tracking-wider text-ink-faint">
+                  <span className="flex min-w-0 flex-1 items-center gap-2 text-[12px] uppercase tracking-wider text-ink-faint">
                     <span className="shrink-0 p-1">
                       <Led
                         status={
@@ -509,7 +507,7 @@ export function Dashboard({
             crt
             footer={
               <div className="flex h-10 items-center gap-2 px-2 pt-4 sm:gap-3">
-                <span className="flex shrink-0 items-center gap-2 font-ui text-[10px] uppercase tracking-[0.16em] text-ink-dim sm:gap-3">
+                <span className="flex shrink-0 items-center gap-2 font-ui text-[12px] uppercase tracking-[0.16em] text-ink-dim sm:gap-3">
                   <span className="flex items-center gap-1.5">
                     <Led status={hasLevel.info ? 'healthy' : 'idle'} ring={hasLevel.info} />
                     <span className="max-sm:sr-only">INFO</span>
@@ -556,7 +554,7 @@ export function Dashboard({
               </div>
             }
           >
-            <div className="min-h-0 flex-1 overflow-hidden max-lg:min-h-[220px]">
+            <div className="min-h-0 flex-1 overflow-y-auto max-lg:max-h-[min(320px,40dvh)] lg:overflow-hidden">
               <div key={selectedRunId ?? 'event-list'} className="event-panel-fade h-full min-h-0">
                 {selectedRunId ? (
                   <div className="h-full overflow-hidden rounded-lg border border-[rgba(0,0,0,0.6)] bg-[#0b0d0a] p-1">
@@ -593,11 +591,11 @@ export function Dashboard({
                               className="flex w-full flex-col gap-0.5 py-2 text-left hover:bg-phosphor/4 lg:flex-row lg:items-baseline lg:gap-3 lg:py-1.5"
                             >
                               <div className="flex items-baseline justify-between gap-3 lg:contents">
-                                <span className="shrink-0 whitespace-nowrap font-mono text-[11px] tabular-nums text-ink-faint lg:text-[12px]">
+                                <span className="shrink-0 whitespace-nowrap font-mono text-[12px] tabular-nums text-ink-faint">
                                   {time}
                                 </span>
                                 <span
-                                  className="shrink-0 whitespace-nowrap text-[11px] font-medium lg:order-4 lg:text-[12px]"
+                                  className="shrink-0 whitespace-nowrap text-[12px] font-medium lg:order-4"
                                   style={{color: tone}}
                                 >
                                   {statusText}
@@ -615,7 +613,7 @@ export function Dashboard({
                                 {row.name}
                               </span>
                               {row.ports.length > 0 && (
-                                <span className="truncate font-mono text-[11px] text-info lg:order-5 lg:shrink-0 lg:text-[12px]">
+                                <span className="truncate font-mono text-[12px] text-info lg:order-5 lg:shrink-0">
                                   {row.ports.map((p) => `:${p}`).join(' ')}
                                 </span>
                               )}
@@ -638,7 +636,7 @@ export function Dashboard({
           {projects.data !== undefined && projects.data.length === 0 && (
             <div className="bezel-raised flex w-full shrink-0 flex-col justify-center rounded-lg p-1.5 max-lg:min-h-40 lg:min-w-0 lg:flex-1 lg:self-stretch">
               <div className="bezel-recessed flex h-full flex-col justify-center gap-3 rounded-md bg-bezel px-4 py-4">
-                <div className="font-ui text-[11px] uppercase tracking-[0.2em] text-ink-dim">
+                <div className="font-ui text-[12px] uppercase tracking-[0.2em] text-ink-dim">
                   No projects yet
                 </div>
                 <p className="max-w-xl text-[13px] leading-relaxed text-ink">

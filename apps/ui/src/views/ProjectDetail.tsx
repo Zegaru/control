@@ -168,7 +168,7 @@ export function ProjectDetail({
                 />
               </Button>
             </div>
-            <div className="mt-2 rounded-md border border-panel-edge bg-panel px-3 py-2 font-mono text-[11px] text-ink-faint">
+            <div className="mt-2 rounded-md border border-panel-edge bg-panel px-3 py-2 font-mono text-[12px] text-ink-faint">
               {p.rootPath}
             </div>
           </div>
@@ -206,7 +206,7 @@ export function ProjectDetail({
       <div className="grid min-h-0 flex-1 grid-cols-[minmax(260px,1fr)_minmax(0,2fr)] gap-2">
         <div className="flex min-h-0 flex-col gap-2 overflow-hidden">
           <Panel title="Compose projects" className="shrink-0">
-            <p className="mb-2 text-[11px] text-ink-faint">
+            <p className="mb-2 text-[12px] text-ink-faint">
               Link compose project names so their containers show up here. Add a name if CONTROL
               guessed wrong from the folder.
             </p>
@@ -214,7 +214,7 @@ export function ProjectDetail({
               {(p.composeProjects ?? []).map((claim) => (
                 <span
                   key={claim}
-                  className="inline-flex items-center gap-1 rounded border border-phosphor-dim px-2 py-0.5 text-[11px] text-phosphor"
+                  className="inline-flex items-center gap-1 rounded border border-phosphor-dim px-2 py-0.5 text-[12px] text-phosphor"
                 >
                   {claim}
                   <Button
@@ -245,14 +245,14 @@ export function ProjectDetail({
           </Panel>
 
           <Panel title="Port labels" className="shrink-0">
-            <p className="mb-2 text-[11px] text-ink-faint">
+            <p className="mb-2 text-[12px] text-ink-faint">
               Rename how listening ports appear on Overview and Port Map for this project (e.g.{' '}
               <code>3000 → frontend</code>).
             </p>
-            {portLabelError && <p className="mb-2 text-[11px] text-danger">{portLabelError}</p>}
+            {portLabelError && <p className="mb-2 text-[12px] text-danger">{portLabelError}</p>}
             {unlabeledListeningPorts.length > 0 && (
               <div className="mb-2">
-                <p className="mb-1.5 font-ui text-[10px] uppercase tracking-wider text-ink-faint">
+                <p className="mb-1.5 font-ui text-[12px] uppercase tracking-wider text-ink-faint">
                   Listening now
                 </p>
                 <div className="flex flex-wrap gap-1.5">
@@ -262,7 +262,7 @@ export function ProjectDetail({
                       variant="ghost"
                       type="button"
                       onClick={() => pickListeningPort(port)}
-                      className="rounded border border-dashed border-panel-edge px-2 py-0.5 text-[11px] text-ink-dim hover:not-data-disabled:border-phosphor-dim hover:not-data-disabled:text-phosphor"
+                      className="rounded border border-dashed border-panel-edge px-2 py-0.5 text-[12px] text-ink-dim hover:not-data-disabled:border-phosphor-dim hover:not-data-disabled:text-phosphor"
                       title={`Label port ${port}`}
                     >
                       :{port}
@@ -276,7 +276,7 @@ export function ProjectDetail({
               {portLabelEntries.map(([port, label]) => (
                 <span
                   key={port}
-                  className="inline-flex items-center gap-1 rounded border border-phosphor-dim px-2 py-0.5 text-[11px] text-phosphor"
+                  className="inline-flex items-center gap-1 rounded border border-phosphor-dim px-2 py-0.5 text-[12px] text-phosphor"
                 >
                   {port} · {label}
                   <Button
@@ -330,7 +330,7 @@ export function ProjectDetail({
           </Panel>
 
           <Panel title="Environments" className="flex min-h-0 flex-1 flex-col">
-            <p className="mb-3 shrink-0 text-[11px] text-ink-faint">
+            <p className="mb-3 shrink-0 text-[12px] text-ink-faint">
               Named setups for what Overview turns on. Star one as the default; change it from the
               Overview selector.
             </p>
@@ -363,7 +363,7 @@ export function ProjectDetail({
                           <span>{env.name}</span>
                           {isDefault && <Chip tone="phosphor">default</Chip>}
                         </div>
-                        <div className="truncate text-[10px] text-ink-faint">{targetLabel}</div>
+                        <div className="truncate text-[12px] text-ink-faint">{targetLabel}</div>
                       </div>
                       <Button
                         variant="ghost"
@@ -435,7 +435,7 @@ export function ProjectDetail({
                     <section key={mod.id}>
                       {showModuleHeader && (
                         <header className="mb-3 flex items-center justify-between gap-3 border-b border-panel-edge pb-2">
-                          <h3 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-ink-dim">
+                          <h3 className="text-[12px] font-semibold uppercase tracking-[0.2em] text-ink-dim">
                             {mod.relPath === '' ? `${mod.name} (root)` : mod.relPath}
                           </h3>
                           <div className="flex gap-1">
@@ -459,7 +459,7 @@ export function ProjectDetail({
                               variant="ghost"
                               onClick={() => setShowSecondary((v) => !v)}
                               aria-expanded={showSecondary}
-                              className="mt-2 block px-0 py-0 text-left text-[11px] uppercase tracking-wider text-ink-faint hover:not-data-disabled:text-ink-dim"
+                              className="mt-2 block px-0 py-0 text-left text-[12px] uppercase tracking-wider text-ink-faint hover:not-data-disabled:text-ink-dim"
                             >
                               <span
                                 className={cn(
@@ -492,7 +492,7 @@ export function ProjectDetail({
                         <Button
                           variant="ghost"
                           onClick={() => setAddingCommand({moduleId: mod.id})}
-                          className="mt-2 block px-0 py-0 text-left text-[11px] uppercase tracking-wider text-ink-faint hover:not-data-disabled:text-phosphor"
+                          className="mt-2 block px-0 py-0 text-left text-[12px] uppercase tracking-wider text-ink-faint hover:not-data-disabled:text-phosphor"
                         >
                           + Add command
                         </Button>

@@ -23,8 +23,8 @@ export type ButtonProps = Omit<BaseButtonProps, 'className'> & {
 };
 
 const sizeCls: Record<ButtonSize, string> = {
-  sm: 'px-3 py-1.5 text-[10px]',
-  md: 'px-4 py-2 text-[11px]',
+  sm: 'px-3 py-1.5 text-[12px]',
+  md: 'px-4 py-2 text-[12px]',
 };
 
 const mechToneCls: Record<ButtonTone, string> = {
@@ -173,7 +173,7 @@ export type SelectProps = {
 
 const selectTriggerSizeCls: Record<SelectSize, string> = {
   md: 'min-h-9 px-3 py-2 text-sm',
-  sm: 'min-h-7 px-2 py-1 text-[10px] uppercase tracking-wider',
+  sm: 'min-h-7 px-2 py-1 text-[12px] uppercase tracking-wider',
 };
 
 const selectTriggerCls =
@@ -197,7 +197,7 @@ const selectItemCls =
   'data-selected:text-phosphor';
 
 const selectGroupLabelCls =
-  'py-1.5 pr-3 pl-2.5 text-[10px] font-semibold uppercase tracking-widest text-ink-faint select-none';
+  'py-1.5 pr-3 pl-2.5 text-[12px] font-semibold uppercase tracking-widest text-ink-faint select-none';
 
 function SelectChevron({className}: {className?: string}) {
   return (
@@ -274,7 +274,7 @@ export function Select({
     ...options,
     ...groups.flatMap((g) => g.options),
   ];
-  const itemClassName = size === 'sm' ? 'text-[10px] uppercase tracking-wider' : undefined;
+  const itemClassName = size === 'sm' ? 'text-[12px] uppercase tracking-wider' : undefined;
 
   return (
     <BaseSelect.Root

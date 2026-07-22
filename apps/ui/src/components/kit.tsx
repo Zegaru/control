@@ -24,9 +24,8 @@ export type {
 export function statusColor(status: RunStatus | 'idle'): string {
   switch (status) {
     case 'healthy':
-      return 'var(--color-phosphor)';
     case 'running':
-      return 'var(--color-phosphor-dim)';
+      return 'var(--color-phosphor)';
     case 'starting':
       return 'var(--color-amber)';
     case 'unhealthy':
@@ -117,7 +116,7 @@ export function Panel({
                   <header className="font-ui mb-1 flex shrink-0 items-center justify-between gap-3 overflow-visible pb-1">
                     {title ? (
                       typeof title === 'string' ? (
-                        <h2 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-ink-dim">
+                        <h2 className="text-[12px] font-semibold uppercase tracking-[0.2em] text-ink-dim">
                           {title}
                         </h2>
                       ) : (
@@ -203,7 +202,7 @@ export function Chip({
       : 'border-panel-edge text-ink-dim bg-bezel shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)]';
   return (
     <span
-      className={`inline-flex items-center overflow-visible rounded px-2 py-0.5 text-[11px] font-medium ${toneCls}`}
+      className={`inline-flex items-center overflow-visible rounded px-2 py-0.5 text-[12px] font-medium ${toneCls}`}
     >
       {children}
     </span>
@@ -236,13 +235,16 @@ export function SegmentCounter({
       ? 'text-glow-danger'
       : '';
   return (
-    <div className="crt-well rounded-md px-4 py-2 text-center">
-      <div className={`text-2xl font-bold ${glowCls}`} style={{color}}>
+    <div className="crt-well flex min-w-0 flex-col items-center justify-center rounded-md px-1 py-2 sm:px-2">
+      <div
+        className={`text-xl font-bold leading-none tabular-nums sm:text-2xl ${glowCls}`}
+        style={{color}}
+      >
         {value}
       </div>
       <div
-        className="font-ui mt-1.5 text-[10px] uppercase tracking-widest"
-        style={{color, opacity: 0.65}}
+        className="font-ui mt-1.5 max-w-full whitespace-nowrap text-center text-[10px] uppercase leading-none tracking-[var(--seg-track)] [margin-inline-end:calc(var(--seg-track)*-1)] [--seg-track:0.08em] sm:text-[11px] sm:[--seg-track:0.12em] lg:text-[12px] lg:[--seg-track:0.14em]"
+        style={{color}}
       >
         {label}
       </div>
@@ -422,7 +424,7 @@ export function CircularGauge({
     ) : (
       <>
         {Math.round(animated)}
-        {unit ? <span className="text-[0.65em] opacity-70">{unit}</span> : null}
+        {unit ? <span className="text-[0.65em] text-ink-dim">{unit}</span> : null}
       </>
     ));
 
@@ -437,7 +439,8 @@ export function CircularGauge({
           <span
             className={cn(
               'font-ui font-medium uppercase tracking-[0.14em] text-ink-dim',
-              size === 'xs' ? 'text-[7px]' : 'text-[9px]'
+              // xs (40px face) cannot fit 12px; sm/md meet the readable floor
+              size === 'xs' ? 'text-[10px]' : 'text-[12px]'
             )}
           >
             {label}
@@ -445,8 +448,8 @@ export function CircularGauge({
           <span
             className={cn(
               'gauge-readout font-ui mt-0.5 font-semibold leading-none text-ink tabular-nums',
-              size === 'xs' ? 'text-[11px]' : size === 'sm' ? 'text-sm' : 'text-base',
-              detail && 'mt-1 flex flex-col items-center gap-0.5 text-[10px] font-medium'
+              size === 'xs' ? 'text-[12px]' : size === 'sm' ? 'text-sm' : 'text-base',
+              detail && 'mt-1 flex flex-col items-center gap-0.5 text-[12px] font-medium'
             )}
           >
             {readout}
@@ -758,7 +761,7 @@ export function Sparkline({data, label, unit}: {data: number[]; label: string; u
   return (
     <div className="crt-well flex items-end justify-between gap-2 rounded-md px-3 py-2.5">
       <div className="min-w-0">
-        <div className="font-ui text-[9px] uppercase tracking-wider text-phosphor opacity-60">
+        <div className="font-ui text-[12px] uppercase tracking-wider text-phosphor">
           {label}
         </div>
         <div className="mt-1 text-lg font-bold leading-none text-glow text-phosphor">
@@ -798,11 +801,11 @@ export function TerminalScreen({
   return (
     <div className={`crt-frame mx-2 mb-2 ${className}`}>
       <div className="crt bezel-recessed flex h-full flex-col overflow-hidden rounded-xl border border-black">
-        <div className="relative z-10 flex-1 overflow-y-auto p-6 text-[11px] leading-relaxed text-glow-info">
+        <div className="relative z-10 flex-1 overflow-y-auto p-6 text-[12px] leading-relaxed text-glow-info">
           {children}
         </div>
         {footer && (
-          <div className="font-ui relative z-10 flex items-center gap-3 border-t border-panel-edge bg-bezel/80 px-4 py-3 text-[10px] uppercase tracking-wider text-ink-faint backdrop-blur-sm">
+          <div className="font-ui relative z-10 flex items-center gap-3 border-t border-panel-edge bg-bezel/80 px-4 py-3 text-[12px] uppercase tracking-wider text-ink-faint backdrop-blur-sm">
             {footer}
           </div>
         )}
