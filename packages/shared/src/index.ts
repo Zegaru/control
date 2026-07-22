@@ -147,6 +147,8 @@ export const actionSchema = z.object({
   /** Long-running server (dev/start/serve/watch) vs one-shot task (build/test/lint). */
   primary: z.boolean(),
   envOverrides: z.record(z.string()).nullable().optional(),
+  /** Relative basenames or module-relative posix paths (e.g. `.env.local`, `config/.env`). */
+  envFiles: z.array(z.string().min(1)).nullable().optional(),
   portHint: z.number().int().positive().nullable().optional(),
   healthUrl: healthUrlFieldSchema,
 })
@@ -313,6 +315,7 @@ export const createActionBodySchema = z
     portHint: z.number().int().positive().nullable().optional(),
     healthUrl: healthUrlFieldSchema,
     envOverrides: z.record(z.string()).nullable().optional(),
+    envFiles: z.array(z.string().min(1)).nullable().optional(),
   })
   .refine((b) => Boolean(b.moduleId) !== Boolean(b.projectId), {
     message: 'Provide exactly one of moduleId or projectId',
@@ -327,6 +330,7 @@ export const patchActionBodySchema = z.object({
   portHint: z.number().int().positive().nullable().optional(),
   healthUrl: healthUrlFieldSchema,
   envOverrides: z.record(z.string()).nullable().optional(),
+  envFiles: z.array(z.string().min(1)).nullable().optional(),
 })
 export type PatchActionBody = z.infer<typeof patchActionBodySchema>
 
