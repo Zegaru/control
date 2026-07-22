@@ -12,6 +12,12 @@ A local daemon owns process supervision (host processes and Docker stacks).
 The React UI is a thin client over it, so closing the UI never kills your
 servers.
 
+![CONTROL overview — dashboard, system status, and project cards](./docs/screenshots/overview.png)
+
+*Project detail — modules, commands, environments, and port labels:*
+
+![CONTROL project detail](./docs/screenshots/project.png)
+
 See [DESIGN.md](./DESIGN.md) for product goals, design & requirements.
 Agent/CI conventions: [AGENTS.md](./AGENTS.md).
 Contributing: [CONTRIBUTING.md](./CONTRIBUTING.md).
@@ -110,12 +116,6 @@ pnpm rebuild better-sqlite3 node-pty
 Build scripts for those packages are allowlisted in `pnpm-workspace.yaml`
 (`allowBuilds`). If install still fails, see [CONTRIBUTING.md](./CONTRIBUTING.md)
 and the README Prerequisites section above.
-
-## Screenshots
-
-![Overview](./docs/screenshots/overview.png)
-
-![Project detail](./docs/screenshots/project.png)
 
 ## What’s implemented
 

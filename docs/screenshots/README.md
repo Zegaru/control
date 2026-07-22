@@ -1,6 +1,6 @@
 # Screenshots
 
-Linked from the root [README](../../README.md#screenshots):
+Linked from the root [README](../../README.md) (hero, below the intro).
 
 - `overview.png` — Dashboard / Overview
 - `project.png` — Project detail (modules, commands, environments)
