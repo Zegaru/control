@@ -713,7 +713,7 @@ export function MasterPower({
       onClick={(e) => e.stopPropagation()}
       className={cn(
         'rocker-housing rocker-danger font-ui relative flex flex-col rounded-md font-bold tracking-wide data-disabled:opacity-40',
-        compact ? 'h-12 w-14 p-1 text-[8px]' : 'h-18 w-21 p-1.5 text-[10px]',
+        compact ? 'h-12 w-10 p-1 text-[8px]' : 'h-18 w-21 p-1.5 text-[10px]',
         on ? 'rocker-on' : 'rocker-off'
       )}
     >

@@ -59,9 +59,23 @@ function VentGrill({className = ''}: {className?: string}) {
           transform={`rotate(${i * 30} 24 24)`}
         />
       ))}
-      <circle cx="24" cy="24" r="6.5" fill="#1c1c1c" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+      <circle
+        cx="24"
+        cy="24"
+        r="6.5"
+        fill="#1c1c1c"
+        stroke="rgba(255,255,255,0.12)"
+        strokeWidth="1"
+      />
       <circle cx="24" cy="24" r="6.5" fill="none" stroke="#000" strokeWidth="0.75" />
-      <circle cx="24" cy="24" r="2.75" fill="#0c0c0c" stroke="rgba(255,255,255,0.08)" strokeWidth="0.5" />
+      <circle
+        cx="24"
+        cy="24"
+        r="2.75"
+        fill="#0c0c0c"
+        stroke="rgba(255,255,255,0.08)"
+        strokeWidth="0.5"
+      />
     </svg>
   );
 }
@@ -84,9 +98,7 @@ const BRAND_TAGLINES = [
 const LONGEST_TAGLINE = BRAND_TAGLINES.reduce((a, b) => (a.length >= b.length ? a : b));
 
 function pickTagline(exclude?: string): string {
-  const pool = exclude
-    ? BRAND_TAGLINES.filter((line) => line !== exclude)
-    : [...BRAND_TAGLINES];
+  const pool = exclude ? BRAND_TAGLINES.filter((line) => line !== exclude) : [...BRAND_TAGLINES];
   return pool[Math.floor(Math.random() * pool.length)] ?? BRAND_TAGLINES[0];
 }
 
@@ -168,7 +180,7 @@ export function ControlStrip({
       <div
         className={cn(
           'bezel-recessed min-w-0 overflow-visible rounded-md bg-bezel',
-          compact ? 'px-2 py-1.5' : 'py-2.5 pl-5 pr-3'
+          compact ? 'px-1.5 py-1' : 'py-2.5 pl-5 pr-3'
         )}
       >
         <div
@@ -178,11 +190,7 @@ export function ControlStrip({
           )}
         >
           <div className="flex shrink-0 items-center gap-3 overflow-visible">
-            <MasterPower
-              on={masterOn}
-              onToggle={onMasterToggle}
-              size={compact ? 'sm' : 'md'}
-            />
+            <MasterPower on={masterOn} onToggle={onMasterToggle} size={compact ? 'sm' : 'md'} />
             {!compact && (
               <span className="font-ui text-[9px] uppercase tracking-widest text-ink-faint">
                 Master Power
@@ -190,7 +198,12 @@ export function ControlStrip({
             )}
           </div>
 
-          <div className={cn('flex shrink-0 items-center overflow-visible', compact ? 'gap-1' : 'gap-2')}>
+          <div
+            className={cn(
+              'flex shrink-0 items-center overflow-visible',
+              compact ? 'gap-1' : 'gap-2'
+            )}
+          >
             {actions.map((a) => (
               <BacklitButton
                 key={a.label}
@@ -200,7 +213,7 @@ export function ControlStrip({
                 holdMs={a.holdMs}
                 disabled={a.disabled}
               >
-                {compact ? (a.shortLabel ?? a.label) : a.label}
+                {compact ? a.shortLabel ?? a.label : a.label}
               </BacklitButton>
             ))}
           </div>
