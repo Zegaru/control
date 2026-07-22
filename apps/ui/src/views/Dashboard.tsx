@@ -121,7 +121,7 @@ export function Dashboard({
   const [adding, setAdding] = useState(false);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [logFilter, setLogFilter] = useState<LogFilter>('all');
-  /** Optimistic amber while a project toggle is in flight (esp. stop — daemon has no stopping status). */
+  /** Optimistic amber while a project toggle is in flight (until live power state matches). */
   const [pendingToggle, setPendingToggle] = useState<Record<string, 'on' | 'off'>>({});
   const [metricHistory, setMetricHistory] = useState<{
     cpu: number[];
@@ -328,34 +328,28 @@ export function Dashboard({
           const {[tree.id]: _, ...rest} = p;
           return rest;
         });
-      } finally {
-        if (dir === 'on') {
-          setPendingToggle((p) => {
-            const {[tree.id]: _, ...rest} = p;
-            return rest;
-          });
-        }
       }
     },
     [invalidate, pendingToggle, runningContainers]
   );
 
-  // Clear stop-pending once action runs and project containers are gone.
+  // Clear optimistic pending once the target power state is observed in tree/container data.
   useEffect(() => {
-    const offIds = Object.entries(pendingToggle)
-      .filter(([, dir]) => dir === 'off')
-      .map(([id]) => id);
-    if (offIds.length === 0) return;
+    const entries = Object.entries(pendingToggle);
+    if (entries.length === 0) return;
 
-    const settled = offIds.filter((id) => {
-      const tree = treeData.find((t) => t.id === id);
-      if (!tree) return true;
-      const actionsLive = tree.modules.some((m) =>
-        m.actions.some((a) => a.activeRun && isActiveStatus(a.activeRun.status))
-      );
-      const containersLive = runningContainers.some((c) => c.projectId === id);
-      return !actionsLive && !containersLive;
-    });
+    const settled = entries
+      .filter(([id, dir]) => {
+        const tree = treeData.find((t) => t.id === id);
+        if (!tree) return dir === 'off';
+        const actionsLive = tree.modules.some((m) =>
+          m.actions.some((a) => a.activeRun && isActiveStatus(a.activeRun.status))
+        );
+        const containersLive = runningContainers.some((c) => c.projectId === id);
+        const live = actionsLive || containersLive;
+        return dir === 'off' ? !live : live;
+      })
+      .map(([id]) => id);
     if (settled.length === 0) return;
 
     setPendingToggle((p) => {
