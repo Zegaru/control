@@ -6,19 +6,20 @@ import {api} from '../api.js';
 import {
   BacklitButton,
   Chip,
-  ControlStrip,
   Led,
   Panel,
-  ProjectModule,
   RotaryKnob,
   SegmentCounter,
   Sparkline,
   statusLabel,
-  type ControlStripNotification,
-  type ProjectService,
 } from '../components/kit.js';
 import {AddProjectDialog} from '../components/AddProjectDialog.js';
+import {
+  ControlStrip,
+  type ControlStripNotification,
+} from '../components/ControlStrip.js';
 import {LogPanel} from '../components/LogPanel.js';
+import {ProjectModule, type ProjectService} from '../components/ProjectModule.js';
 import {useSocket} from '../socket.js';
 import type {EventLogLevel} from '../useWs.js';
 

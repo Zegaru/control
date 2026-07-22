@@ -82,14 +82,14 @@ All primitives live in [`src/components/kit.tsx`](src/components/kit.tsx).
 | Component | Props (key) | Mockup role |
 |-----------|-------------|-------------|
 | `NavItem` | `icon`, `label`, `active`, `onClick` | Sidebar nav (amber active) |
-| `AgentStatus` | `online`, `label?` | Sidebar footer + waveform |
+| `AgentStatus` | `online`, `label?` | Sidebar footer + waveform (`AgentStatus.tsx`) |
 
 ### Compositions
 
 | Component | Props (key) | Mockup role |
 |-----------|-------------|-------------|
-| `ProjectModule` | `name`, `path`, `on`, `onToggle`, `services`, `metrics?`, `variant?` | Project card module |
-| `ControlStrip` | `masterOn`, `onMasterToggle`, `actions`, `gauges`, `notifications?` | Bottom rack strip |
+| `ProjectModule` | `name`, `path`, `on`, `onToggle`, `services`, `metrics?`, `variant?` | Project card module (`ProjectModule.tsx`) |
+| `ControlStrip` | `masterOn`, `onMasterToggle`, `actions`, `gauges`, `notifications?` | Bottom rack strip (`ControlStrip.tsx`) |
 
 ## View mapping
 
@@ -110,8 +110,11 @@ Import and render once during development to verify primitives:
 import {
   Led, Panel, RockerToggle, Chip, SegmentCounter, Sparkline,
   TerminalScreen, RotaryKnob, CircularGauge, BacklitButton, MasterPower,
-  NavItem, AgentStatus, ProjectModule, ControlStrip,
+  NavItem,
 } from './components/kit.js'
+import {AgentStatus} from './components/AgentStatus.js'
+import {ProjectModule} from './components/ProjectModule.js'
+import {ControlStrip} from './components/ControlStrip.js'
 
 // Led row: idle, starting (pulse), healthy, failed
 // Panel crt + SegmentCounter grid + Sparkline row
