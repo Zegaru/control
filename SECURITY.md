@@ -26,9 +26,9 @@ issue beyond this documented model.
 
 ## Reporting a vulnerability
 
-Open a **private** GitHub Security Advisory on this repository once it is
-published. Until then, contact the maintainer via the GitHub profile that owns
-the repo. Please do not file a public issue for an undisclosed vulnerability.
+Open a **private** [GitHub Security Advisory](https://github.com/Zegaru/control/security/advisories/new)
+on this repository. Please do not file a public issue for an undisclosed
+vulnerability.
 
 Include:
 

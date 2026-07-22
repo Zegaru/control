@@ -24,7 +24,7 @@ By participating, you agree to follow the
 From a fresh clone (same sequence as the README **Get running** section):
 
 ```bash
-git clone <repo-url> control
+git clone git@github.com:Zegaru/control.git
 cd control
 corepack enable
 pnpm install
@@ -77,6 +77,30 @@ Optional during development: `pnpm test:watch` (Vitest watch) and
 
 Report vulnerabilities per [SECURITY.md](./SECURITY.md). Do not open a public
 issue for an undisclosed vulnerability.
+
+## Cutting a release
+
+Maintainers only. CONTROL ships a Windows NSIS installer from GitHub Actions.
+
+1. Update `[Unreleased]` notes in [`CHANGELOG.md`](./CHANGELOG.md), then move
+   them under a new `## [x.y.z] — YYYY-MM-DD` section and refresh the compare
+   links at the bottom.
+2. Bump versions everywhere:
+   ```bash
+   pnpm bump x.y.z
+   ```
+3. Commit on `main` (include the changelog + bump).
+4. Tag and push:
+   ```bash
+   git tag -a vx.y.z -m "vx.y.z"
+   git push origin main --tags
+   ```
+5. The [Release](https://github.com/Zegaru/control/actions/workflows/release.yml)
+   workflow builds on `windows-latest` and publishes
+   `Control_*_x64-setup.exe` plus `SHA256SUMS` to the GitHub Release.
+
+Installers are **unsigned** for now — SmartScreen may warn until Authenticode
+signing is added.
 
 ## Architecture pointers
 

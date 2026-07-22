@@ -43,7 +43,7 @@ CI runs `typecheck` / `test` / `lint` on `ubuntu-latest` and `windows-latest`.
 Contributor setup from a fresh clone:
 
 ```bash
-git clone <repo-url> control
+git clone git@github.com:Zegaru/control.git
 cd control
 corepack enable
 pnpm install          # compiles native modules (node-pty, better-sqlite3)
@@ -87,10 +87,15 @@ pnpm --filter @control/shell build
 ```
 
 Produces an installer under
-`apps/shell/src-tauri/target/release/bundle/`. Prerequisites (Rust, WebView2,
-MSVC) and dev workflow: [`apps/shell/README.md`](./apps/shell/README.md).
+`apps/shell/src-tauri/target/release/bundle/nsis/`
+(e.g. `Control_0.1.0_x64-setup.exe`). Prerequisites (Rust, WebView2, MSVC) and
+dev workflow: [`apps/shell/README.md`](./apps/shell/README.md).
 Node ≥22 must stay on `PATH` at runtime. Unsigned builds may trigger SmartScreen
 until signed releases exist.
+
+Tagged releases (`v*`) build that installer on GitHub Actions and attach it to
+the [GitHub Release](https://github.com/Zegaru/control/releases). See
+[CONTRIBUTING.md](./CONTRIBUTING.md#cutting-a-release).
 
 ## If `pnpm install` fails
 
@@ -108,8 +113,9 @@ and the README Prerequisites section above.
 
 ## Screenshots
 
-Real UI captures welcome under [`docs/screenshots/`](./docs/screenshots/).
-Add PNGs there and link them from this section when available.
+![Overview](./docs/screenshots/overview.png)
+
+![Project detail](./docs/screenshots/project.png)
 
 ## What’s implemented
 

@@ -1,4 +1,6 @@
-# Prefer private advisories for vulnerabilities — see SECURITY.md in the repo root.
-# Once this repository is on GitHub, add a contact_links entry to
-# https://github.com/<owner>/<repo>/security/advisories/new
+# Prefer private advisories for vulnerabilities — see SECURITY.md.
 blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/Zegaru/control/security/advisories/new
+    about: Report an undisclosed vulnerability privately (do not file a public issue).

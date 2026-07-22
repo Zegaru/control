@@ -4,6 +4,14 @@
   "private": true,
   "license": "MIT",
   "description": "CONTROL — Local Dev Command Center. One UI to see and manage every dev server across your projects.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Zegaru/control.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Zegaru/control/issues"
+  },
+  "homepage": "https://github.com/Zegaru/control#readme",
   "type": "module",
   "packageManager": "pnpm@11.5.3",
   "engines": {
@@ -20,7 +28,8 @@
     "test:watch": "vitest",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
-    "start": "pnpm --filter @control/daemon start"
+    "start": "pnpm --filter @control/daemon start",
+    "bump": "node scripts/bump-version.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.4",
