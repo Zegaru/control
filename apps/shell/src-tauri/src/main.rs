@@ -17,6 +17,7 @@ use tauri_plugin_positioner::{Position, WindowExt};
 
 const DAEMON_ORIGIN: &str = "http://127.0.0.1:4400";
 const DAEMON_ADDR: &str = "127.0.0.1:4400";
+const VITE_UI_ORIGIN: &str = "http://127.0.0.1:5173";
 /// Nudge the tray popover down from TrayCenter (pixels).
 const TRAY_POPOVER_Y_NUDGE: i32 = 24;
 
@@ -35,8 +36,8 @@ fn is_control_home(p: &Path) -> bool {
     p.join("apps").join("daemon").exists()
 }
 
-/// Locate CONTROL_HOME: env override, then bundled resources (installed app),
-/// then walk up from the executable to a monorepo checkout (dev).
+/// Locate CONTROL_HOME: env override, then (dev) monorepo checkout, then bundled
+/// resources (installed app), then monorepo walk-up from the executable.
 fn find_control_home(app: &AppHandle) -> Option<PathBuf> {
     if let Ok(home) = std::env::var("CONTROL_HOME") {
         let p = PathBuf::from(home);
@@ -45,12 +46,21 @@ fn find_control_home(app: &AppHandle) -> Option<PathBuf> {
         }
     }
 
+    #[cfg(debug_assertions)]
+    if let Some(home) = find_monorepo_home() {
+        return Some(home);
+    }
+
     if let Ok(resource_dir) = app.path().resource_dir() {
         if is_control_home(&resource_dir) {
             return Some(resource_dir);
         }
     }
 
+    find_monorepo_home()
+}
+
+fn find_monorepo_home() -> Option<PathBuf> {
     let mut dir = std::env::current_exe().ok()?.parent()?.to_path_buf();
     loop {
         if dir.join("pnpm-workspace.yaml").exists() && is_control_home(&dir) {
@@ -137,6 +147,10 @@ fn spawn_daemon(home: &Path) -> std::io::Result<Child> {
     cmd.current_dir(&daemon_dir)
         .env("CONTROL_HOME", home)
         .stdin(Stdio::null());
+    #[cfg(debug_assertions)]
+    {
+        cmd.env("CONTROL_DEV", "1");
+    }
     if let Some(f) = log {
         let err = f.try_clone().ok();
         cmd.stdout(Stdio::from(f));
@@ -194,6 +208,40 @@ fn wait_for_daemon() -> bool {
         std::thread::sleep(Duration::from_millis(500));
     }
     false
+}
+
+fn is_vite_dev_up() -> bool {
+    "127.0.0.1:5173"
+        .parse::<std::net::SocketAddr>()
+        .ok()
+        .and_then(|addr| TcpStream::connect_timeout(&addr, Duration::from_millis(300)).ok())
+        .is_some()
+}
+
+/// Dev: prefer the Vite dev server (live UI). Release / no Vite: daemon-served dist.
+fn ui_load_origin() -> &'static str {
+    #[cfg(debug_assertions)]
+    {
+        if is_vite_dev_up() {
+            return VITE_UI_ORIGIN;
+        }
+    }
+    DAEMON_ORIGIN
+}
+
+fn wait_for_ui_load() -> bool {
+    let origin = ui_load_origin();
+    if origin == VITE_UI_ORIGIN {
+        for _ in 0..60 {
+            if is_vite_dev_up() && is_control_daemon_healthy() {
+                return true;
+            }
+            std::thread::sleep(Duration::from_millis(500));
+        }
+        is_vite_dev_up() && is_control_daemon_healthy()
+    } else {
+        wait_for_daemon()
+    }
 }
 
 fn show_main(app: &AppHandle) {
@@ -334,13 +382,14 @@ fn tray_get_snapshot() -> TraySnapshot {
     }
 }
 
-/// Point the window at the daemon once it's up, or surface a failure message.
+/// Point the window at the UI once the daemon (and optional Vite dev server) are up.
 fn load_when_ready(app: &AppHandle) {
     let handle = app.clone();
     std::thread::spawn(move || {
-        if wait_for_daemon() {
+        if wait_for_ui_load() {
+            let origin = ui_load_origin();
             if let Some(win) = handle.get_webview_window("main") {
-                let _ = win.eval(&format!("window.location.replace('{DAEMON_ORIGIN}')"));
+                let _ = win.eval(&format!("window.location.replace('{origin}')"));
             }
         } else if let Some(win) = handle.get_webview_window("main") {
             let _ = win.eval(

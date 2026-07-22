@@ -2,10 +2,7 @@ import {useEffect, useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
 import {api, ApiError} from '../api.js';
 import {Button, Modal, TextInput} from './ui.js';
-
-function isTauri(): boolean {
-  return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
-}
+import {isTauri} from '../lib/tauri.js';
 
 export function AddProjectDialog({
   open,

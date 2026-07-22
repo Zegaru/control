@@ -3,10 +3,7 @@ import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {LOG_RETENTION_STEPS} from '@control/shared';
 import {api} from '../api.js';
 import {Chip, Led, Panel, RockerToggle, RotaryKnob, Button, TextInput} from '../components/kit.js';
-
-function isTauri(): boolean {
-  return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
-}
+import {isTauri} from '../lib/tauri.js';
 
 export function SettingsView() {
   const qc = useQueryClient();
@@ -99,7 +96,7 @@ export function SettingsView() {
 
       <Panel title="Scanner · Ignore">
         <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 overflow-visible">
             <Led status="healthy" ring />
             <div>
               <div className="font-ui text-[12px] font-semibold uppercase tracking-[0.14em] text-ink">
@@ -163,8 +160,8 @@ export function SettingsView() {
 
       <Panel title="Logs · Retention">
         <div className="flex flex-col gap-5">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex min-w-0 items-center gap-3">
+          <div className="flex items-center justify-between gap-4 overflow-visible">
+            <div className="flex min-w-0 items-center gap-3 overflow-visible">
               <Led status={settings ? 'healthy' : 'starting'} pulse={!settings} ring />
               <div>
                 <div className="font-ui text-[12px] font-semibold uppercase tracking-[0.14em] text-ink">
@@ -188,7 +185,7 @@ export function SettingsView() {
             />
           </div>
 
-          <div className="bezel-recessed flex items-end justify-between rounded-md border border-panel-edge/60 px-4 py-3">
+          <div className="bezel-recessed flex items-end justify-between overflow-visible rounded-md border border-panel-edge/60 px-4 py-3.5">
             <div>
               <div className="font-ui text-[9px] uppercase tracking-[0.22em] text-ink-faint">
                 Dial Position
@@ -197,7 +194,7 @@ export function SettingsView() {
                 {retentionSteps[retentionIndex]}
               </div>
             </div>
-            <div className="flex flex-wrap justify-end gap-1">
+            <div className="flex flex-wrap justify-end gap-1.5 overflow-visible py-1">
               {retentionSteps.map((n, i) => (
                 <Chip key={n} tone={i === retentionIndex ? 'phosphor' : 'default'}>
                   {n}
@@ -237,18 +234,20 @@ export function SettingsView() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 self-end sm:self-center">
+          <div className="flex items-center gap-3 self-end overflow-visible sm:self-center">
             {!inShell && (
               <span className="font-ui text-[10px] uppercase tracking-[0.16em] text-ink-faint">
                 Shell offline
               </span>
             )}
-            <RockerToggle
-              on={autostartOn}
-              busy={autostartBusy}
-              disabled={!inShell || autostartBusy}
-              onToggle={toggleAutostart}
-            />
+            <div className="overflow-visible p-2">
+              <RockerToggle
+                on={autostartOn}
+                busy={autostartBusy}
+                disabled={!inShell || autostartBusy}
+                onToggle={toggleAutostart}
+              />
+            </div>
           </div>
         </div>
         {autostartError && (

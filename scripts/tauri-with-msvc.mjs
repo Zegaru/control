@@ -13,10 +13,16 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const shellRoot = join(dirname(fileURLToPath(import.meta.url)), '..', 'apps', 'shell')
+const repoRoot = join(shellRoot, '..', '..')
 const tauriArgs = withProfileConfig(process.argv.slice(2))
 if (tauriArgs.length === 0) {
   console.error('Usage: node scripts/tauri-with-msvc.mjs <tauri-args...>')
   process.exit(1)
+}
+
+/** Dev shell uses the monorepo checkout, not the staged runtime copy. */
+if (tauriArgs[0] === 'dev') {
+  process.env.CONTROL_HOME = repoRoot
 }
 
 /** Dev uses the monorepo checkout; release bundles the staged runtime. */

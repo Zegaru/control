@@ -44,7 +44,21 @@ app.onError((err, c) => {
 // In production the daemon serves the built SPA from apps/ui/dist (one origin).
 const here = dirname(fileURLToPath(import.meta.url))
 const uiDist = join(here, '..', '..', 'ui', 'dist')
+const devNoCache = process.env.CONTROL_DEV === '1' || /[/\\]src$/.test(here)
 if (existsSync(uiDist)) {
+  if (devNoCache) {
+    app.use('/*', async (c, next) => {
+      await next()
+      const ct = c.res.headers.get('content-type') ?? ''
+      if (
+        ct.includes('text/html') ||
+        ct.includes('javascript') ||
+        ct.includes('text/css')
+      ) {
+        c.header('Cache-Control', 'no-store, must-revalidate')
+      }
+    })
+  }
   app.use('/*', serveStatic({ root: uiDist }))
   app.get('/*', serveStatic({ path: join(uiDist, 'index.html') }))
 }

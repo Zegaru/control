@@ -31,6 +31,16 @@ body,
   height: 100%;
 }
 
+html,
+body {
+  overflow: hidden;
+  overscroll-behavior: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   margin: 0;
   position: relative;
@@ -38,6 +48,29 @@ body {
   color: var(--color-ink);
   font-family: var(--font-mono);
   -webkit-font-smoothing: antialiased;
+}
+
+input,
+textarea,
+[contenteditable='true'] {
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+}
+
+.xterm {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-phosphor) 35%, transparent);
+  color: var(--color-ink);
+}
+
+::-moz-selection {
+  background: color-mix(in srgb, var(--color-phosphor) 35%, transparent);
+  color: var(--color-ink);
 }
 
 .xterm {
@@ -402,6 +435,7 @@ body {
   --btn-glow: transparent;
   position: relative;
   isolation: isolate;
+  cursor: default;
   background: linear-gradient(180deg, #1c1c1c 0%, #141414 42%, #0f0f0f 100%);
   border: 1px solid #0a0a0a;
   border-radius: 5px;
@@ -448,11 +482,11 @@ body {
   color: var(--color-danger);
 }
 
-/* Hold-to-confirm fill — Stop All / Restart All */
+/* Hold-to-confirm fill — Stop All / Restart All.
+ * Fill is clipped via clip-path (not overflow) so tone glow can bloom outside the key. */
 .hold-confirm-btn {
   --hold-ms: 2000ms;
   --hold-fill: color-mix(in srgb, var(--color-danger) 38%, transparent);
-  overflow: hidden;
 }
 
 .hold-confirm-btn.backlit-btn-amber {
@@ -580,6 +614,32 @@ body {
 
 .nav-push[aria-current='page'] .nav-push-icon {
   filter: drop-shadow(0 0 6px var(--color-amber));
+}
+
+/* Portrait / companion: nav bank becomes a compact horizontal strip.
+ * Side padding lets the active item sit centered so neighbors stay reachable. */
+@media (max-width: 1023px) {
+  .nav-bank {
+    flex-direction: row;
+    align-items: stretch;
+    overflow-x: auto;
+    scrollbar-width: none;
+    scroll-snap-type: x mandatory;
+    padding-inline: max(0.25rem, calc(40% - 3.25rem));
+  }
+
+  .nav-bank::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav-push {
+    width: auto;
+    flex-shrink: 0;
+    gap: 0.45rem;
+    padding: 0.45rem 0.65rem;
+    font-size: 0.75rem;
+    scroll-snap-align: center;
+  }
 }
 
 /* Circular gauge well — recessed instrument face; overflow visible so arc bloom isn't clipped */
@@ -735,7 +795,7 @@ body {
 }
 
 .led-lit {
-  box-shadow: 0 0 4px 1px currentColor, 0 0 10px 2px currentColor;
+  box-shadow: 0 0 4px 1px currentColor, 0 0 8px 2px currentColor;
 }
 
 .led::after {
@@ -752,7 +812,7 @@ body {
 }
 
 .led-ring {
-  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.55), 0 0 6px 2px currentColor, 0 0 14px 3px currentColor;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.55), 0 0 5px 1px currentColor, 0 0 10px 2px currentColor;
 }
 
 .text-glow {
@@ -977,11 +1037,33 @@ body {
   transition: none !important;
 }
 
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-panel-edge) var(--color-panel);
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
+
+::-webkit-scrollbar-track {
+  background: var(--color-panel);
+}
+
 ::-webkit-scrollbar-thumb {
   background: var(--color-panel-edge);
   border-radius: 4px;
+}
+
+/* Frameless shell — titlebar drag region and window controls */
+.window-drag-gutter {
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+.window-controls,
+.window-controls button {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
 }

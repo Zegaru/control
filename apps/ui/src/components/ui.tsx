@@ -35,7 +35,7 @@ const mechToneCls: Record<ButtonTone, string> = {
 
 /** Shared mechanical key chrome (raised face in recessed well). */
 const mechBase =
-  'backlit-btn font-ui inline-flex items-center justify-center rounded-[5px] uppercase tracking-widest font-semibold select-none';
+  'backlit-btn font-ui inline-flex items-center justify-center rounded-[5px] uppercase tracking-widest font-semibold select-none cursor-default';
 
 function buttonClassName({
   variant,
@@ -57,11 +57,11 @@ function buttonClassName({
   }
 
   const softPress =
-    'transition-[transform,opacity] duration-100 ease-out active:not-data-disabled:scale-[0.97] active:not-data-disabled:opacity-85';
+    'cursor-default transition-[transform,opacity] duration-100 ease-out active:not-data-disabled:scale-[0.97] active:not-data-disabled:opacity-85';
 
   if (variant === 'icon') {
     return cn(
-      'inline-flex items-center justify-center rounded p-1 text-ink-faint select-none',
+      'inline-flex items-center justify-center rounded p-1 text-ink-faint select-none cursor-default',
       'hover:not-data-disabled:text-ink',
       softPress,
       focus,
@@ -72,7 +72,7 @@ function buttonClassName({
 
   if (variant === 'ghost') {
     return cn(
-      'rounded px-3 py-1.5 text-xs text-ink-dim select-none',
+      'rounded px-3 py-1.5 text-xs text-ink-dim select-none cursor-default',
       'hover:not-data-disabled:text-ink',
       softPress,
       focus,

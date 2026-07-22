@@ -21,9 +21,9 @@ export function PortsView({onOpenRun}: {onOpenRun: (runId: string) => void}) {
   const rows = showExternal ? all : managed;
 
   return (
-    <div className="max-w-3xl">
-      <h1 className="sr-only">Port Map</h1>
+    <div className="max-w-3xl h-full">
       <Panel
+      className="h-full flex flex-col"
         title="Port Map"
         right={
           <button
@@ -56,13 +56,13 @@ export function PortsView({onOpenRun}: {onOpenRun: (runId: string) => void}) {
           masquerade as the owner.
         </p>
 
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-3 flex flex-wrap gap-2 overflow-visible py-0.5">
           <Chip tone="phosphor">{all.filter((o) => o.owner === 'run').length} runs</Chip>
           <Chip tone="amber">{all.filter((o) => o.owner === 'container').length} containers</Chip>
           <Chip>{external.length} external</Chip>
         </div>
 
-        <div className="mt-4 border-t border-panel-edge pt-3">
+        <div className="mt-4 border-t border-panel-edge pt-3 flex-1 overflow-y-auto">
           {rows.length === 0 ? (
             <p className="py-6 text-center text-sm text-ink-faint">No ports in use.</p>
           ) : (

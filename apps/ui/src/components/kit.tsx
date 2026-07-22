@@ -61,17 +61,19 @@ export function Led({
   const color = statusColor(status);
   const lit = status !== 'idle';
   return (
-    <span
-      className={cn(
-        'led inline-block h-2.5 w-2.5 shrink-0 rounded-full',
-        lit && 'led-lit',
-        lit && ring && 'led-ring',
-        pulse && 'animate-pulse',
-        className
-      )}
-      style={lit ? {backgroundColor: color, color} : undefined}
-      aria-label={statusLabel(status)}
-    />
+    <span className="inline-flex shrink-0 items-center justify-center overflow-visible p-2">
+      <span
+        className={cn(
+          'led inline-block h-2.5 w-2.5 shrink-0 rounded-full',
+          lit && 'led-lit',
+          lit && ring && 'led-ring',
+          pulse && 'animate-pulse',
+          className
+        )}
+        style={lit ? {backgroundColor: color, color} : undefined}
+        aria-label={statusLabel(status)}
+      />
+    </span>
   );
 }
 
@@ -91,19 +93,25 @@ export function Panel({
   footer?: ReactNode;
 }) {
   return (
-    <section className={`bezel-raised overflow-hidden rounded-xl p-5 flex flex-col ${className}`}>
+    <section
+      className={`bezel-raised flex min-w-0 flex-col overflow-visible rounded-xl p-5 max-lg:p-3 ${className}`}
+    >
       <Screw className="top-2 left-2" />
       <Screw className="top-2 right-2" />
       <Screw className="bottom-2 left-2" />
       <Screw className="bottom-2 right-2" />
 
-      <div className="bezel-recessed flex flex-1 min-h-0 flex-col overflow-hidden rounded-2xl bg-bezel">
-        <div className={`flex-1 h-full ${crt ? 'crt-frame p-0' : 'p-4'}`}>
-          <div className="bezel-recessed border-0! h-full rounded-2xl bg-bezel p-4">
-            <div className={crt ? 'crt bezel-recessed border-0! h-full rounded-xl p-4' : 'h-full'}>
-              <div className="relative z-10 h-full flex flex-col">
+      <div className="bezel-recessed flex min-h-0 flex-1 flex-col overflow-visible rounded-2xl bg-bezel">
+        <div className={`h-full min-h-0 flex-1 ${crt ? 'crt-frame p-0' : 'p-4'}`}>
+          <div className="bezel-recessed h-full min-h-0 rounded-2xl border-0! bg-bezel p-4">
+            <div
+              className={
+                crt ? 'crt bezel-recessed h-full min-h-0 rounded-xl border-0! p-4' : 'h-full min-h-0'
+              }
+            >
+              <div className="relative z-10 flex h-full min-h-0 flex-col overflow-visible">
                 {(title || right) && (
-                  <header className="font-ui mb-1 flex items-center justify-between gap-3 overflow-visible pb-1">
+                  <header className="font-ui mb-1 flex shrink-0 items-center justify-between gap-3 overflow-visible pb-1">
                     {title ? (
                       typeof title === 'string' ? (
                         <h2 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-ink-dim">
@@ -118,7 +126,7 @@ export function Panel({
                     {right}
                   </header>
                 )}
-                {children}
+                <div className="flex min-h-0 flex-1 flex-col overflow-visible">{children}</div>
               </div>
             </div>
           </div>
@@ -228,7 +236,7 @@ export function Chip({
 }) {
   const toneCls =
     tone === 'phosphor'
-      ? 'border-phosphor-dim/70 text-phosphor bg-phosphor/10 text-glow shadow-[inset_0_1px_2px_rgba(0,0,0,0.45),0_0_10px_-2px_var(--color-phosphor)]'
+      ? 'border-phosphor-dim/70 text-phosphor bg-phosphor/10 text-glow shadow-[inset_0_1px_2px_rgba(0,0,0,0.45),0_0_8px_-1px_var(--color-phosphor)]'
       : tone === 'amber'
       ? 'border-amber text-amber bg-amber/6 shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)]'
       : tone === 'info'
@@ -236,7 +244,7 @@ export function Chip({
       : 'border-panel-edge text-ink-dim bg-bezel shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)]';
   return (
     <span
-      className={`inline-flex items-center rounded px-2 py-0.5 text-[11px] font-medium ${toneCls}`}
+      className={`inline-flex items-center overflow-visible rounded px-2 py-0.5 text-[11px] font-medium ${toneCls}`}
     >
       {children}
     </span>
@@ -439,13 +447,13 @@ export function CircularGauge({
   value: number;
   label: string;
   unit?: string;
-  size?: 'sm' | 'md';
+  size?: 'xs' | 'sm' | 'md';
   /** Replaces the numeric readout (e.g. network up/down). */
   detail?: ReactNode;
   formatValue?: (value: number) => ReactNode;
 }) {
-  const px = size === 'sm' ? 56 : 72;
-  const stroke = size === 'sm' ? 4 : 5;
+  const px = size === 'xs' ? 40 : size === 'sm' ? 56 : 72;
+  const stroke = size === 'xs' ? 3 : size === 'sm' ? 4 : 5;
   const animated = useAnimatedValue(value);
   const color = gaugeTone(animated);
   const readout =
@@ -464,16 +472,21 @@ export function CircularGauge({
       <div className="gauge-face relative overflow-visible rounded-full">
         <DialArc value={animated} size={px} strokeWidth={stroke} color={color} />
         <div
-          className="pointer-events-none absolute flex flex-col items-center justify-center px-2"
+          className="pointer-events-none absolute flex flex-col items-center justify-center px-1.5"
           style={{inset: GAUGE_GLOW_PAD}}
         >
-          <span className="font-ui text-[9px] font-medium uppercase tracking-[0.14em] text-ink-dim">
+          <span
+            className={cn(
+              'font-ui font-medium uppercase tracking-[0.14em] text-ink-dim',
+              size === 'xs' ? 'text-[7px]' : 'text-[9px]'
+            )}
+          >
             {label}
           </span>
           <span
             className={cn(
               'gauge-readout font-ui mt-0.5 font-semibold leading-none text-ink tabular-nums',
-              size === 'sm' ? 'text-sm' : 'text-base',
+              size === 'xs' ? 'text-[11px]' : size === 'sm' ? 'text-sm' : 'text-base',
               detail && 'mt-1 flex flex-col items-center gap-0.5 text-[10px] font-medium'
             )}
           >
@@ -697,11 +710,14 @@ export function MasterPower({
   on,
   onToggle,
   disabled,
+  size = 'md',
 }: {
   on: boolean;
   onToggle: () => void;
   disabled?: boolean;
+  size?: 'sm' | 'md';
 }) {
+  const compact = size === 'sm';
   return (
     <Switch.Root
       checked={on}
@@ -711,7 +727,10 @@ export function MasterPower({
       onCheckedChange={() => onToggle()}
       onClick={(e) => e.stopPropagation()}
       className={cn(
-        'rocker-housing rocker-danger font-ui relative flex h-18 w-21 flex-col rounded-md p-1.5 text-[10px] font-bold tracking-wide data-disabled:opacity-40',
+        'rocker-housing rocker-danger font-ui relative flex flex-col rounded-md font-bold tracking-wide data-disabled:opacity-40',
+        compact
+          ? 'h-12 w-14 p-1 text-[8px]'
+          : 'h-18 w-21 p-1.5 text-[10px]',
         on ? 'rocker-on' : 'rocker-off'
       )}
     >
@@ -726,11 +745,12 @@ export function MasterPower({
         </span>
         <span
           className={cn(
-            'rocker-face-off font-ui text-[8px] uppercase tracking-wider',
+            'rocker-face-off font-ui uppercase tracking-wider',
+            compact ? 'text-[6px]' : 'text-[8px]',
             on ? 'rocker-segment-raised' : 'rocker-segment-sunk'
           )}
         >
-          All Systems
+          {compact ? 'All' : 'All Systems'}
         </span>
       </span>
     </Switch.Root>
@@ -1019,9 +1039,9 @@ export function ProjectModule({
   const favoritesActive = activeEnvironmentId === null;
 
   return (
-    <div className="bezel-raised flex h-full min-h-0 flex-col rounded-lg p-1.5">
-      <div className="bezel-recessed flex min-h-0 flex-1 flex-col overflow-hidden rounded-md bg-bezel">
-        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-panel-edge px-4 py-3">
+    <div className="bezel-raised flex h-full min-h-0 flex-col overflow-visible rounded-lg p-1.5">
+      <div className="bezel-recessed flex min-h-0 flex-1 flex-col overflow-visible rounded-md bg-bezel">
+        <div className="flex shrink-0 items-start justify-between gap-3 overflow-visible border-b border-panel-edge px-4 py-3">
           <Button
             variant="ghost"
             onClick={onClick}
@@ -1141,6 +1161,8 @@ export function ProjectModule({
 
 export type ControlStripAction = {
   label: string;
+  /** Narrow-viewport label; falls back to `label`. */
+  shortLabel?: string;
   tone?: 'default' | 'phosphor' | 'amber' | 'danger';
   onClick: () => void;
   /** When set, requires press-and-hold before `onClick` (see BacklitButton `holdMs`). */
@@ -1198,9 +1220,9 @@ export function ControlStrip({
   onMasterToggle,
   actions,
   gauges,
-  notifications = [],
+  notifications: _notifications = [],
   version,
-  network,
+  network: _network,
 }: {
   masterOn: boolean;
   onMasterToggle: () => void;
@@ -1210,85 +1232,94 @@ export function ControlStrip({
   version?: string;
   network?: {up: string; down: string};
 }) {
-  const notifColor = (tone?: string) =>
-    tone === 'phosphor'
-      ? 'var(--color-phosphor)'
-      : tone === 'amber'
-      ? 'var(--color-amber)'
-      : tone === 'danger'
-      ? 'var(--color-danger)'
-      : 'var(--color-ink-faint)';
+  const [compact, setCompact] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia('(max-width: 1023px)').matches : false
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1023px)');
+    const onChange = () => setCompact(mq.matches);
+    onChange();
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
 
   return (
-    <div className="bezel-raised rounded-lg p-2">
-      <div className="bezel-recessed rounded-md bg-bezel pl-4 pr-1 py-1">
-        <div className="flex flex-wrap items-stretch gap-6">
-          <div className="flex items-center gap-3 self-center">
-            <MasterPower on={masterOn} onToggle={onMasterToggle} />
-            <span className="font-ui text-[9px] uppercase tracking-widest text-ink-faint">
-              Master Power
-            </span>
+    <div className="bezel-raised w-full min-w-0 shrink-0 overflow-visible rounded-lg p-2">
+      <div
+        className={cn(
+          'bezel-recessed min-w-0 overflow-visible rounded-md bg-bezel',
+          compact ? 'px-2 py-1.5' : 'py-2.5 pl-5 pr-3'
+        )}
+      >
+        <div
+          className={cn(
+            'flex min-w-0 items-center overflow-visible',
+            compact ? 'justify-between gap-1.5' : 'gap-6'
+          )}
+        >
+          <div className="flex shrink-0 items-center gap-3 overflow-visible">
+            <MasterPower
+              on={masterOn}
+              onToggle={onMasterToggle}
+              size={compact ? 'sm' : 'md'}
+            />
+            {!compact && (
+              <span className="font-ui text-[9px] uppercase tracking-widest text-ink-faint">
+                Master Power
+              </span>
+            )}
           </div>
 
-          <div className="flex flex-wrap gap-2 self-center">
+          <div className={cn('flex shrink-0 items-center overflow-visible', compact ? 'gap-1' : 'gap-2')}>
             {actions.map((a) => (
               <BacklitButton
                 key={a.label}
                 tone={a.tone}
+                size={compact ? 'sm' : 'md'}
                 onClick={a.onClick}
                 holdMs={a.holdMs}
                 disabled={a.disabled}
               >
-                {a.label}
+                {compact ? (a.shortLabel ?? a.label) : a.label}
               </BacklitButton>
             ))}
           </div>
 
-          <div className="flex flex-1 flex-wrap items-center justify-center gap-5 self-center">
+          <div
+            className={cn(
+              'flex shrink-0 items-center overflow-visible',
+              compact ? 'gap-1.5' : 'ml-auto gap-5'
+            )}
+          >
             {gauges.map((g) => (
-              <CircularGauge key={g.label} value={g.value} label={g.label} unit={g.unit} />
+              <CircularGauge
+                key={g.label}
+                value={g.value}
+                label={g.label}
+                unit={g.unit}
+                size={compact ? 'xs' : 'md'}
+              />
             ))}
           </div>
 
-          {notifications.length > 0 && (
-            <ul className="min-w-[140px] space-y-1 self-center text-[10px]">
-              {notifications.map((n, i) => (
-                <li key={i} className="flex items-start gap-1.5">
-                  <Led
-                    status={
-                      n.tone === 'danger'
-                        ? 'failed'
-                        : n.tone === 'amber'
-                        ? 'starting'
-                        : n.tone === 'phosphor'
-                        ? 'healthy'
-                        : 'idle'
-                    }
-                  />
-                  <span className="flex-1" style={{color: notifColor(n.tone)}}>
-                    {n.message}
-                  </span>
-                  {n.time && <span className="text-ink-faint">{n.time}</span>}
-                </li>
-              ))}
-            </ul>
-          )}
-
-          <div className="relative ml-auto flex shrink-0 self-stretch">
-            <div className="bezel-recessed relative flex h-full min-w-[240px] items-center gap-3 rounded-md px-4 py-2">
-              <Screw className="top-1.5 left-1.5" />
-              <Screw className="top-1.5 right-1.5" />
-              <Screw className="bottom-1.5 left-1.5" />
-              <Screw className="bottom-1.5 right-1.5" />
-              <VentGrill className="h-full max-h-20 w-auto" />
-              <div className="pr-1">
-                <div className="font-ui text-[11px] font-semibold tracking-[0.12em] text-ink">
-                  CONTROL{version ? ` v${version}` : ''}
+          {!compact && (
+            <div className="relative hidden shrink-0 overflow-visible xl:flex">
+              <div className="bezel-recessed relative flex items-center gap-3 rounded-md px-4 py-2">
+                <Screw className="top-1.5 left-1.5" />
+                <Screw className="top-1.5 right-1.5" />
+                <Screw className="bottom-1.5 left-1.5" />
+                <Screw className="bottom-1.5 right-1.5" />
+                <VentGrill className="h-18 w-18" />
+                <div className="pr-1">
+                  <div className="font-ui text-[11px] font-semibold tracking-[0.12em] text-ink">
+                    CONTROL{version ? ` v${version}` : ''}
+                  </div>
+                  <div className="mt-0.5 text-[10px] text-ink-dim">Stay in control.</div>
                 </div>
-                <div className="mt-0.5 text-[10px] text-ink-dim">Stay in control.</div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

@@ -34,17 +34,13 @@ export function GroupsView() {
   }
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold">Launch Groups</h1>
-          <p className="mt-1 text-sm text-ink-dim">
-            Start several actions in order — e.g. bring up infra, wait until it's healthy, then
-            start web + worker.
-          </p>
-        </div>
-        <Button onClick={() => setEditing('new')}>+ New Group</Button>
-      </div>
+    <div className="space-y-2">
+      <Panel title="Launch Groups" right={<Button onClick={() => setEditing('new')}>+ New Group</Button>}>
+        <p className="mt-1 text-sm text-ink-dim">
+          Start several actions in order — e.g. bring up infra, wait until it's healthy, then
+          start web + worker.
+        </p>
+      </Panel>
 
       {(groups.data ?? []).length === 0 && (
         <Panel>

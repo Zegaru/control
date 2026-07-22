@@ -82,7 +82,7 @@ export function CommandPalette({
             key={fa.action.id}
             onMouseEnter={() => setSel(i)}
             onClick={() => run(i)}
-            className={`flex cursor-pointer items-center gap-3 px-4 py-2 text-sm ${
+            className={`flex items-center gap-3 px-4 py-2 text-sm ${
               i === sel ? 'bg-panel' : ''
             }`}
           >

@@ -113,6 +113,7 @@ export function Dashboard({
     const el = projectListRef.current;
     if (!el) return;
     const onWheel = (e: WheelEvent) => {
+      if (window.matchMedia('(max-width: 1023px)').matches) return;
       if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
       if (el.scrollWidth <= el.clientWidth) return;
       e.preventDefault();
@@ -385,53 +386,60 @@ export function Dashboard({
   ];
 
   return (
-    <div className="flex flex-col gap-2 h-full">
-      <div className="grid grid-cols-8 gap-2">
-          <Panel title="System Status" crt className="col-span-3 h-[440px]">
-            <div className="mb-3 text-3xl font-bold text-phosphor text-glow">
-              {counts.running + counts.starting}{' '}
-              {counts.running + counts.starting > 1 ? 'SERVICES' : 'SERVICE'}{' '}
-              {counts.starting ? 'STARTING' : 'RUNNING'}
-            </div>
-            <div className="grid grid-cols-4 gap-2">
-              <SegmentCounter value={counts.running} label="Running" tone="phosphor" />
-              <SegmentCounter value={counts.starting} label="Starting" tone="amber" />
-              <SegmentCounter value={counts.stopped} label="Stopped" tone="phosphor" />
-              <SegmentCounter value={counts.failed} label="Failed" tone="danger" />
-            </div>
-            <div className="mt-2 border-t border-[rgba(125,252,154,0.12)] pt-2">
-              <div className="font-ui mb-2 text-[10px] uppercase tracking-[0.2em] text-ink-dim">
-                Resource Usage
+    <div className="flex h-full min-h-0 w-full min-w-0 flex-col gap-2">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-y-auto lg:grid lg:grid-rows-[minmax(360px,1.35fr)_minmax(120px,1fr)] lg:overflow-hidden">
+        <div className="grid min-w-0 grid-cols-1 gap-2 max-lg:shrink-0 lg:min-h-0 lg:grid-cols-8 lg:grid-rows-1">
+          <Panel
+            title="System Status"
+            crt
+            className="min-h-0 max-lg:h-auto lg:col-span-3 lg:h-full"
+          >
+            <div className="overflow-visible">
+              <div className="mb-2 text-3xl font-bold text-phosphor text-glow max-lg:text-xl">
+                {counts.running + counts.starting}{' '}
+                {counts.running + counts.starting !== 1 ? 'SERVICES' : 'SERVICE'}{' '}
+                {counts.starting ? 'STARTING' : 'RUNNING'}
               </div>
-              <div className="grid grid-cols-3 gap-2">
-                <Sparkline data={sparkCpu} label="CPU" unit="%" />
-                <Sparkline data={sparkMem} label="Memory" unit="%" />
-                <Sparkline data={sparkDisk} label="Disk" unit="%" />
+              <div className="grid grid-cols-4 gap-2">
+                <SegmentCounter value={counts.running} label="Running" tone="phosphor" />
+                <SegmentCounter value={counts.starting} label="Starting" tone="amber" />
+                <SegmentCounter value={counts.stopped} label="Stopped" tone="phosphor" />
+                <SegmentCounter value={counts.failed} label="Failed" tone="danger" />
               </div>
-            </div>
-            {activePorts.length > 0 && (
               <div className="mt-2 border-t border-[rgba(125,252,154,0.12)] pt-2">
-                <div className="font-ui mb-2 text-[10px] uppercase tracking-[0.2em] text-ink-dim">
-                  Active Ports
+                <div className="font-ui mb-1.5 text-[10px] uppercase tracking-[0.2em] text-ink-dim">
+                  Resource Usage
                 </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {activePorts.slice(0, 6).map((p) => (
-                    <Chip key={p} tone="phosphor">
-                      {p}
-                    </Chip>
-                  ))}
-                  {activePorts.length > 6 && (
-                    <span className="opacity-60">
-                      <Chip tone="phosphor">+{activePorts.length - 6}</Chip>
-                    </span>
-                  )}
+                <div className="grid grid-cols-3 gap-2">
+                  <Sparkline data={sparkCpu} label="CPU" unit="%" />
+                  <Sparkline data={sparkMem} label="Memory" unit="%" />
+                  <Sparkline data={sparkDisk} label="Disk" unit="%" />
                 </div>
               </div>
-            )}
+              {activePorts.length > 0 && (
+                <div className="mt-2 border-t border-[rgba(125,252,154,0.12)] pt-2">
+                  <div className="font-ui mb-1.5 text-[10px] uppercase tracking-[0.2em] text-ink-dim">
+                    Active Ports
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {activePorts.slice(0, 6).map((p) => (
+                      <Chip key={p} tone="phosphor">
+                        {p}
+                      </Chip>
+                    ))}
+                    {activePorts.length > 6 && (
+                      <span className="opacity-60">
+                        <Chip tone="phosphor">+{activePorts.length - 6}</Chip>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </Panel>
 
           <Panel
-            className="col-span-5 h-[440px]"
+            className="min-h-0 max-lg:h-auto max-lg:min-h-[320px] lg:col-span-5 lg:h-full"
             title={
               selectedRunId && selectedEvent ? (
                 <div className="flex min-w-0 items-center gap-3">
@@ -445,8 +453,8 @@ export function Dashboard({
                           selectedEvent.level === 'error'
                             ? 'failed'
                             : selectedEvent.level === 'warn'
-                            ? 'starting'
-                            : 'healthy'
+                              ? 'starting'
+                              : 'healthy'
                         }
                       />
                     </span>
@@ -465,20 +473,23 @@ export function Dashboard({
             }
             crt
             footer={
-              <div className="flex items-center gap-3 px-2 pt-4 h-10">
-                <span className="flex shrink-0 items-center gap-3 font-ui text-[10px] uppercase tracking-[0.16em] text-ink-dim">
+              <div className="flex h-10 items-center gap-2 px-2 pt-4 sm:gap-3">
+                <span className="flex shrink-0 items-center gap-2 font-ui text-[10px] uppercase tracking-[0.16em] text-ink-dim sm:gap-3">
                   <span className="flex items-center gap-1.5">
-                    <Led status={hasLevel.info ? 'healthy' : 'idle'} ring={hasLevel.info} /> INFO
+                    <Led status={hasLevel.info ? 'healthy' : 'idle'} ring={hasLevel.info} />
+                    <span className="max-sm:sr-only">INFO</span>
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <Led status={hasLevel.warn ? 'starting' : 'idle'} ring={hasLevel.warn} /> WARN
+                    <Led status={hasLevel.warn ? 'starting' : 'idle'} ring={hasLevel.warn} />
+                    <span className="max-sm:sr-only">WARN</span>
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <Led status={hasLevel.error ? 'failed' : 'idle'} ring={hasLevel.error} /> ERROR
+                    <Led status={hasLevel.error ? 'failed' : 'idle'} ring={hasLevel.error} />
+                    <span className="max-sm:sr-only">ERROR</span>
                   </span>
                 </span>
 
-                <div className="chassis-rail mx-1 min-w-0 flex-1" aria-hidden>
+                <div className="chassis-rail mx-1 hidden min-w-0 flex-1 sm:flex" aria-hidden>
                   <span className="chassis-rail-line" />
                   <span className="chassis-rail-rivet" />
                   <span className="chassis-rail-line" />
@@ -488,7 +499,7 @@ export function Dashboard({
                   <span className="chassis-rail-line" />
                 </div>
 
-                <div className="flex shrink-0 items-center gap-3">
+                <div className="flex shrink-0 items-center gap-2 sm:gap-3">
                   <RotaryKnob
                     value={LOG_FILTERS.indexOf(logFilter)}
                     steps={LOG_FILTERS.length}
@@ -510,7 +521,7 @@ export function Dashboard({
               </div>
             }
           >
-            <div className="flex-1 min-h-0 overflow-hidden">
+            <div className="min-h-0 flex-1 overflow-hidden max-lg:min-h-[220px]">
               <div key={selectedRunId ?? 'event-list'} className="event-panel-fade h-full min-h-0">
                 {selectedRunId ? (
                   <div className="h-full overflow-hidden rounded-lg border border-[rgba(0,0,0,0.6)] bg-[#0b0d0a] p-1">
@@ -522,113 +533,134 @@ export function Dashboard({
                   <p className="text-ink-faint">No {logFilter} events.</p>
                 ) : (
                   <div className="h-full overflow-y-auto">
-                    <table className="w-full text-left">
-                      <tbody>
-                        {filteredEvents.map((row) => (
-                          <tr
-                            key={row.id}
-                            className="cursor-pointer border-b border-panel-edge/50 hover:bg-phosphor/4"
-                            onClick={() => setSelectedRunId(row.runId)}
-                          >
-                            <td className="py-1 pr-3 text-ink-faint">
-                              {new Date(row.at).toLocaleTimeString()}
-                            </td>
-                            <td className="py-1 pr-3 text-ink-dim">{row.project}</td>
-                            <td className="py-1 pr-3">{row.name}</td>
-                            <td className="py-1 pr-3">
-                              <span
-                                style={{
-                                  color:
-                                    row.level === 'error'
-                                      ? 'var(--color-danger)'
-                                      : row.level === 'warn'
-                                        ? 'var(--color-amber)'
-                                        : 'var(--color-phosphor)',
-                                }}
-                              >
-                                {statusLabel(row.status)}
-                                {row.exitCode != null ? ` · exit ${row.exitCode}` : ''}
-                              </span>
-                            </td>
-                            <td className="py-1">
-                              {row.ports.map((p) => (
-                                <span key={p} className="mr-1 text-info">
-                                  :{p}
+                    <ul className="divide-y divide-panel-edge/50">
+                      {filteredEvents.map((row) => {
+                        const tone =
+                          row.level === 'error'
+                            ? 'var(--color-danger)'
+                            : row.level === 'warn'
+                              ? 'var(--color-amber)'
+                              : 'var(--color-phosphor)';
+                        const time = new Date(row.at).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          second: '2-digit',
+                          hour12: false,
+                        });
+                        const statusText = `${statusLabel(row.status)}${
+                          row.exitCode != null ? ` · exit ${row.exitCode}` : ''
+                        }`;
+                        return (
+                          <li key={row.id}>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedRunId(row.runId)}
+                              className="flex w-full flex-col gap-0.5 py-2 text-left hover:bg-phosphor/4 lg:flex-row lg:items-baseline lg:gap-3 lg:py-1.5"
+                            >
+                              <div className="flex items-baseline justify-between gap-3 lg:contents">
+                                <span className="shrink-0 whitespace-nowrap font-mono text-[11px] tabular-nums text-ink-faint lg:text-[12px]">
+                                  {time}
                                 </span>
-                              ))}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                                <span
+                                  className="shrink-0 whitespace-nowrap text-[11px] font-medium lg:order-4 lg:text-[12px]"
+                                  style={{color: tone}}
+                                >
+                                  {statusText}
+                                </span>
+                              </div>
+                              <span className="min-w-0 truncate text-[12px] lg:hidden">
+                                <span className="text-ink-dim">{row.project}</span>
+                                <span className="text-ink-faint"> / </span>
+                                <span>{row.name}</span>
+                              </span>
+                              <span className="hidden min-w-0 max-w-[9rem] shrink-0 truncate text-ink-dim lg:block">
+                                {row.project}
+                              </span>
+                              <span className="hidden min-w-0 flex-1 truncate lg:order-3 lg:block">
+                                {row.name}
+                              </span>
+                              {row.ports.length > 0 && (
+                                <span className="truncate font-mono text-[11px] text-info lg:order-5 lg:shrink-0 lg:text-[12px]">
+                                  {row.ports.map((p) => `:${p}`).join(' ')}
+                                </span>
+                              )}
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
                   </div>
                 )}
               </div>
             </div>
           </Panel>
-      </div>
+        </div>
 
-      <div
-        ref={projectListRef}
-        className="flex min-h-0 flex-1 gap-2 overflow-x-auto overflow-y-hidden"
-      >
-        {(projects.data ?? []).map((p) => {
-          const tree = treeData.find((t) => t.id === p.id);
-          const activeActions = tree
-            ? tree.modules
-                .flatMap((m) => m.actions)
-                .filter((a) => a.activeRun && isActiveStatus(a.activeRun.status))
-            : [];
-          const projContainers = runningContainers.filter((c) => c.projectId === p.id);
-          const projExternal = externalServices.filter((o) => o.projectId === p.id);
-          const activeCount = activeActions.length + projContainers.length + projExternal.length;
-          const anyStarting =
-            activeActions.some((a) => a.activeRun!.status === 'starting') ||
-            projContainers.some((c) => c.health === 'starting');
-          const toggling = pendingToggle[p.id] != null;
-          const busy = anyStarting || toggling;
-          const pm = projectMetrics.data?.projects[p.id];
-          const metrics = activeCount > 0 ? {cpu: pm?.cpu ?? 0, mem: pm?.memory ?? 0} : undefined;
-          const moduleServices = tree
-            ? [
-                ...buildPowerItems(tree, recentRuns),
-                ...buildRuntimeServices(p.id, runningContainers, externalServices),
-              ]
-            : [];
+        <div
+          ref={projectListRef}
+          className="flex min-w-0 gap-2 max-lg:flex-col max-lg:overflow-visible lg:min-h-0 lg:flex-row lg:overflow-x-auto lg:overflow-y-hidden"
+        >
+          {(projects.data ?? []).map((p) => {
+            const tree = treeData.find((t) => t.id === p.id);
+            const activeActions = tree
+              ? tree.modules
+                  .flatMap((m) => m.actions)
+                  .filter((a) => a.activeRun && isActiveStatus(a.activeRun.status))
+              : [];
+            const projContainers = runningContainers.filter((c) => c.projectId === p.id);
+            const projExternal = externalServices.filter((o) => o.projectId === p.id);
+            const activeCount = activeActions.length + projContainers.length + projExternal.length;
+            const anyStarting =
+              activeActions.some((a) => a.activeRun!.status === 'starting') ||
+              projContainers.some((c) => c.health === 'starting');
+            const toggling = pendingToggle[p.id] != null;
+            const busy = anyStarting || toggling;
+            const pm = projectMetrics.data?.projects[p.id];
+            const metrics = activeCount > 0 ? {cpu: pm?.cpu ?? 0, mem: pm?.memory ?? 0} : undefined;
+            const moduleServices = tree
+              ? [
+                  ...buildPowerItems(tree, recentRuns),
+                  ...buildRuntimeServices(p.id, runningContainers, externalServices),
+                ]
+              : [];
 
-          return (
-            <div key={p.id} className="flex w-72 min-h-0 shrink-0 flex-col self-stretch">
-              <ProjectModule
-                name={p.name}
-                path={p.rootPath}
-                favorite={p.favorite}
-                on={activeCount > 0}
-                busy={busy}
-                onClick={() => onOpenProject(p.id)}
-                onToggle={tree ? () => void toggleProject(tree, groups) : undefined}
-                environments={tree?.environments ?? []}
-                selectedEnvironmentId={tree?.selectedEnvironmentId ?? null}
-                defaultEnvironmentId={tree?.defaultEnvironmentId ?? null}
-                onSelectEnvironment={
-                  tree
-                    ? (id) => {
-                        void api.patchProject(p.id, {selectedEnvironmentId: id}).then(() => {
-                          qc.invalidateQueries({queryKey: ['tree', p.id]});
-                        });
-                      }
-                    : undefined
-                }
-                services={moduleServices}
-                onOpenRun={onOpenRun}
-                onToggleService={(svc) => void toggleService(svc)}
-                metrics={metrics}
-              />
-            </div>
-          );
-        })}
+            return (
+              <div
+                key={p.id}
+                className="flex w-full shrink-0 flex-col max-lg:h-auto max-lg:min-h-[220px] lg:w-72 lg:min-h-0 lg:self-stretch"
+              >
+                <ProjectModule
+                  name={p.name}
+                  path={p.rootPath}
+                  favorite={p.favorite}
+                  on={activeCount > 0}
+                  busy={busy}
+                  onClick={() => onOpenProject(p.id)}
+                  onToggle={tree ? () => void toggleProject(tree, groups) : undefined}
+                  environments={tree?.environments ?? []}
+                  selectedEnvironmentId={tree?.selectedEnvironmentId ?? null}
+                  defaultEnvironmentId={tree?.defaultEnvironmentId ?? null}
+                  onSelectEnvironment={
+                    tree
+                      ? (id) => {
+                          void api.patchProject(p.id, {selectedEnvironmentId: id}).then(() => {
+                            qc.invalidateQueries({queryKey: ['tree', p.id]});
+                          });
+                        }
+                      : undefined
+                  }
+                  services={moduleServices}
+                  onOpenRun={onOpenRun}
+                  onToggleService={(svc) => void toggleService(svc)}
+                  metrics={metrics}
+                />
+              </div>
+            );
+          })}
 
-        <div className="flex w-72 shrink-0 flex-col self-stretch">
-          <ProjectModule variant="add" onClick={() => setAdding(true)} />
+          <div className="flex w-full shrink-0 flex-col max-lg:min-h-[120px] lg:w-72 lg:self-stretch">
+            <ProjectModule variant="add" onClick={() => setAdding(true)} />
+          </div>
         </div>
       </div>
 
@@ -638,9 +670,15 @@ export function Dashboard({
           if (masterOn) void stopAll();
         }}
         actions={[
-          {label: 'Start All', tone: 'phosphor', onClick: () => void startFavorites()},
+          {
+            label: 'Start All',
+            shortLabel: 'Start',
+            tone: 'phosphor',
+            onClick: () => void startFavorites(),
+          },
           {
             label: 'Stop All',
+            shortLabel: 'Stop',
             tone: 'danger',
             holdMs: 2000,
             disabled: !masterOn,
@@ -648,12 +686,12 @@ export function Dashboard({
           },
           {
             label: 'Restart All',
+            shortLabel: 'Restart',
             tone: 'amber',
             holdMs: 2000,
             disabled: !masterOn,
             onClick: () => void restartFavorites(),
           },
-          {label: 'Health Check', onClick: () => invalidate()},
         ]}
         gauges={gauges}
         notifications={notifications}

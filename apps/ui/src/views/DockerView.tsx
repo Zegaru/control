@@ -86,25 +86,16 @@ export function DockerView({onOpenContainer}: {onOpenContainer: (id: string) => 
           : 'No connection to Docker Desktop';
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center gap-3">
-        <h1 className="text-xl font-bold">Docker</h1>
-        {available ? (
-          <>
+    <div className="flex flex-col gap-2">
+      <Panel title="Docker Engine" right=
+        {available && (
+          <div className="flex items-center gap-2">
             <Chip tone="phosphor">{list.filter((c) => c.state === 'running').length} running</Chip>
             <Chip>{list.length} total</Chip>
-          </>
-        ) : (
-          status.data && (
-            <Chip tone="amber">{pending === 'start' ? 'Starting' : 'Offline'}</Chip>
-          )
-        )}
-      </div>
-
-      <Panel title="Docker Engine">
-        <div className="flex flex-col gap-5 pt-1">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex min-w-0 items-center gap-3">
+          </div>)}>
+        <div className="flex flex-col gap-5 overflow-visible pt-1">
+          <div className="flex items-center justify-between gap-4 overflow-visible">
+            <div className="flex min-w-0 items-center gap-3 overflow-visible">
               <Led status={engineLed} pulse={busy} ring={available || busy} />
               <div>
                 <div className="font-ui text-[13px] font-semibold uppercase tracking-[0.14em] text-ink">
@@ -115,7 +106,9 @@ export function DockerView({onOpenContainer}: {onOpenContainer: (id: string) => 
                 </div>
               </div>
             </div>
-            <RockerToggle on={available} busy={busy} disabled={busy} onToggle={toggleDocker} />
+            <div className="shrink-0 overflow-visible p-2">
+              <RockerToggle on={available} busy={busy} disabled={busy} onToggle={toggleDocker} />
+            </div>
           </div>
 
           {!available && status.data && (
