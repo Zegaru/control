@@ -25,7 +25,7 @@ pnpm typecheck    # all workspace packages
 pnpm test         # Vitest characterization suite
 pnpm lint         # Biome check
 pnpm dev          # daemon + UI — do not start unless the user asks
-pnpm dev:daemon   # clear stale CONTROL or bump CONTROL_PORT (4401…) then start
+pnpm dev:daemon   # tsx watch — auto-restart on daemon/shared src changes
 pnpm kill:daemon  # free CONTROL_PORT only if a CONTROL daemon owns it
 pnpm dev:ui
 pnpm build

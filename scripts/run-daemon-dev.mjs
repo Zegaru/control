@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 /**
  * Dev entry for @control/daemon: ensure a usable CONTROL_PORT (kill stale
- * CONTROL or bump past foreign listeners), then start tsx.
+ * CONTROL or bump past foreign listeners), then start tsx watch (auto-restart
+ * on daemon + shared src changes).
  *
- * Spawns Node → tsx directly (no shell / pnpm.cmd) so Windows quoting cannot
- * eat the script args.
+ * Spawns Node → tsx watch directly (no shell / pnpm.cmd) so Windows quoting
+ * cannot eat the script args.
  */
 import { createRequire } from 'node:module'
 import { spawn } from 'node:child_process'
@@ -25,15 +26,27 @@ try {
   process.exit(1)
 }
 
-const child = spawn(process.execPath, [tsxCli, 'src/index.ts'], {
-  cwd: daemonRoot,
-  env: {
-    ...process.env,
-    CONTROL_PORT: String(port),
-    CONTROL_DAEMON_URL: `http://127.0.0.1:${port}`,
+const child = spawn(
+  process.execPath,
+  [
+    tsxCli,
+    'watch',
+    '--clear-screen=false',
+    // Keep shared contracts in the watch set when imported via workspace link.
+    '--include',
+    join(here, '..', 'packages', 'shared', 'src'),
+    'src/index.ts',
+  ],
+  {
+    cwd: daemonRoot,
+    env: {
+      ...process.env,
+      CONTROL_PORT: String(port),
+      CONTROL_DAEMON_URL: `http://127.0.0.1:${port}`,
+    },
+    stdio: 'inherit',
   },
-  stdio: 'inherit',
-})
+)
 
 child.on('exit', (code, signal) => {
   if (signal) process.exit(1)

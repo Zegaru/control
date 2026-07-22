@@ -57,6 +57,11 @@ pnpm test             # vitest characterization suite
 pnpm lint             # biome check
 ```
 
+Daemon `dev` uses `tsx watch` — edits under `apps/daemon` and `packages/shared`
+restart the daemon process. Restart drops in-memory daemon state; SQLite under
+`~/.control` persists; supervised host processes may die with the daemon or be
+re-adopted on boot.
+
 ## Install paths
 
 - **Dev (recommended for contributors):** `pnpm install` → `pnpm dev` →
