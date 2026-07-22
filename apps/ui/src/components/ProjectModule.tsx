@@ -150,14 +150,14 @@ export function ProjectModule({
             onClick={onClick}
             aria-label={name ? `Open ${name}` : 'Open project'}
             className={cn(
-              'group/header -my-0.5 min-h-0 min-w-0 flex-1 items-start justify-start rounded-sm px-1 py-1 text-left',
+              'group/header -my-0.5 min-h-0 min-w-0 flex-1 items-start justify-start rounded-sm pr-1 pl-0 pt-1 pb-2 text-left',
               'transition-[background-color,box-shadow,transform] duration-150 ease-out',
               'hover:not-data-disabled:bg-phosphor/6 hover:not-data-disabled:shadow-[inset_0_0_0_1px_rgba(125,252,154,0.14),inset_0_0_16px_rgba(125,252,154,0.05)]',
               'active:not-data-disabled:bg-phosphor/10 active:not-data-disabled:shadow-[inset_0_2px_10px_rgba(0,0,0,0.45)]'
             )}
           >
             <div className="min-w-0">
-              <div className="flex items-center gap-1">
+              <div className="flex items-center">
                 <Led status={projectStatus} pulse={busy} ring={!!on || !!busy} />
                 <div className="flex min-w-0 items-center gap-1">
                   {favorite && <Star size={14} weight="fill" className="text-amber" />}
@@ -166,11 +166,6 @@ export function ProjectModule({
                   </span>
                 </div>
               </div>
-              {path && (
-                <div className="mt-1 truncate pl-5 text-[12px] leading-tight text-ink-faint transition-colors duration-150 group-hover/header:text-ink-dim group-active/header:text-ink-dim">
-                  {path}
-                </div>
-              )}
               {stacks.length > 0 && (
                 <div className="mt-1.5 flex flex-wrap gap-1 pl-5">
                   {stacks.slice(0, 2).map((stack) => (
@@ -199,7 +194,7 @@ export function ProjectModule({
             </div>
           )}
           {services.length > 0 && (
-            <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto px-4 py-3">
+            <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-4 pl-2 py-3">
               {services.map((svc) => {
                 const active = svc.status !== 'idle' && isActiveStatus(svc.status);
                 const canToggle = !!(svc.actionId || svc.groupId) && onToggleService;
