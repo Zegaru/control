@@ -24,6 +24,20 @@
         "decorations": true,
         "theme": "Dark",
         "backgroundColor": "#05060a"
+      },
+      {
+        "label": "tray",
+        "title": "CONTROL",
+        "url": "tray.html",
+        "width": 260,
+        "height": 276,
+        "resizable": false,
+        "decorations": false,
+        "visible": false,
+        "skipTaskbar": true,
+        "alwaysOnTop": true,
+        "theme": "Dark",
+        "backgroundColor": "#05060a"
       }
     ],
     "security": {
@@ -33,9 +47,6 @@
   "bundle": {
     "active": true,
     "targets": ["nsis"],
-    "resources": {
-      "../runtime/apps": "apps"
-    },
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

@@ -1,0 +1,12 @@
+[[permission]]
+identifier = "tray-commands"
+description = "Tray popover invoke handlers"
+commands.allow = [
+  "tray_open",
+  "tray_restart_daemon",
+  "tray_toggle_autostart",
+  "tray_is_autostart_enabled",
+  "tray_quit",
+  "tray_hide",
+  "tray_get_snapshot",
+]

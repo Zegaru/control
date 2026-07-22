@@ -20,7 +20,17 @@ import { startProjectMetrics } from './projectMetrics.js'
 const app = new Hono()
 
 // Vite dev server (UI) runs on a different origin; allow it in dev.
-app.use('/api/*', cors({ origin: ['http://localhost:5173', 'http://127.0.0.1:5173'] }))
+app.use(
+  '/api/*',
+  cors({
+    origin: [
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+      'http://tauri.localhost',
+      'https://tauri.localhost',
+    ],
+  }),
+)
 
 app.route('/api', api)
 

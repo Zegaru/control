@@ -8,13 +8,20 @@ use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
 use std::time::Duration;
 
+use serde::Serialize;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Manager, RunEvent, WindowEvent};
+use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, RunEvent, WindowEvent};
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
+use tauri_plugin_positioner::{Position, WindowExt};
 
 const DAEMON_ORIGIN: &str = "http://127.0.0.1:4400";
 const DAEMON_ADDR: &str = "127.0.0.1:4400";
+/// Nudge the tray popover down from TrayCenter (pixels).
+const TRAY_POPOVER_Y_NUDGE: i32 = 24;
+
+/// Set to `false` to restore the OS-native tray context menu.
+const USE_CUSTOM_TRAY_POPOVER: bool = true;
 
 /// Handle to the daemon process the shell spawns, or an already-running instance.
 enum DaemonHandle {
@@ -190,10 +197,140 @@ fn wait_for_daemon() -> bool {
 }
 
 fn show_main(app: &AppHandle) {
+    hide_tray_popover(app);
     if let Some(win) = app.get_webview_window("main") {
         let _ = win.show();
         let _ = win.unminimize();
         let _ = win.set_focus();
+    }
+}
+
+fn hide_tray_popover(app: &AppHandle) {
+    if let Some(win) = app.get_webview_window("tray") {
+        let _ = win.hide();
+    }
+}
+
+fn position_tray_popover(win: &tauri::WebviewWindow) {
+    if win.move_window_constrained(Position::TrayCenter).is_ok() {
+        if let Ok(pos) = win.outer_position() {
+            let _ = win.set_position(PhysicalPosition::new(pos.x, pos.y + TRAY_POPOVER_Y_NUDGE));
+        }
+    }
+}
+
+fn push_tray_stats(app: &AppHandle) {
+    let snap = tray_get_snapshot();
+    let Ok(json) = serde_json::to_string(&snap) else {
+        return;
+    };
+    if let Some(win) = app.get_webview_window("tray") {
+        let _ = win.eval(&format!(
+            "if (window.__controlTrayApply) window.__controlTrayApply({json});"
+        ));
+    }
+}
+
+fn toggle_tray_popover(app: &AppHandle) {
+    let Some(win) = app.get_webview_window("tray") else {
+        return;
+    };
+    if win.is_visible().unwrap_or(false) {
+        let _ = win.hide();
+        return;
+    }
+    position_tray_popover(&win);
+    let _ = win.show();
+    let _ = win.set_focus();
+    push_tray_stats(app);
+    let _ = app.emit_to("tray", "tray-shown", ());
+    let _ = win.eval("window.__controlTrayFocus?.()");
+}
+
+fn fetch_daemon_json(path: &str) -> Option<serde_json::Value> {
+    let addr = DAEMON_ADDR.parse().ok()?;
+    let mut stream = TcpStream::connect_timeout(&addr, Duration::from_millis(800)).ok()?;
+    let _ = stream.set_read_timeout(Some(Duration::from_millis(800)));
+    let req = format!(
+        "GET /api{path} HTTP/1.1\r\nHost: 127.0.0.1\r\nAccept: application/json\r\nConnection: close\r\n\r\n"
+    );
+    stream.write_all(req.as_bytes()).ok()?;
+    let mut buf = Vec::new();
+    stream.read_to_end(&mut buf).ok()?;
+    let text = String::from_utf8_lossy(&buf);
+    let body = text.split("\r\n\r\n").nth(1)?.trim();
+    serde_json::from_str(body).ok()
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct TraySnapshot {
+    online: bool,
+    cpu: u8,
+    memory: u8,
+    project_count: usize,
+    active_runs: usize,
+    docker_available: Option<bool>,
+}
+
+#[tauri::command]
+fn tray_get_snapshot() -> TraySnapshot {
+    let online = fetch_daemon_json("/health")
+        .as_ref()
+        .and_then(|v| v.get("ok"))
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
+
+    if !online {
+        return TraySnapshot {
+            online: false,
+            cpu: 0,
+            memory: 0,
+            project_count: 0,
+            active_runs: 0,
+            docker_available: None,
+        };
+    }
+
+    let metrics = fetch_daemon_json("/host/metrics");
+    let cpu = metrics
+        .as_ref()
+        .and_then(|v| v.get("cpu"))
+        .and_then(|v| v.as_f64())
+        .unwrap_or(0.0)
+        .round()
+        .clamp(0.0, 100.0) as u8;
+    let memory = metrics
+        .as_ref()
+        .and_then(|v| v.get("memory"))
+        .and_then(|v| v.as_f64())
+        .unwrap_or(0.0)
+        .round()
+        .clamp(0.0, 100.0) as u8;
+
+    let (project_count, active_runs) = fetch_daemon_json("/projects")
+        .and_then(|v| v.as_array().cloned())
+        .map(|projects| {
+            let active = projects
+                .iter()
+                .filter_map(|p| p.get("activeRunCount").and_then(|n| n.as_u64()))
+                .sum::<u64>() as usize;
+            (projects.len(), active)
+        })
+        .unwrap_or((0, 0));
+
+    let docker_available = fetch_daemon_json("/docker/status")
+        .as_ref()
+        .and_then(|v| v.get("available"))
+        .and_then(|v| v.as_bool());
+
+    TraySnapshot {
+        online: true,
+        cpu,
+        memory,
+        project_count,
+        active_runs,
+        docker_available,
     }
 }
 
@@ -247,85 +384,178 @@ fn kill_daemon(app: &AppHandle) {
     }
 }
 
+#[tauri::command]
+fn tray_open(app: AppHandle) {
+    show_main(&app);
+}
+
+#[tauri::command]
+fn tray_restart_daemon(app: AppHandle) {
+    restart_daemon(&app);
+}
+
+#[tauri::command]
+fn tray_is_autostart_enabled(app: AppHandle) -> bool {
+    app.autolaunch().is_enabled().unwrap_or(false)
+}
+
+#[tauri::command]
+fn tray_toggle_autostart(app: AppHandle) -> bool {
+    let mgr = app.autolaunch();
+    let now_enabled = if mgr.is_enabled().unwrap_or(false) {
+        let _ = mgr.disable();
+        false
+    } else {
+        let _ = mgr.enable();
+        true
+    };
+    now_enabled
+}
+
+#[tauri::command]
+fn tray_quit(app: AppHandle) {
+    kill_daemon(&app);
+    app.exit(0);
+}
+
+#[tauri::command]
+fn tray_hide(app: AppHandle) {
+    hide_tray_popover(&app);
+}
+
+fn build_native_tray_menu(app: &mut tauri::App) -> tauri::Result<()> {
+    let handle = app.handle();
+    let open = MenuItem::with_id(app, "open", "Open CONTROL", true, None::<&str>)?;
+    let restart = MenuItem::with_id(app, "restart", "Restart daemon", true, None::<&str>)?;
+    let autostart_enabled = handle.autolaunch().is_enabled().unwrap_or(false);
+    let autostart = MenuItem::with_id(
+        app,
+        "autostart",
+        if autostart_enabled {
+            "✓ Start on login"
+        } else {
+            "Start on login"
+        },
+        true,
+        None::<&str>,
+    )?;
+    let quit = MenuItem::with_id(app, "quit", "Quit CONTROL", true, None::<&str>)?;
+    let menu = Menu::with_items(app, &[&open, &restart, &autostart, &quit])?;
+
+    let autostart_item = autostart.clone();
+    TrayIconBuilder::with_id("control-tray")
+        .icon(app.default_window_icon().unwrap().clone())
+        .tooltip("CONTROL — Local Dev Command Center")
+        .menu(&menu)
+        .show_menu_on_left_click(false)
+        .on_menu_event(move |app, event| match event.id.as_ref() {
+            "open" => show_main(app),
+            "restart" => restart_daemon(app),
+            "quit" => {
+                kill_daemon(app);
+                app.exit(0);
+            }
+            "autostart" => {
+                let mgr = app.autolaunch();
+                let now_enabled = if mgr.is_enabled().unwrap_or(false) {
+                    let _ = mgr.disable();
+                    false
+                } else {
+                    let _ = mgr.enable();
+                    true
+                };
+                let _ = autostart_item.set_text(if now_enabled {
+                    "✓ Start on login"
+                } else {
+                    "Start on login"
+                });
+            }
+            _ => {}
+        })
+        .on_tray_icon_event(|tray, event| {
+            if let TrayIconEvent::Click {
+                button: MouseButton::Left,
+                button_state: MouseButtonState::Up,
+                ..
+            } = event
+            {
+                show_main(tray.app_handle());
+            }
+        })
+        .build(app)?;
+
+    Ok(())
+}
+
+fn build_custom_tray_popover(app: &mut tauri::App) -> tauri::Result<()> {
+    TrayIconBuilder::with_id("control-tray")
+        .icon(app.default_window_icon().unwrap().clone())
+        .tooltip("CONTROL — Local Dev Command Center")
+        .show_menu_on_left_click(false)
+        .on_tray_icon_event(|tray, event| {
+            tauri_plugin_positioner::on_tray_event(tray.app_handle(), &event);
+            match event {
+                TrayIconEvent::Click {
+                    button: MouseButton::Left,
+                    button_state: MouseButtonState::Up,
+                    ..
+                } => show_main(tray.app_handle()),
+                TrayIconEvent::Click {
+                    button: MouseButton::Right,
+                    button_state: MouseButtonState::Up,
+                    ..
+                } => toggle_tray_popover(tray.app_handle()),
+                _ => {}
+            }
+        })
+        .build(app)?;
+
+    Ok(())
+}
+
 fn main() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, None))
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_positioner::init())
+        .invoke_handler(tauri::generate_handler![
+            tray_open,
+            tray_restart_daemon,
+            tray_toggle_autostart,
+            tray_is_autostart_enabled,
+            tray_quit,
+            tray_hide,
+            tray_get_snapshot,
+        ])
         .manage(DaemonState(Mutex::new(None)))
         .setup(|app| {
-            let handle = app.handle();
+            let handle = app.handle().clone();
 
             if is_control_daemon_healthy() {
                 *app.state::<DaemonState>().0.lock().unwrap() = Some(DaemonHandle::External);
-            } else if let Some(home) = find_control_home(handle) {
+            } else if let Some(home) = find_control_home(&handle) {
                 if let Ok(child) = spawn_daemon(&home) {
                     *app.state::<DaemonState>().0.lock().unwrap() = Some(DaemonHandle::Owned(child));
                 }
             }
 
-            let open = MenuItem::with_id(app, "open", "Open CONTROL", true, None::<&str>)?;
-            let restart = MenuItem::with_id(app, "restart", "Restart daemon", true, None::<&str>)?;
-            let autostart_enabled = handle.autolaunch().is_enabled().unwrap_or(false);
-            let autostart = MenuItem::with_id(
-                app,
-                "autostart",
-                if autostart_enabled {
-                    "✓ Start on login"
-                } else {
-                    "Start on login"
-                },
-                true,
-                None::<&str>,
-            )?;
-            let quit = MenuItem::with_id(app, "quit", "Quit CONTROL", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&open, &restart, &autostart, &quit])?;
+            if USE_CUSTOM_TRAY_POPOVER {
+                build_custom_tray_popover(app)?;
+            } else {
+                build_native_tray_menu(app)?;
+            }
 
-            let autostart_item = autostart.clone();
-            TrayIconBuilder::with_id("control-tray")
-                .icon(app.default_window_icon().unwrap().clone())
-                .tooltip("CONTROL — Local Dev Command Center")
-                .menu(&menu)
-                .show_menu_on_left_click(false)
-                .on_menu_event(move |app, event| match event.id.as_ref() {
-                    "open" => show_main(app),
-                    "restart" => restart_daemon(app),
-                    "quit" => {
-                        kill_daemon(app);
-                        app.exit(0);
-                    }
-                    "autostart" => {
-                        let mgr = app.autolaunch();
-                        let now_enabled = if mgr.is_enabled().unwrap_or(false) {
-                            let _ = mgr.disable();
-                            false
-                        } else {
-                            let _ = mgr.enable();
-                            true
-                        };
-                        let _ = autostart_item.set_text(if now_enabled {
-                            "✓ Start on login"
-                        } else {
-                            "Start on login"
-                        });
-                    }
-                    _ => {}
-                })
-                .on_tray_icon_event(|tray, event| {
-                    if let TrayIconEvent::Click {
-                        button: MouseButton::Left,
-                        button_state: MouseButtonState::Up,
-                        ..
-                    } = event
-                    {
-                        show_main(tray.app_handle());
-                    }
-                })
-                .build(app)?;
-
-            load_when_ready(handle);
+            load_when_ready(&handle);
             Ok(())
         })
         .on_window_event(|window, event| {
+            if window.label() == "tray" {
+                if let WindowEvent::Focused(false) = event {
+                    let _ = window.hide();
+                }
+                return;
+            }
+
             // Closing the window hides to tray — the daemon (and your servers)
             // keep running. Quit fully from the tray menu.
             if let WindowEvent::CloseRequested { api, .. } = event {

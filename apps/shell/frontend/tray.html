@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CONTROL</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --panel: #0e0e0e;
+        --panel-raised: #161616;
+        --panel-edge: #2e2e2e;
+        --bezel: #05060a;
+        --phosphor: #7dfc9a;
+        --phosphor-dim: #3f7a52;
+        --amber: #f5b34a;
+        --danger: #ff5f56;
+        --ink: #d4d4d4;
+        --ink-dim: #8a8a8a;
+        --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, ui-monospace, monospace;
+        --font-ui: 'Chakra Petch', 'Segoe UI', sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        background: var(--bezel);
+        color: var(--ink);
+        font-family: var(--font-mono);
+        font-size: 11px;
+        -webkit-font-smoothing: antialiased;
+        user-select: none;
+      }
+
+      .shell {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        min-height: 100%;
+        padding: 7px;
+        background: linear-gradient(180deg, #1c1c1c 0%, var(--panel-raised) 30%, #121212 100%);
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.1),
+          inset 0 -1px 0 rgba(0, 0, 0, 0.45),
+          0 3px 12px rgba(0, 0, 0, 0.5);
+      }
+
+      .screw {
+        position: absolute;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 35% 35%, #4a4a4a 0%, #2a2a2a 50%, #111 100%);
+        box-shadow:
+          inset 0 1px 1px rgba(255, 255, 255, 0.15),
+          0 1px 2px rgba(0, 0, 0, 0.9);
+        z-index: 2;
+      }
+
+      .screw::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 4px;
+        height: 4px;
+        background: radial-gradient(circle at center, #111 0%, #000 100%);
+        transform: translate(-50%, -50%) rotate(45deg);
+        clip-path: polygon(
+          40% 0,
+          60% 0,
+          60% 40%,
+          100% 40%,
+          100% 60%,
+          60% 60%,
+          60% 100%,
+          40% 100%,
+          40% 60%,
+          0 60%,
+          0 40%,
+          40% 40%
+        );
+      }
+
+      .screw-tl {
+        top: 3px;
+        left: 3px;
+      }
+
+      .screw-tr {
+        top: 3px;
+        right: 3px;
+      }
+
+      .inner {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+        border-radius: 7px;
+        overflow: hidden;
+        background: var(--bezel);
+        box-shadow:
+          inset 0 3px 10px rgba(0, 0, 0, 0.75),
+          inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      }
+
+      .stats {
+        padding: 10px 12px 8px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.45);
+        background: linear-gradient(180deg, #0d1311 0%, rgba(0, 0, 0, 0.35) 100%);
+        box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(125, 252, 154, 0.12);
+      }
+
+      .stats-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+
+      .brand {
+        font-family: var(--font-ui);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.32em;
+        color: var(--phosphor);
+        text-shadow:
+          0 0 10px rgba(125, 252, 154, 0.65),
+          0 0 20px rgba(125, 252, 154, 0.2);
+      }
+
+      .pulse {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-family: var(--font-ui);
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--ink-dim);
+      }
+
+      .led {
+        position: relative;
+        flex-shrink: 0;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #0c0c0c;
+        box-shadow:
+          inset 0 1px 3px rgba(0, 0, 0, 0.95),
+          inset 0 -1px 0 rgba(255, 255, 255, 0.03),
+          0 0 0 1px rgba(0, 0, 0, 0.65);
+      }
+
+      .led::after {
+        content: '';
+        position: absolute;
+        inset: 1px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
+        pointer-events: none;
+      }
+
+      .pulse.online .led {
+        background: var(--phosphor);
+        color: var(--phosphor);
+        box-shadow:
+          0 0 0 2px rgba(0, 0, 0, 0.55),
+          0 0 6px 2px var(--phosphor),
+          0 0 14px 3px rgba(125, 252, 154, 0.45);
+      }
+
+      .pulse.online .led::after {
+        background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.55) 0%, transparent 55%);
+      }
+
+      .pulse.online {
+        color: var(--phosphor-dim);
+      }
+
+      .pulse.offline .led {
+        background: var(--danger);
+        color: var(--danger);
+        box-shadow:
+          0 0 4px 1px var(--danger),
+          0 0 10px 2px rgba(255, 95, 86, 0.35);
+      }
+
+      .pulse.offline {
+        color: #c98a86;
+      }
+
+      .meters {
+        display: grid;
+        gap: 7px;
+        margin-bottom: 8px;
+      }
+
+      .meter-row {
+        display: grid;
+        grid-template-columns: 28px 1fr 30px;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .meter-label {
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        color: var(--ink-dim);
+      }
+
+      .meter-track {
+        height: 6px;
+        border-radius: 2px;
+        overflow: hidden;
+        background: linear-gradient(180deg, #080808 0%, var(--panel) 40%, #111 100%);
+        box-shadow:
+          inset 0 2px 6px rgba(0, 0, 0, 0.75),
+          inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      }
+
+      .meter-fill {
+        height: 100%;
+        width: 0%;
+        background: var(--phosphor);
+        box-shadow: 0 0 6px 1px rgba(125, 252, 154, 0.55);
+        transition: width 0.25s ease;
+      }
+
+      .meter-fill.warn {
+        background: var(--amber);
+        box-shadow: 0 0 6px 1px rgba(245, 179, 74, 0.5);
+      }
+
+      .meter-fill.hot {
+        background: var(--danger);
+        box-shadow: 0 0 6px 1px rgba(255, 95, 86, 0.5);
+      }
+
+      .meter-value {
+        text-align: right;
+        font-size: 9px;
+        font-weight: 500;
+        color: var(--ink-dim);
+      }
+
+      .counts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 10px;
+        font-family: var(--font-ui);
+        font-size: 9px;
+        font-weight: 500;
+        letter-spacing: 0.06em;
+        color: var(--ink-dim);
+      }
+
+      .counts strong {
+        color: var(--ink);
+        font-weight: 600;
+      }
+
+      .docker-hint {
+        margin-top: 6px;
+        font-family: var(--font-ui);
+        font-size: 9px;
+        font-weight: 500;
+        color: var(--ink-dim);
+      }
+
+      .docker-hint.ok {
+        color: var(--phosphor-dim);
+        text-shadow: 0 0 8px rgba(125, 252, 154, 0.25);
+      }
+
+      .actions {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 8px 10px 10px;
+        background: linear-gradient(180deg, #101010 0%, #080808 100%);
+      }
+
+      .action {
+        --btn-glow: transparent;
+        appearance: none;
+        position: relative;
+        isolation: isolate;
+        margin: 0;
+        width: 100%;
+        padding: 7px 11px;
+        text-align: left;
+        font-family: var(--font-ui);
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.03em;
+        cursor: pointer;
+        color: #c4bfb2;
+        background: linear-gradient(180deg, #1c1c1c 0%, #141414 42%, #0f0f0f 100%);
+        border: 1px solid #0a0a0a;
+        border-radius: 4px;
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.14),
+          inset 0 -1px 0 rgba(0, 0, 0, 0.55),
+          0 1px 0 #050505,
+          0 2px 3px rgba(0, 0, 0, 0.65),
+          0 0 0 1.5px #080808,
+          0 0 0 2px #161616,
+          0 0 10px -1px var(--btn-glow);
+        transition:
+          transform 0.07s ease,
+          box-shadow 0.07s ease,
+          color 0.12s ease;
+      }
+
+      .action:hover {
+        --btn-glow: color-mix(in srgb, var(--phosphor) 40%, transparent);
+        color: var(--phosphor);
+        background: linear-gradient(180deg, #222 0%, #171717 42%, #111 100%);
+      }
+
+      .action:focus-visible {
+        --btn-glow: color-mix(in srgb, var(--phosphor) 55%, transparent);
+        color: var(--phosphor);
+        outline: 2px solid var(--phosphor-dim);
+        outline-offset: 1px;
+      }
+
+      .action:active {
+        transform: translateY(1px);
+        background: linear-gradient(180deg, #121212 0%, #0c0c0c 100%);
+        box-shadow:
+          inset 0 2px 6px rgba(0, 0, 0, 0.75),
+          inset 0 1px 0 rgba(0, 0, 0, 0.4),
+          0 0 0 1.5px #060606,
+          0 0 0 2px #141414;
+      }
+
+      .action.checked::before {
+        content: '✓ ';
+        color: var(--phosphor);
+        text-shadow: 0 0 8px rgba(125, 252, 154, 0.45);
+      }
+
+      .action.danger:hover,
+      .action.danger:focus-visible {
+        --btn-glow: color-mix(in srgb, var(--danger) 45%, transparent);
+        color: var(--danger);
+      }
+
+      .action.danger:focus-visible {
+        outline-color: var(--danger);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <span class="screw screw-tl" aria-hidden="true"></span>
+      <span class="screw screw-tr" aria-hidden="true"></span>
+      <div class="inner">
+        <section class="stats" aria-label="System status" aria-live="polite">
+          <div class="stats-head">
+            <div class="brand">CONTROL</div>
+            <div class="pulse offline" id="pulse">
+              <span class="led" aria-hidden="true"></span>
+              <span id="pulse-label">offline</span>
+            </div>
+          </div>
+          <div class="meters">
+            <div class="meter-row">
+              <span class="meter-label">CPU</span>
+              <div
+                class="meter-track"
+                role="progressbar"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="0"
+                aria-label="CPU"
+                id="cpu-meter"
+              >
+                <div class="meter-fill" id="cpu-fill"></div>
+              </div>
+              <span class="meter-value" id="cpu-val">—</span>
+            </div>
+            <div class="meter-row">
+              <span class="meter-label">MEM</span>
+              <div
+                class="meter-track"
+                role="progressbar"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="0"
+                aria-label="Memory"
+                id="mem-meter"
+              >
+                <div class="meter-fill" id="mem-fill"></div>
+              </div>
+              <span class="meter-value" id="mem-val">—</span>
+            </div>
+          </div>
+          <div class="counts">
+            <span><strong id="project-count">—</strong> projects</span>
+            <span><strong id="active-count">—</strong> active</span>
+          </div>
+          <div class="docker-hint" id="docker-hint" hidden></div>
+        </section>
+        <nav class="actions" aria-label="Tray actions" role="menu">
+          <button type="button" class="action" data-action="open" role="menuitem">Open CONTROL</button>
+          <button type="button" class="action" data-action="restart" role="menuitem">Restart daemon</button>
+          <button
+            type="button"
+            class="action"
+            data-action="autostart"
+            id="autostart-btn"
+            role="menuitemcheckbox"
+            aria-checked="false"
+          >
+            Start on login
+          </button>
+          <button type="button" class="action danger" data-action="quit" role="menuitem">Quit CONTROL</button>
+        </nav>
+      </div>
+    </div>
+    <script>
+      const pulse = document.getElementById('pulse');
+      const pulseLabel = document.getElementById('pulse-label');
+      const cpuFill = document.getElementById('cpu-fill');
+      const memFill = document.getElementById('mem-fill');
+      const cpuVal = document.getElementById('cpu-val');
+      const memVal = document.getElementById('mem-val');
+      const projectCount = document.getElementById('project-count');
+      const activeCount = document.getElementById('active-count');
+      const dockerHint = document.getElementById('docker-hint');
+      const autostartBtn = document.getElementById('autostart-btn');
+      const actionsNav = document.querySelector('.actions');
+      const cpuMeter = document.getElementById('cpu-meter');
+      const memMeter = document.getElementById('mem-meter');
+
+      const menuItems = () => Array.from(actionsNav.querySelectorAll('[data-action]'));
+
+      function invoke(cmd, args = {}) {
+        const inv = window.__TAURI_INTERNALS__?.invoke;
+        if (inv) return inv(cmd, args);
+        const core = window.__TAURI__?.core?.invoke;
+        if (core) return core(cmd, args);
+        throw new Error('Tauri invoke unavailable');
+      }
+
+      function listen(event, handler) {
+        const listenFn =
+          window.__TAURI_INTERNALS__?.event?.listen ?? window.__TAURI__?.event?.listen;
+        if (!listenFn) throw new Error('Tauri listen unavailable');
+        return listenFn(event, handler);
+      }
+
+      function applySnapshot(snap) {
+        if (!snap?.online) {
+          setOffline();
+          return;
+        }
+        setOnline();
+        setMeter(cpuFill, cpuVal, cpuMeter, Number(snap.cpu ?? 0));
+        setMeter(memFill, memVal, memMeter, Number(snap.memory ?? 0));
+        projectCount.textContent = String(snap.projectCount ?? 0);
+        activeCount.textContent = String(snap.activeRuns ?? 0);
+
+        if (typeof snap.dockerAvailable === 'boolean') {
+          dockerHint.hidden = false;
+          dockerHint.textContent = snap.dockerAvailable ? 'Docker ready' : 'Docker unavailable';
+          dockerHint.classList.toggle('ok', snap.dockerAvailable);
+        } else {
+          dockerHint.hidden = true;
+        }
+      }
+
+      window.__controlTrayApply = applySnapshot;
+
+      function setMeter(fill, valueEl, meterEl, pct) {
+        const n = Math.round(Math.max(0, Math.min(100, pct)));
+        fill.style.width = `${n}%`;
+        valueEl.textContent = `${n}%`;
+        if (meterEl) meterEl.setAttribute('aria-valuenow', String(n));
+        fill.classList.remove('warn', 'hot');
+        if (n >= 85) fill.classList.add('hot');
+        else if (n >= 60) fill.classList.add('warn');
+      }
+
+      function setOffline() {
+        pulse.classList.remove('online');
+        pulse.classList.add('offline');
+        pulseLabel.textContent = 'offline';
+        setMeter(cpuFill, cpuVal, cpuMeter, 0);
+        setMeter(memFill, memVal, memMeter, 0);
+        cpuVal.textContent = '—';
+        memVal.textContent = '—';
+        projectCount.textContent = '—';
+        activeCount.textContent = '—';
+        dockerHint.hidden = true;
+      }
+
+      function setOnline() {
+        pulse.classList.remove('offline');
+        pulse.classList.add('online');
+        pulseLabel.textContent = 'online';
+      }
+
+      function focusMenuItem(index) {
+        const items = menuItems();
+        if (!items.length) return;
+        const i = Math.max(0, Math.min(index, items.length - 1));
+        items.forEach((el, idx) => {
+          el.tabIndex = idx === i ? 0 : -1;
+        });
+        items[i].focus();
+      }
+
+      function focusFirstMenuItem() {
+        focusMenuItem(0);
+      }
+
+      window.__controlTrayFocus = focusFirstMenuItem;
+
+      async function runAction(action) {
+        if (action === 'open') await invoke('tray_open');
+        else if (action === 'restart') await invoke('tray_restart_daemon');
+        else if (action === 'autostart') {
+          const on = await invoke('tray_toggle_autostart');
+          autostartBtn.classList.toggle('checked', Boolean(on));
+          autostartBtn.setAttribute('aria-checked', String(Boolean(on)));
+        } else if (action === 'quit') await invoke('tray_quit');
+      }
+
+      async function refreshAutostart() {
+        try {
+          const on = await invoke('tray_is_autostart_enabled');
+          autostartBtn.classList.toggle('checked', Boolean(on));
+          autostartBtn.setAttribute('aria-checked', String(Boolean(on)));
+        } catch {
+          autostartBtn.classList.remove('checked');
+          autostartBtn.setAttribute('aria-checked', 'false');
+        }
+      }
+
+      async function refreshStats() {
+        try {
+          const snap = await invoke('tray_get_snapshot');
+          applySnapshot(snap);
+        } catch {
+          setOffline();
+        }
+      }
+
+      menuItems().forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const action = btn.getAttribute('data-action');
+          try {
+            await runAction(action);
+          } catch (err) {
+            console.error('[control-tray]', err);
+          }
+        });
+      });
+
+      actionsNav.addEventListener('keydown', (e) => {
+        const items = menuItems();
+        const current = items.indexOf(document.activeElement);
+
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          focusMenuItem(current < 0 ? 0 : (current + 1) % items.length);
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          focusMenuItem(current < 0 ? items.length - 1 : (current - 1 + items.length) % items.length);
+        } else if (e.key === 'Home') {
+          e.preventDefault();
+          focusMenuItem(0);
+        } else if (e.key === 'End') {
+          e.preventDefault();
+          focusMenuItem(items.length - 1);
+        } else if (e.key === 'Tab') {
+          e.preventDefault();
+          if (e.shiftKey) {
+            focusMenuItem(current <= 0 ? items.length - 1 : current - 1);
+          } else {
+            focusMenuItem(current < 0 ? 0 : (current + 1) % items.length);
+          }
+        }
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') invoke('tray_hide').catch(() => {});
+      });
+
+      listen('tray-shown', () => {
+        void refreshAutostart();
+        requestAnimationFrame(() => focusFirstMenuItem());
+      });
+
+      focusFirstMenuItem();
+    </script>
+  </body>
+</html>

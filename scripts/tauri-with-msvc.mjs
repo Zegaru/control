@@ -13,10 +13,23 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const shellRoot = join(dirname(fileURLToPath(import.meta.url)), '..', 'apps', 'shell')
-const tauriArgs = process.argv.slice(2)
+const tauriArgs = withProfileConfig(process.argv.slice(2))
 if (tauriArgs.length === 0) {
   console.error('Usage: node scripts/tauri-with-msvc.mjs <tauri-args...>')
   process.exit(1)
+}
+
+/** Dev uses the monorepo checkout; release bundles the staged runtime. */
+function withProfileConfig(args) {
+  if (args.includes('--config') || args.includes('-c')) return args
+  const sub = args[0]
+  if (sub === 'build') {
+    const releaseConfig = join('src-tauri', 'tauri.release.conf.json')
+    if (existsSync(join(shellRoot, releaseConfig))) {
+      return [sub, '--config', releaseConfig, ...args.slice(1)]
+    }
+  }
+  return args
 }
 
 function findVcvars64() {

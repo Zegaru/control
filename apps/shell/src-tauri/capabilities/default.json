@@ -1,8 +1,8 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "CONTROL shell capabilities. The main window navigates to the daemon-served UI at 127.0.0.1:4400. Tray + Settings can toggle autostart; dialog:allow-open lets the UI open a native folder picker when adding a project.",
-  "windows": ["main"],
+  "description": "CONTROL shell capabilities. The main window navigates to the daemon-served UI at 127.0.0.1:4400. Tray popover fetches the same origin for stats; Settings and tray can toggle autostart.",
+  "windows": ["main", "tray"],
   "remote": {
     "urls": ["http://127.0.0.1:4400/*"]
   },
@@ -11,6 +11,8 @@
     "dialog:allow-open",
     "autostart:allow-enable",
     "autostart:allow-disable",
-    "autostart:allow-is-enabled"
+    "autostart:allow-is-enabled",
+    "positioner:default",
+    "tray-commands"
   ]
 }
