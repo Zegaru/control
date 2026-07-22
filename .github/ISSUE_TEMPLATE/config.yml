@@ -1,0 +1,4 @@
+# Prefer private advisories for vulnerabilities — see SECURITY.md in the repo root.
+# Once this repository is on GitHub, add a contact_links entry to
+# https://github.com/<owner>/<repo>/security/advisories/new
+blank_issues_enabled: true
