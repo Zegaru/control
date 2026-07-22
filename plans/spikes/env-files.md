@@ -1,5 +1,7 @@
 # Spike: Per-action `.env` / `.env.local` selection
 
+> Implemented in plan 032.
+
 ## Evidence
 
 - `DESIGN.md` §12 explicitly defers per-action env file selection past MVP.

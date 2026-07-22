@@ -108,6 +108,8 @@ export const api = {
     req<Action>('/actions', { method: 'POST', body: JSON.stringify(body) }),
   patchAction: (id: string, body: PatchActionBody) =>
     req<Action>(`/actions/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  envFileCandidates: (id: string) =>
+    req<{ candidates: string[] }>(`/actions/${id}/env-files`),
   actionRuns: (id: string) => req<Run[]>(`/actions/${id}/runs`),
   startAction: (id: string, force = false, env?: Record<string, string>) =>
     req<Run | { error: string; port: number }>(

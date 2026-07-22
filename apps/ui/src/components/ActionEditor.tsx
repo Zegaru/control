@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { ActionWithRun } from '@control/shared'
 import { api } from '../api.js'
@@ -27,12 +27,29 @@ export function ActionEditor({
   const [env, setEnv] = useState(
     action.envOverrides ? Object.entries(action.envOverrides).map(([k, v]) => `${k}=${v}`).join('\n') : '',
   )
+  const [selectedEnvFiles, setSelectedEnvFiles] = useState<string[]>(action.envFiles ?? [])
   const [busy, setBusy] = useState(false)
 
   const history = useQuery({
     queryKey: ['action-runs', action.id],
     queryFn: () => api.actionRuns(action.id),
   })
+
+  const candidates = useQuery({
+    queryKey: ['action-env-files', action.id],
+    queryFn: () => api.envFileCandidates(action.id),
+    enabled: open,
+  })
+
+  useEffect(() => {
+    if (open) setSelectedEnvFiles(action.envFiles ?? [])
+  }, [open, action.envFiles])
+
+  const toggleEnvFile = (file: string) => {
+    setSelectedEnvFiles((prev) =>
+      prev.includes(file) ? prev.filter((n) => n !== file) : [...prev, file],
+    )
+  }
 
   const save = async () => {
     setBusy(true)
@@ -47,6 +64,7 @@ export function ActionEditor({
         command: command.trim() || action.command,
         portHint: portHint ? Number(portHint) : null,
         healthUrl: healthUrl.trim() || null,
+        envFiles: selectedEnvFiles.length ? selectedEnvFiles : null,
         envOverrides: Object.keys(envOverrides).length ? envOverrides : null,
       })
       qc.invalidateQueries({ queryKey: ['trees'] })
@@ -107,8 +125,31 @@ export function ActionEditor({
             />
           </label>
         </div>
+        <div className="block">
+          <span className="mb-1 block text-xs text-ink-dim">Env files</span>
+          {candidates.isLoading ? (
+            <p className="text-[12px] text-ink-faint">Looking for .env files…</p>
+          ) : candidates.data && candidates.data.candidates.length > 0 ? (
+            <div className="space-y-1 rounded border border-panel-edge bg-bezel px-3 py-2">
+              {candidates.data.candidates.map((file) => (
+                <label key={file} className="flex items-center gap-2 text-sm font-mono">
+                  <input
+                    type="checkbox"
+                    checked={selectedEnvFiles.includes(file)}
+                    onChange={() => toggleEnvFile(file)}
+                  />
+                  {file}
+                </label>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[12px] text-ink-faint">No .env files in this action’s directory.</p>
+          )}
+        </div>
         <label className="block">
-          <span className="mb-1 block text-xs text-ink-dim">Env vars (KEY=value per line)</span>
+          <span className="mb-1 block text-xs text-ink-dim">
+            Env overrides (KEY=value per line — win over files)
+          </span>
           <textarea
             value={env}
             onChange={(e) => setEnv(e.target.value)}

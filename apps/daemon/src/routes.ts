@@ -38,8 +38,10 @@ import {
   patchModule,
   patchProject,
   rescanProject,
+  resolveActionCwd,
   updateGroup,
 } from './registry.js'
+import { listEnvFileCandidates } from './envFile.js'
 import { supervisor } from './supervisor.js'
 import { startGroup, stopGroup } from './groupRunner.js'
 import { startProjectPower, stopProjectPower } from './projectPower.js'
@@ -169,6 +171,13 @@ api.post('/actions', async (c) => {
 api.patch('/actions/:id', async (c) => {
   const body = patchActionBodySchema.parse(await c.req.json())
   return c.json(patchAction(c.req.param('id'), body))
+})
+
+api.get('/actions/:id/env-files', (c) => {
+  const action = getAction(c.req.param('id'))
+  if (!action) throw new HttpError(404, 'Action not found')
+  const cwd = resolveActionCwd(action)
+  return c.json({ candidates: cwd ? listEnvFileCandidates(cwd) : [] })
 })
 
 api.get('/actions/:id/runs', (c) => c.json(listRunsForAction(c.req.param('id'))))

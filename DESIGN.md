@@ -546,7 +546,7 @@ Each milestone ends usable. M1–M3 is the MVP that replaces the current pain.
 
 - **Monorepo task runners**: should `turbo run dev` at root be preferred over per-module scripts? v1: detect both, let favorites decide.
 
-- **Env file handling**: per-action selection of `.env` files (this repo's `.env.local` pattern) — deferred past MVP; envOverrides covers the gap.
+- **Env file handling**: per-action selection of `.env` files is implemented (ActionEditor picker + spawn merge: process → files → runtimeEnv → overrides).
 
 - **Log privacy**: dev logs can contain tokens; retention is local-only and capped, but no scrubbing in v1.
 
