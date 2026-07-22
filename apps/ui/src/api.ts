@@ -9,10 +9,12 @@ import type {
   Environment,
   Group,
   HostMetrics,
+  Module,
   ProjectMetricsSnapshot,
   PatchActionBody,
   PatchEnvironmentBody,
   PatchGroupBody,
+  PatchModuleBody,
   PatchProjectBody,
   PatchSettingsBody,
   PortOwner,
@@ -103,6 +105,9 @@ export const api = {
   patchEnvironment: (id: string, body: PatchEnvironmentBody) =>
     req<Environment>(`/environments/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteEnvironment: (id: string) => req<void>(`/environments/${id}`, { method: 'DELETE' }),
+
+  patchModule: (id: string, body: PatchModuleBody) =>
+    req<Module>(`/modules/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
 
   createAction: (body: CreateActionBody) =>
     req<Action>('/actions', { method: 'POST', body: JSON.stringify(body) }),

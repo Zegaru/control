@@ -20,6 +20,7 @@ export function ProjectDetail({
 }) {
   const qc = useQueryClient();
   const [showSecondary, setShowSecondary] = useState(false);
+  const [showHidden, setShowHidden] = useState(false);
   const [claimInput, setClaimInput] = useState('');
   const [portLabelPort, setPortLabelPort] = useState('');
   const [portLabelName, setPortLabelName] = useState('');
@@ -108,6 +109,15 @@ export function ProjectDetail({
   const singleRootModule =
     p.modules.length === 1 && p.modules[0]!.relPath === '' ? p.modules[0]! : null;
   const commandsTitle = singleRootModule ? `${singleRootModule.name} (root)` : 'Commands';
+
+  const modules = showHidden
+    ? p.modules.filter((m) => m.hidden || m.actions.some((a) => a.hidden))
+    : p.modules.filter((m) => !m.hidden);
+  const nothingVisible =
+    !showHidden &&
+    p.modules.length > 0 &&
+    (modules.length === 0 ||
+      modules.every((m) => m.actions.every((a) => a.hidden)));
 
   const portLabelEntries = Object.entries(p.portLabels ?? {}).sort(
     ([a], [b]) => Number(a) - Number(b)
@@ -401,13 +411,17 @@ export function ProjectDetail({
           title={commandsTitle}
           className="flex min-h-0 flex-col"
           right={
-            singleRootModule ? (
-              <div className="flex gap-1">
-                {singleRootModule.detectedStacks.map((s) => (
-                  <Chip key={s.kind}>{s.kind}</Chip>
-                ))}
-              </div>
-            ) : undefined
+            <div className="flex items-center gap-2">
+              {singleRootModule &&
+                singleRootModule.detectedStacks.map((s) => <Chip key={s.kind}>{s.kind}</Chip>)}
+              <Button
+                variant="ghost"
+                onClick={() => setShowHidden((v) => !v)}
+                className="px-0 py-0 text-[12px] uppercase tracking-wider text-ink-faint hover:not-data-disabled:text-ink-dim"
+              >
+                {showHidden ? 'Hide hidden' : 'Show hidden'}
+              </Button>
+            </div>
           }
         >
           <div className="min-h-0 flex-1 overflow-y-auto">
@@ -424,12 +438,20 @@ export function ProjectDetail({
                   + Add command
                 </Button>
               </>
+            ) : nothingVisible ? (
+              <p className="text-sm text-ink-faint">
+                All commands are hidden. Use Show hidden to restore.
+              </p>
+            ) : modules.length === 0 ? (
+              <p className="text-sm text-ink-faint">No hidden commands.</p>
             ) : (
               <div className="space-y-6">
-                {p.modules.map((mod) => {
-                  const primary = mod.actions.filter((a) => !a.hidden && a.primary);
-                  const secondary = mod.actions.filter((a) => !a.hidden && !a.primary);
+                {modules.map((mod) => {
+                  const visible = mod.actions.filter((a) => (showHidden ? a.hidden : !a.hidden));
+                  const primary = visible.filter((a) => a.primary);
+                  const secondary = visible.filter((a) => !a.primary);
                   const showModuleHeader = p.modules.length > 1;
+                  const actionVariant = showHidden ? 'hidden' : 'default';
 
                   return (
                     <section key={mod.id}>
@@ -438,10 +460,22 @@ export function ProjectDetail({
                           <h3 className="text-[12px] font-semibold uppercase tracking-[0.2em] text-ink-dim">
                             {mod.relPath === '' ? `${mod.name} (root)` : mod.relPath}
                           </h3>
-                          <div className="flex gap-1">
+                          <div className="flex items-center gap-2">
                             {mod.detectedStacks.map((s) => (
                               <Chip key={s.kind}>{s.kind}</Chip>
                             ))}
+                            {(!showHidden || mod.hidden) && (
+                              <Button
+                                variant="ghost"
+                                onClick={async () => {
+                                  await api.patchModule(mod.id, {hidden: !mod.hidden});
+                                  invalidateTree();
+                                }}
+                                className="px-0 py-0 text-[12px] uppercase tracking-wider text-ink-faint hover:not-data-disabled:text-ink-dim"
+                              >
+                                {mod.hidden ? 'Unhide module' : 'Hide module'}
+                              </Button>
+                            )}
                           </div>
                         </header>
                       )}
@@ -450,7 +484,12 @@ export function ProjectDetail({
                           <p className="text-sm text-ink-faint">No actions detected.</p>
                         )}
                         {primary.map((a) => (
-                          <ActionRow key={a.id} action={a} onOpenRun={onOpenRun} />
+                          <ActionRow
+                            key={a.id}
+                            action={a}
+                            onOpenRun={onOpenRun}
+                            variant={actionVariant}
+                          />
                         ))}
 
                         {secondary.length > 0 && (
@@ -482,7 +521,12 @@ export function ProjectDetail({
                             >
                               <div className="min-h-0 space-y-2 overflow-hidden">
                                 {secondary.map((a) => (
-                                  <ActionRow key={a.id} action={a} onOpenRun={onOpenRun} />
+                                  <ActionRow
+                                    key={a.id}
+                                    action={a}
+                                    onOpenRun={onOpenRun}
+                                    variant={actionVariant}
+                                  />
                                 ))}
                               </div>
                             </div>
