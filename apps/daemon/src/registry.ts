@@ -23,6 +23,7 @@ import {
   type RunStatus,
 } from '@control/shared'
 import { db, schema } from './db/index.js'
+import { HttpError } from './httpError.js'
 import { newId } from './ids.js'
 import { scanProject } from './scanner.js'
 import { bus } from './events.js'
@@ -972,11 +973,4 @@ export function buildPathProjectMatcher(): (haystack: string | null) => string |
 
 // --- error helper ----------------------------------------------------------
 
-export class HttpError extends Error {
-  constructor(
-    public status: number,
-    message: string,
-  ) {
-    super(message)
-  }
-}
+export { HttpError } from './httpError.js'

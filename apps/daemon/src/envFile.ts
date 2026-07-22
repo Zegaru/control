@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { isAbsolute, normalize, relative, resolve, sep } from 'node:path'
-import { HttpError } from './registry.js'
+import { HttpError } from './httpError.js'
 
 const ENV_BASENAME_RE = /^\.env(\..+)?$/
 
