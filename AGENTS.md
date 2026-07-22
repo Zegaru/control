@@ -1,6 +1,6 @@
 # AGENTS.md — CONTROL workspace guide
 
-CONTROL is a local-first dev command center: a Node daemon supervises host processes and Docker stacks; a React SPA is the thin client.
+CONTROL is a local-first dev command center: run and track every local service without living in a console. A Node daemon supervises host processes and Docker stacks; a React SPA is the thin client. Product intent: [DESIGN.md](./DESIGN.md).
 
 ## Layout
 

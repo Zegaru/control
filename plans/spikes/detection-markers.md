@@ -8,7 +8,7 @@
 | justfile | listed | ❌ |
 | Expo / RN (`app.json`, `metro.config.js`) | listed | ❌ |
 | `.claude/launch.json` | highest-confidence | ❌ |
-| turbo/nx/lerna workspace expansion | open question §11 | ❌ |
+| turbo/nx/lerna workspace expansion | open question §12 | ❌ |
 
 ## Priority order
 
@@ -17,7 +17,7 @@
 3. **justfile** — parse targets matching `dev|start|serve`.
 4. **Expo** — lower priority; noisier heuristics.
 
-## Open question (DESIGN §11)
+## Open question (DESIGN §12)
 
 Turbo root `dev` vs per-module scripts → detect both; let favorites decide.
 

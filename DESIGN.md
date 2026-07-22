@@ -2,11 +2,15 @@
 
 
 
-A local-first dev server manager: one UI to see every dev server you have running across all your projects, and start/stop them with one click — host processes and Docker stacks alike.
+**Run and track every local service without living in a console.**
 
 
 
-Status: **implemented through M6** (see [README.md](./README.md) Status). Former working name: Switchboard. Stack: TypeScript daemon + React UI + optional Tauri shell (`apps/shell`).
+A local-first command center for every dev server across your projects — host processes and Docker stacks alike. Start/stop with one click; the daemon owns supervision so closing the UI never kills your servers.
+
+
+
+Status: **implemented through M6** (see [README.md](./README.md)). Former working name: Switchboard. Stack: TypeScript daemon + React UI + optional Tauri shell (`apps/shell`).
 
 
 
@@ -14,7 +18,47 @@ Status: **implemented through M6** (see [README.md](./README.md) Status). Former
 
 
 
-## 1. Goals
+## 1. Why CONTROL exists
+
+
+
+Local development outgrew the console as the only control surface:
+
+
+
+- Most AI apps and agent workflows are not console-first. Services start in scattered terminals whose UIs are weak for supervising process state.
+
+- You often need to run and track services on days you never open a console or IDE at all.
+
+- Project scripts, ports, and runtime state are easy to mix up; keeping that map in your head adds cognitive weight.
+
+
+
+CONTROL exists to own that map outside any single console or editor.
+
+
+
+## 2. Goals
+
+
+
+**Problem → promise**
+
+
+
+| Pain | Goal |
+
+|---|---|
+
+| Consoles are scattered and weak for process work | One pane for run/stop, logs, and health across projects |
+
+| You often work outside the console | UI is optional; a local daemon keeps services supervised |
+
+| Scripts / ports / state blur together | Projects, actions, ports, and Docker stay attributed and visible |
+
+
+
+**How we deliver that**
 
 
 
@@ -46,7 +90,7 @@ Status: **implemented through M6** (see [README.md](./README.md) Status). Former
 
 
 
-## 2. Architecture
+## 3. Architecture
 
 
 
@@ -108,7 +152,7 @@ packages/shared/  # Zod schemas + TS types shared by daemon and UI (API contract
 
 
 
-## 3. Tech stack
+## 4. Tech stack
 
 
 
@@ -144,7 +188,7 @@ packages/shared/  # Zod schemas + TS types shared by daemon and UI (API contract
 
 
 
-## 4. Data model
+## 5. Data model
 
 
 
@@ -186,7 +230,7 @@ groups     id, projectId?, name, steps (json: ordered [{actionId, waitFor: 'heal
 
 
 
-## 5. Detection engine
+## 6. Detection engine
 
 
 
@@ -254,7 +298,7 @@ Pure TS module in the daemon. Input: a project root. Output: modules + suggested
 
 
 
-## 6. Process supervision
+## 7. Process supervision
 
 
 
@@ -286,7 +330,7 @@ Container-backed actions (`type: compose`) bypass all of the above: dockerode pr
 
 
 
-## 7. API design
+## 8. API design
 
 
 
@@ -374,7 +418,7 @@ All request/response shapes defined as Zod schemas in `packages/shared` — the 
 
 
 
-## 8. UI
+## 9. UI
 
 
 
@@ -402,7 +446,7 @@ Design notes: dark-mode first; status semantics by color (gray idle, blue starti
 
 
 
-## 9. Requirements
+## 10. Requirements
 
 
 
@@ -466,7 +510,7 @@ Design notes: dark-mode first; status semantics by color (gray idle, blue starti
 
 
 
-## 10. Milestones
+## 11. Milestones
 
 
 
@@ -494,7 +538,7 @@ Each milestone ends usable. M1–M3 is the MVP that replaces the current pain.
 
 
 
-## 11. Risks & open questions
+## 12. Risks & open questions
 
 
 

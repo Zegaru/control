@@ -29,7 +29,7 @@
 
 DESIGN.md and code asymmetries point to four grounded next bets — not generic ideas:
 
-1. Per-action `.env` / `.env.local` selection (explicitly deferred in DESIGN §11).
+1. Per-action `.env` / `.env.local` selection (explicitly deferred in DESIGN §12).
 2. Optional PTY stdin (“can come later”; logs are read-only except Ctrl-C on stop).
 3. Unfinished detection markers (justfile, Expo, `.claude/launch.json`, turbo/nx).
 4. Non-Windows host port attribution (`hostPorts.ts` returns `[]` off win32; NFR-1 deferred macOS/Linux).
@@ -38,7 +38,7 @@ This plan produces **decision-ready writeups** under `plans/spikes/` (create fol
 
 ## Current state
 
-**DESIGN §11** (`DESIGN.md:507`):
+**DESIGN §12** (`DESIGN.md`):
 
 > Env file handling: per-action selection of `.env` files … deferred past MVP; envOverrides covers the gap.
 

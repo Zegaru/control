@@ -27,7 +27,7 @@ FR-11 and the shared Run docstring promise that after a daemon restart, survivin
 
 ## Current state
 
-**DESIGN.md §6 / FR-11** (quote for vocabulary):
+**DESIGN.md §7 / FR-11** (quote for vocabulary):
 
 > on daemon start, walk the `runs` table: PID alive + expected port listening → mark `adopted` (stop + port status supported; PTY log stream is lost — documented limitation). PID dead → mark `exited` retroactively.
 

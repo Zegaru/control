@@ -2,7 +2,7 @@
 
 ## Evidence
 
-- `DESIGN.md` §11 explicitly defers per-action env file selection past MVP.
+- `DESIGN.md` §12 explicitly defers per-action env file selection past MVP.
 - Today: `action.envOverrides` in DB + runtime env merge in `supervisor.buildEnv`.
 - Project **environments** already carry `env` maps (`packages/shared`, registry).
 

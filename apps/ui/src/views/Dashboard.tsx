@@ -14,10 +14,7 @@ import {
   statusLabel,
 } from '../components/kit.js';
 import {AddProjectDialog} from '../components/AddProjectDialog.js';
-import {
-  ControlStrip,
-  type ControlStripNotification,
-} from '../components/ControlStrip.js';
+import {ControlStrip, type ControlStripNotification} from '../components/ControlStrip.js';
 import {LogPanel} from '../components/LogPanel.js';
 import {ProjectModule, type ProjectService} from '../components/ProjectModule.js';
 import {useEventLog} from '../eventLogStore.js';
@@ -81,10 +78,10 @@ function buildRuntimeServices(
   projectId: string,
   runningContainers: ContainerInfo[],
   externalServices: {
-    projectId?: string | null
-    label?: string | null
-    processName?: string | null
-    port: number
+    projectId?: string | null;
+    label?: string | null;
+    processName?: string | null;
+    port: number;
   }[]
 ): ProjectService[] {
   const services: ProjectService[] = [];
@@ -493,8 +490,8 @@ export function Dashboard({
                           selectedEvent.level === 'error'
                             ? 'failed'
                             : selectedEvent.level === 'warn'
-                              ? 'starting'
-                              : 'healthy'
+                            ? 'starting'
+                            : 'healthy'
                         }
                       />
                     </span>
@@ -579,8 +576,8 @@ export function Dashboard({
                           row.level === 'error'
                             ? 'var(--color-danger)'
                             : row.level === 'warn'
-                              ? 'var(--color-amber)'
-                              : 'var(--color-phosphor)';
+                            ? 'var(--color-amber)'
+                            : 'var(--color-phosphor)';
                         const time = new Date(row.at).toLocaleTimeString([], {
                           hour: '2-digit',
                           minute: '2-digit',
@@ -640,6 +637,25 @@ export function Dashboard({
           ref={projectListRef}
           className="flex min-w-0 gap-2 max-lg:flex-col max-lg:overflow-visible lg:min-h-0 lg:flex-row lg:overflow-x-auto lg:overflow-y-hidden"
         >
+          {projects.data !== undefined && projects.data.length === 0 && (
+            <div className="bezel-raised flex w-full shrink-0 flex-col justify-center rounded-lg p-1.5 max-lg:min-h-40 lg:min-w-0 lg:flex-1 lg:self-stretch">
+              <div className="bezel-recessed flex h-full flex-col justify-center gap-3 rounded-md bg-bezel px-4 py-4">
+                <div className="font-ui text-[11px] uppercase tracking-[0.2em] text-ink-dim">
+                  Why CONTROL
+                </div>
+                <p className="max-w-xl text-[13px] leading-relaxed text-ink">
+                  Run and track every local service without living in a console. Agents and tools
+                  scatter process state across weak terminals — CONTROL keeps projects, ports, and
+                  what&apos;s running in one place.
+                </p>
+                <div className="flex justify-center mt-4">
+                  <BacklitButton tone="phosphor" onClick={() => setAdding(true)}>
+                    Add Project
+                  </BacklitButton>
+                </div>
+              </div>
+            </div>
+          )}
           {(projects.data ?? []).map((p) => {
             const tree = treeData.find((t) => t.id === p.id);
             const activeActions = tree
@@ -700,9 +716,11 @@ export function Dashboard({
             );
           })}
 
-          <div className="flex w-full shrink-0 flex-col max-lg:min-h-[120px] lg:w-72 lg:self-stretch">
-            <ProjectModule variant="add" onClick={() => setAdding(true)} />
-          </div>
+          {!(projects.data !== undefined && projects.data.length === 0) && (
+            <div className="flex w-full shrink-0 flex-col max-lg:min-h-[120px] lg:w-72 lg:self-stretch">
+              <ProjectModule variant="add" onClick={() => setAdding(true)} />
+            </div>
+          )}
         </div>
       </div>
 
