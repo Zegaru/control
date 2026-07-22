@@ -20,6 +20,8 @@ export function ProjectDetail({
   const qc = useQueryClient()
   const [showSecondary, setShowSecondary] = useState(false)
   const [claimInput, setClaimInput] = useState('')
+  const [portLabelPort, setPortLabelPort] = useState('')
+  const [portLabelName, setPortLabelName] = useState('')
   const [addingCommand, setAddingCommand] = useState<
     { moduleId: string } | { projectId: string } | null
   >(null)
@@ -53,6 +55,14 @@ export function ProjectDetail({
       qc.invalidateQueries({ queryKey: ['ports'] })
     },
   })
+  const setPortLabels = useMutation({
+    mutationFn: (portLabels: Record<string, string>) => api.patchProject(projectId, { portLabels }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tree', projectId] })
+      qc.invalidateQueries({ queryKey: ['projects'] })
+      qc.invalidateQueries({ queryKey: ['ports'] })
+    },
+  })
   const setDefaultEnv = useMutation({
     mutationFn: (defaultEnvironmentId: string | null) =>
       api.patchProject(projectId, { defaultEnvironmentId }),
@@ -76,6 +86,20 @@ export function ProjectDetail({
   const commandsTitle = singleRootModule
     ? `${singleRootModule.name} (root)`
     : 'Commands'
+
+  const portLabelEntries = Object.entries(p.portLabels ?? {}).sort(
+    ([a], [b]) => Number(a) - Number(b),
+  )
+
+  const addPortLabel = () => {
+    const port = portLabelPort.trim()
+    const label = portLabelName.trim()
+    if (!/^\d+$/.test(port) || !label) return
+    const next = { ...(p.portLabels ?? {}), [port]: label }
+    setPortLabels.mutate(next)
+    setPortLabelPort('')
+    setPortLabelName('')
+  }
 
   return (
     <div className="flex h-full flex-col gap-2 overflow-hidden">
@@ -163,6 +187,53 @@ export function ProjectDetail({
                 }}
                 placeholder="add label + Enter"
                 className="w-40 px-2 py-1 text-xs"
+              />
+            </div>
+          </Panel>
+
+          <Panel title="Port labels" className="shrink-0">
+            <p className="mb-2 text-[11px] text-ink-faint">
+              Rename how listening ports appear on Overview and Port Map for this project (e.g.{' '}
+              <code>3000 → frontend</code>).
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              {portLabelEntries.map(([port, label]) => (
+                <span
+                  key={port}
+                  className="inline-flex items-center gap-1 rounded border border-phosphor-dim px-2 py-0.5 text-[11px] text-phosphor"
+                >
+                  {port} · {label}
+                  <Button
+                    variant="icon"
+                    onClick={() => {
+                      const next = { ...(p.portLabels ?? {}) }
+                      delete next[port]
+                      setPortLabels.mutate(next)
+                    }}
+                    className="text-ink-faint hover:not-data-disabled:text-danger"
+                  >
+                    ✕
+                  </Button>
+                </span>
+              ))}
+              <TextInput
+                value={portLabelPort}
+                onChange={(e) => setPortLabelPort(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') addPortLabel()
+                }}
+                placeholder="port"
+                inputMode="numeric"
+                className="w-16 px-2 py-1 text-xs"
+              />
+              <TextInput
+                value={portLabelName}
+                onChange={(e) => setPortLabelName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') addPortLabel()
+                }}
+                placeholder="label + Enter"
+                className="w-32 px-2 py-1 text-xs"
               />
             </div>
           </Panel>

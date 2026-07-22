@@ -88,6 +88,13 @@ export const detectedStackSchema = z.object({
 })
 export type DetectedStack = z.infer<typeof detectedStackSchema>
 
+/** Port number (string key) → display label for that project's attributed ports. */
+export const portLabelsSchema = z.record(
+  z.string().regex(/^\d+$/, 'Port keys must be positive integers'),
+  z.string().trim().min(1).max(64),
+)
+export type PortLabels = z.infer<typeof portLabelsSchema>
+
 export const projectSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -98,6 +105,8 @@ export const projectSchema = z.object({
   lastScanAt: z.number().nullable().optional(),
   /** Explicit compose project names this project claims (overrides basename inference). */
   composeProjects: z.array(z.string()).default([]),
+  /** Custom display names for ports attributed to this project (Overview + Port Map). */
+  portLabels: portLabelsSchema.default({}),
   /** Dashboard ON uses this environment when set. */
   selectedEnvironmentId: z.string().nullable().optional(),
   /** Dashboard ON falls back to this when nothing is explicitly selected. */
@@ -281,6 +290,7 @@ export const patchProjectBodySchema = z.object({
   favorite: z.boolean().optional(),
   icon: z.string().nullable().optional(),
   composeProjects: z.array(z.string()).optional(),
+  portLabels: portLabelsSchema.optional(),
   selectedEnvironmentId: z.string().nullable().optional(),
   defaultEnvironmentId: z.string().nullable().optional(),
 })

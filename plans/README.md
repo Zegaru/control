@@ -19,7 +19,7 @@ These plans cover **all** vetted audit findings (correctness, security, perf, te
 | 009 | AGENTS.md + lint/format + GitHub Actions CI | P2 | M | 001 | DONE |
 | 010 | Direction spikes: env files, PTY attach, detection, ports | P3 | L | 008, 001 | DONE |
 | 011 | Optional PTY attach + fix xterm copy | P2 | M | — | DONE |
-| 012 | Per-project port labels (Dashboard + Port Map) | P2 | M | — | TODO |
+| 012 | Per-project port labels (Dashboard + Port Map) | P2 | M | — | DONE |
 
 ## Direction spikes (`plans/spikes/`)
 

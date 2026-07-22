@@ -59,7 +59,12 @@ function buildPowerItems(tree: ProjectTree, recentRuns: Record<string, string>):
 function buildRuntimeServices(
   projectId: string,
   runningContainers: ContainerInfo[],
-  externalServices: {projectId?: string | null; processName?: string | null; port: number}[]
+  externalServices: {
+    projectId?: string | null
+    label?: string | null
+    processName?: string | null
+    port: number
+  }[]
 ): ProjectService[] {
   const services: ProjectService[] = [];
   for (const c of runningContainers.filter((c) => c.projectId === projectId)) {
@@ -75,7 +80,7 @@ function buildRuntimeServices(
   for (const o of externalServices.filter((o) => o.projectId === projectId)) {
     services.push({
       key: `external:${o.port}`,
-      name: o.processName ?? 'process',
+      name: o.label ?? o.processName ?? 'process',
       kind: 'container',
       status: 'running',
       ports: [o.port],

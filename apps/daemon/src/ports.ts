@@ -5,6 +5,21 @@ import { buildComposeProjectMatcher, buildPathProjectMatcher } from './registry.
 import { listContainers } from './docker.js'
 import { getHostListeningPorts } from './hostPorts.js'
 
+/** Apply per-project port label overrides when projectId is known. */
+export function applyProjectPortLabels(
+  owners: PortOwner[],
+  labelsByProjectId: Map<string, Record<string, string>>,
+): PortOwner[] {
+  return owners.map((o) => {
+    if (!o.projectId) return o
+    const labels = labelsByProjectId.get(o.projectId)
+    if (!labels) return o
+    const custom = labels[String(o.port)]?.trim()
+    if (!custom) return o
+    return { ...o, label: custom }
+  })
+}
+
 /** Ports owned by CONTROL-managed host runs. */
 function runPorts(): PortOwner[] {
   const runs = db
@@ -17,7 +32,23 @@ function runPorts(): PortOwner[] {
   for (const run of runs) {
     for (const port of run.ports ?? []) {
       const action = db.select().from(schema.actions).where(eq(schema.actions.id, run.actionId)).get()
-      owners.push({ port, owner: 'run', runId: run.id, pid: run.pid, label: action?.name ?? null })
+      let projectId: string | null = null
+      if (action) {
+        const mod = db
+          .select()
+          .from(schema.modules)
+          .where(eq(schema.modules.id, action.moduleId))
+          .get()
+        projectId = mod?.projectId ?? null
+      }
+      owners.push({
+        port,
+        owner: 'run',
+        runId: run.id,
+        pid: run.pid,
+        label: action?.name ?? null,
+        projectId,
+      })
     }
   }
   return owners
@@ -35,6 +66,7 @@ function containerPorts(containers: ContainerInfo[]): PortOwner[] {
         owner: 'container',
         containerId: c.id,
         label: c.composeService ?? c.name,
+        projectId: c.projectId ?? null,
       })
     }
   }
@@ -77,7 +109,13 @@ export async function getPortMap(): Promise<PortOwner[]> {
       projectId: pathMatcher(h.cmd) ?? null,
     })
   }
-  return [...byPort.values()].sort((a, b) => a.port - b.port)
+
+  const labelsByProjectId = new Map(
+    db.select().from(schema.projects).all().map((p) => [p.id, p.portLabels ?? {}]),
+  )
+  return applyProjectPortLabels([...byPort.values()], labelsByProjectId).sort(
+    (a, b) => a.port - b.port,
+  )
 }
 
 /** Ports currently claimed by managed runs or containers (conflict warnings, FR-14). */

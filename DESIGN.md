@@ -154,7 +154,7 @@ Three-layer hierarchy — **Project → Module → Action** — plus runtime **R
 
 ```
 
-projects   id, name, rootPath, favorite, icon?, createdAt, lastScanAt
+projects   id, name, rootPath, favorite, icon?, createdAt, lastScanAt, portLabels? (json: port → display name)
 
 modules    id, projectId, relPath ('' = root), name, detectedStacks (json), hidden
 
@@ -388,7 +388,7 @@ Five screens; the dashboard is the product.
 
 3. **Run view** — xterm log pane, status/uptime/exit code, port badges (click → open in browser), stop / force stop / restart.
 
-4. **Port map** — every listening port → owner (run, container, or "external/unknown" with PID + process name).
+4. **Port map** — every listening port → owner (run, container, or "external/unknown" with PID + process name). Projects may store a `portLabels` map applied when a port is attributed to that project.
 
 5. **Settings** — scan roots, ignore globs, log retention, daemon port, theme.
 

@@ -23,6 +23,10 @@ export const projects = sqliteTable('projects', {
     .notNull()
     .$type<string[]>()
     .default(sql`'[]'`),
+  portLabels: text('port_labels', { mode: 'json' })
+    .notNull()
+    .$type<Record<string, string>>()
+    .default(sql`'{}'`),
   selectedEnvironmentId: text('selected_environment_id'),
   defaultEnvironmentId: text('default_environment_id'),
 })
@@ -103,7 +107,8 @@ CREATE TABLE IF NOT EXISTS projects (
   icon TEXT,
   created_at INTEGER NOT NULL,
   last_scan_at INTEGER,
-  compose_projects TEXT NOT NULL DEFAULT '[]'
+  compose_projects TEXT NOT NULL DEFAULT '[]',
+  port_labels TEXT NOT NULL DEFAULT '{}'
 );
 
 CREATE TABLE IF NOT EXISTS modules (

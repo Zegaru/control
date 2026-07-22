@@ -46,6 +46,7 @@ function toProject(r: ProjectRow): Project {
     createdAt: r.createdAt,
     lastScanAt: r.lastScanAt,
     composeProjects: r.composeProjects ?? [],
+    portLabels: r.portLabels ?? {},
     selectedEnvironmentId: r.selectedEnvironmentId ?? null,
     defaultEnvironmentId: r.defaultEnvironmentId ?? null,
   }
@@ -139,6 +140,7 @@ export function createProject(rootPath: string, name?: string): Project {
     createdAt: Date.now(),
     lastScanAt: null,
     composeProjects: [],
+    portLabels: {},
     selectedEnvironmentId: null,
     defaultEnvironmentId: null,
   }
@@ -165,6 +167,7 @@ export function patchProject(id: string, body: PatchProjectBody): Project {
       ...(body.favorite !== undefined ? { favorite: body.favorite } : {}),
       ...(body.icon !== undefined ? { icon: body.icon } : {}),
       ...(body.composeProjects !== undefined ? { composeProjects: body.composeProjects } : {}),
+      ...(body.portLabels !== undefined ? { portLabels: body.portLabels } : {}),
       ...(body.selectedEnvironmentId !== undefined
         ? { selectedEnvironmentId: body.selectedEnvironmentId }
         : {}),
