@@ -1,26 +1,18 @@
-/** Client-side mirror of daemon `ptySanitize` for snapshots / live stream defense. */
+/** Client-side mirror of daemon `ptySanitize`. */
 export function sanitizeConPtyWrap(
   chunk: string,
   carry: string = '',
 ): {text: string; carry: string} {
-  let s = carry === '\r' ? `\r${chunk}` : chunk
+  let s = chunk
 
-  if (carry === 'break' || carry === '\r') {
-    s = s.replace(/^[ \t]{8,}(?=\S)/, '')
+  if (carry === 'break') {
+    s = s.replace(/^[ \t]{20,}(?=\S)/, '')
   }
 
-  s = s.replace(/\r[ \t]+(?=\S)/g, '\n')
-  s = s.replace(/\r\n[ \t]{8,}(?=\S)/g, '\n')
-  s = s.replace(/\n[ \t]{8,}(?=\S)/g, '\n')
+  s = s.replace(/\r\n[ \t]{20,}(?=\S)/g, '\n')
+  s = s.replace(/\n[ \t]{20,}(?=\S)/g, '\n')
 
-  let nextCarry = ''
-  if (s.endsWith('\r') && !s.endsWith('\r\n')) {
-    nextCarry = '\r'
-    s = s.slice(0, -1)
-  } else if (s.endsWith('\n')) {
-    nextCarry = 'break'
-  }
-
+  const nextCarry = s.endsWith('\n') ? 'break' : ''
   return {text: s, carry: nextCarry}
 }
 

@@ -14,8 +14,8 @@ import {Button} from './kit.js';
  * snapshot then stream over WS; containers stream directly (dockerode replays
  * a tail on subscribe). xterm renders raw PTY bytes so colors/spinners survive.
  *
- * Keep the daemon PTY wide (do not sync cols to this pane). Narrow ConPTY widths
- * hard-wrap JSON into the byte stream and produce right-aligned wrap fragments.
+ * PTY size is synced to this pane so full-screen TUIs (ngrok, etc.) lay out
+ * correctly. ConPTY wrap padding on long log lines is stripped separately.
  */
 export function LogPanel({runId, containerId}: {runId?: string; containerId?: string}) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -24,8 +24,9 @@ export function LogPanel({runId, containerId}: {runId?: string; containerId?: st
   const attachedRef = useRef(false);
   const runIdRef = useRef(runId);
   const sendStdinRef = useRef<(runId: string, data: string) => void>(() => {});
+  const sendResizeRef = useRef<(runId: string, cols: number, rows: number) => void>(() => {});
   const sanitizeCarryRef = useRef('');
-  const {subscribeLogs, subscribeContainer, sendStdin} = useSocket();
+  const {subscribeLogs, subscribeContainer, sendStdin, sendResize} = useSocket();
   const subscribeLogsRef = useRef(subscribeLogs);
   const subscribeContainerRef = useRef(subscribeContainer);
   const [attached, setAttached] = useState(false);
@@ -41,6 +42,7 @@ export function LogPanel({runId, containerId}: {runId?: string; containerId?: st
 
   runIdRef.current = runId;
   sendStdinRef.current = sendStdin;
+  sendResizeRef.current = sendResize;
   attachedRef.current = attached;
   subscribeLogsRef.current = subscribeLogs;
   subscribeContainerRef.current = subscribeContainer;
@@ -53,11 +55,10 @@ export function LogPanel({runId, containerId}: {runId?: string; containerId?: st
     if (!containerRef.current) return;
     sanitizeCarryRef.current = '';
     const term = new Terminal({
-      convertEol: true,
+      // Leave EOL alone — TUIs rely on raw CR/CSI cursor motion.
+      convertEol: false,
       disableStdin: true,
       cursorBlink: false,
-      // Force ConPTY wrap heuristics even on Win11 builds that claim native wrap.
-      windowsMode: true,
       fontFamily: "'JetBrains Mono', Consolas, monospace",
       fontSize: 12,
       theme: {background: '#0b0d0a', foreground: '#d7e0d2', cursor: '#7dfc9a'},
@@ -108,14 +109,16 @@ export function LogPanel({runId, containerId}: {runId?: string; containerId?: st
     });
 
     let resizeTimer: ReturnType<typeof setTimeout> | null = null;
-    // Fit the *viewer* only — never shrink the daemon PTY to this pane width.
-    const syncView = () => {
+    const syncSize = () => {
       if (!containerRef.current) return;
       fit.fit();
+      const id = runIdRef.current;
+      // Match PTY geometry to the pane so full-screen TUIs (ngrok) draw correctly.
+      if (id) sendResizeRef.current(id, term.cols, term.rows);
     };
     const scheduleSync = () => {
       if (resizeTimer) clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(syncView, 50);
+      resizeTimer = setTimeout(syncSize, 50);
     };
 
     requestAnimationFrame(() => requestAnimationFrame(scheduleSync));
@@ -137,7 +140,7 @@ export function LogPanel({runId, containerId}: {runId?: string; containerId?: st
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           if (disposed) return;
-          syncView();
+          syncSize();
           api.runLogs(runId).then((res) => {
             if (!disposed && res.logs) term.write(sanitizeConPtySnapshot(res.logs));
           });
@@ -161,7 +164,12 @@ export function LogPanel({runId, containerId}: {runId?: string; containerId?: st
   }, [runId, containerId]);
 
   useEffect(() => {
-    requestAnimationFrame(() => fitRef.current?.fit());
+    requestAnimationFrame(() => {
+      fitRef.current?.fit();
+      const term = termRef.current;
+      const id = runIdRef.current;
+      if (id && term) sendResizeRef.current(id, term.cols, term.rows);
+    });
   }, [attached]);
 
   useEffect(() => {

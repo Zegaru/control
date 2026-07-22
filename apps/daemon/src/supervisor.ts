@@ -85,7 +85,7 @@ class Supervisor {
     try {
       proc = pty.spawn(file, args, {
         name: 'xterm-color',
-        cols: 1000,
+        cols: 120,
         rows: 30,
         cwd,
         env,
