@@ -10,7 +10,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "concurrently -n daemon,ui -c cyan,magenta \"pnpm dev:daemon\" \"pnpm dev:ui\"",
+    "dev": "node scripts/dev.mjs",
     "dev:daemon": "pnpm --filter @control/daemon dev",
     "dev:ui": "pnpm --filter @control/ui dev",
     "kill:daemon": "node scripts/kill-daemon.mjs",

@@ -41,8 +41,8 @@ Open http://localhost:5173, click **Add Project**, and point it at a repo folder
 Run pieces individually:
 
 ```bash
-pnpm dev:daemon       # daemon only (kills stale listener on CONTROL_PORT first)
-pnpm kill:daemon      # force-free CONTROL_PORT if a stale daemon is stuck
+pnpm dev:daemon       # daemon only (clear stale CONTROL, or bump past busy ports)
+pnpm kill:daemon      # free CONTROL_PORT only if a CONTROL daemon owns it
 pnpm dev:ui           # UI dev server only (proxies /api + /ws to :4400)
 pnpm typecheck        # all packages
 pnpm test             # vitest characterization suite

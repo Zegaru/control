@@ -24,8 +24,8 @@ pnpm install
 pnpm typecheck    # all workspace packages
 pnpm test         # Vitest characterization suite
 pnpm lint         # Biome check
-pnpm dev          # daemon (:4400) + UI (:5173) — do not start unless the user asks
-pnpm dev:daemon   # kills a stale CONTROL daemon on CONTROL_PORT, then starts
+pnpm dev          # daemon + UI — do not start unless the user asks
+pnpm dev:daemon   # clear stale CONTROL or bump CONTROL_PORT (4401…) then start
 pnpm kill:daemon  # free CONTROL_PORT only if a CONTROL daemon owns it
 pnpm dev:ui
 pnpm build
