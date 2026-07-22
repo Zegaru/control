@@ -16,6 +16,7 @@ import { HEALTH_GRACE_MS, nextHealthStatus } from './healthStatus.js'
 import { pidAlive } from './pid.js'
 import { pruneRunsForAction } from './settings.js'
 import { writePty } from './ptyWrite.js'
+import { sanitizeConPtyWrap } from './ptySanitize.js'
 
 const isWin = process.platform === 'win32'
 const GRACEFUL_STOP_MS = 5000
@@ -31,6 +32,8 @@ interface RunHandle {
   ports: number[]
   healthTimer: NodeJS.Timeout | null
   stopping: boolean
+  /** Trailing CR/LF held across ConPTY sanitize chunk boundaries. */
+  sanitizeCarry: string
 }
 
 class Supervisor {
@@ -81,7 +84,7 @@ class Supervisor {
     try {
       proc = pty.spawn(file, args, {
         name: 'xterm-color',
-        cols: 120,
+        cols: 1000,
         rows: 30,
         cwd,
         env,
@@ -103,6 +106,7 @@ class Supervisor {
       ports: [],
       healthTimer: null,
       stopping: false,
+      sanitizeCarry: '',
     }
     this.handles.set(runId, handle)
 
@@ -147,6 +151,18 @@ class Supervisor {
   write(runId: string, data: string): boolean {
     const handle = this.handles.get(runId)
     return writePty(handle?.proc ?? null, data)
+  }
+
+  /** Match PTY dimensions to the UI log pane so long lines are not pre-wrapped at the wrong width. */
+  resize(runId: string, cols: number, rows: number): boolean {
+    const proc = this.handles.get(runId)?.proc
+    if (!proc) return false
+    try {
+      proc.resize(Math.max(10, Math.min(cols, 500)), Math.max(2, Math.min(rows, 200)))
+      return true
+    } catch {
+      return false
+    }
   }
 
   /** Stop a run re-attached after daemon restart (no in-memory PTY handle). */
@@ -246,9 +262,12 @@ class Supervisor {
   private appendLog(runId: string, chunk: string): void {
     const handle = this.handles.get(runId)
     if (!handle) return
-    handle.buffer.push(chunk)
-    handle.logStream?.write(chunk)
-    bus.emitEvent({ type: 'run.log', runId, chunk })
+    const {text, carry} = sanitizeConPtyWrap(chunk, handle.sanitizeCarry)
+    handle.sanitizeCarry = carry
+    if (!text) return
+    handle.buffer.push(text)
+    handle.logStream?.write(text)
+    bus.emitEvent({ type: 'run.log', runId, chunk: text })
   }
 
   private beginHealthWatch(action: Action, handle: RunHandle): void {

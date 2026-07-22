@@ -470,5 +470,11 @@ export const wsClientMessageSchema = z.discriminatedUnion('type', [
     runId: z.string().min(1),
     data: z.string(),
   }),
+  z.object({
+    type: z.literal('run.resize'),
+    runId: z.string().min(1),
+    cols: z.number().int().min(10).max(500),
+    rows: z.number().int().min(2).max(200),
+  }),
 ])
 export type WsClientMessage = z.infer<typeof wsClientMessageSchema>

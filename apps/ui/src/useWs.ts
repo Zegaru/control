@@ -38,6 +38,7 @@ export function useDaemonSocket(): {
   subscribeLogs: (runId: string, cb: LogListener) => () => void
   subscribeContainer: (containerId: string, cb: LogListener) => () => void
   sendStdin: (runId: string, data: string) => void
+  sendResize: (runId: string, cols: number, rows: number) => void
   events: EventLogEntry[]
   clearEvents: () => void
 } {
@@ -143,6 +144,13 @@ export function useDaemonSocket(): {
     [send],
   )
 
+  const sendResize = useCallback(
+    (runId: string, cols: number, rows: number) => {
+      send({ type: 'run.resize', runId, cols, rows })
+    },
+    [send],
+  )
+
   const subscribeLogs = (runId: string, cb: LogListener) => {
     let set = logListeners.current.get(runId)
     if (!set) {
@@ -179,5 +187,5 @@ export function useDaemonSocket(): {
     }
   }
 
-  return { subscribeLogs, subscribeContainer, sendStdin, events, clearEvents }
+  return { subscribeLogs, subscribeContainer, sendStdin, sendResize, events, clearEvents }
 }

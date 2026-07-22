@@ -4,20 +4,26 @@ import {Terminal} from '@xterm/xterm';
 import {FitAddon} from '@xterm/addon-fit';
 import {isActiveStatus} from '@control/shared';
 import {api} from '../api.js';
+import {sanitizeConPtySnapshot, sanitizeConPtyWrap} from '../lib/ptySanitize.js';
 import {useSocket} from '../socket.js';
 import {Button} from './kit.js';
 
 /**
  * Live xterm view for one run or one container. Runs seed from the REST log
  * snapshot then stream over WS; containers stream directly (dockerode replays
- * a tail on subscribe). xterm renders raw bytes so colors/spinners survive.
+ * a tail on subscribe). xterm renders raw PTY bytes so colors/spinners survive.
+ *
+ * Keep the daemon PTY wide (do not sync cols to this pane). Narrow ConPTY widths
+ * hard-wrap JSON into the byte stream and produce right-aligned wrap fragments.
  */
 export function LogPanel({runId, containerId}: {runId?: string; containerId?: string}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
+  const fitRef = useRef<FitAddon | null>(null);
   const attachedRef = useRef(false);
   const runIdRef = useRef(runId);
   const sendStdinRef = useRef<(runId: string, data: string) => void>(() => {});
+  const sanitizeCarryRef = useRef('');
   const {subscribeLogs, subscribeContainer, sendStdin} = useSocket();
   const [attached, setAttached] = useState(false);
 
@@ -40,10 +46,13 @@ export function LogPanel({runId, containerId}: {runId?: string; containerId?: st
 
   useEffect(() => {
     if (!containerRef.current) return;
+    sanitizeCarryRef.current = '';
     const term = new Terminal({
       convertEol: true,
       disableStdin: true,
       cursorBlink: false,
+      // Force ConPTY wrap heuristics even on Win11 builds that claim native wrap.
+      windowsMode: true,
       fontFamily: "'JetBrains Mono', Consolas, monospace",
       fontSize: 12,
       theme: {background: '#0b0d0a', foreground: '#d7e0d2', cursor: '#7dfc9a'},
@@ -52,7 +61,7 @@ export function LogPanel({runId, containerId}: {runId?: string; containerId?: st
     const fit = new FitAddon();
     term.loadAddon(fit);
     term.open(containerRef.current);
-    fit.fit();
+    fitRef.current = fit;
     termRef.current = term;
 
     term.attachCustomKeyEventHandler((ev) => {
@@ -93,28 +102,62 @@ export function LogPanel({runId, containerId}: {runId?: string; containerId?: st
       return true;
     });
 
-    const onResize = () => fit.fit();
-    window.addEventListener('resize', onResize);
+    let resizeTimer: ReturnType<typeof setTimeout> | null = null;
+    // Fit the *viewer* only — never shrink the daemon PTY to this pane width.
+    const syncView = () => {
+      if (!containerRef.current) return;
+      fit.fit();
+    };
+    const scheduleSync = () => {
+      if (resizeTimer) clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(syncView, 50);
+    };
+
+    requestAnimationFrame(() => requestAnimationFrame(scheduleSync));
+
+    const ro = new ResizeObserver(scheduleSync);
+    ro.observe(containerRef.current);
+    window.addEventListener('resize', scheduleSync);
+
+    const writeSanitized = (chunk: string) => {
+      const {text, carry} = sanitizeConPtyWrap(chunk, sanitizeCarryRef.current);
+      sanitizeCarryRef.current = carry;
+      if (text) term.write(text);
+    };
 
     let disposed = false;
     let unsub = () => {};
     if (runId) {
-      api.runLogs(runId).then((res) => {
-        if (!disposed && res.logs) term.write(res.logs);
+      unsub = subscribeLogs(runId, (_id, chunk) => writeSanitized(chunk));
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (disposed) return;
+          syncView();
+          api.runLogs(runId).then((res) => {
+            if (!disposed && res.logs) term.write(sanitizeConPtySnapshot(res.logs));
+          });
+        });
       });
-      unsub = subscribeLogs(runId, (_id, chunk) => term.write(chunk));
     } else if (containerId) {
-      unsub = subscribeContainer(containerId, (_id, chunk) => term.write(chunk));
+      unsub = subscribeContainer(containerId, (_id, chunk) => writeSanitized(chunk));
+      requestAnimationFrame(() => requestAnimationFrame(scheduleSync));
     }
 
     return () => {
       disposed = true;
       unsub();
-      window.removeEventListener('resize', onResize);
+      if (resizeTimer) clearTimeout(resizeTimer);
+      ro.disconnect();
+      window.removeEventListener('resize', scheduleSync);
+      fitRef.current = null;
       termRef.current = null;
       term.dispose();
     };
   }, [runId, containerId, subscribeLogs, subscribeContainer]);
+
+  useEffect(() => {
+    requestAnimationFrame(() => fitRef.current?.fit());
+  }, [attached]);
 
   useEffect(() => {
     const term = termRef.current;

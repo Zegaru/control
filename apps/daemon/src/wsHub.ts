@@ -82,6 +82,8 @@ export function attachWebSocket(server: Server): void {
         streams.delete(msg.containerId)
       } else if (msg.type === 'run.stdin') {
         supervisor.write(msg.runId, msg.data)
+      } else if (msg.type === 'run.resize') {
+        supervisor.resize(msg.runId, msg.cols, msg.rows)
       }
     })
 
