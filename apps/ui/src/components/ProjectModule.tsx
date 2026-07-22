@@ -1,4 +1,5 @@
 import type {ReactNode} from 'react';
+import {Star} from '@phosphor-icons/react';
 import {isActiveStatus, type RunStatus} from '@control/shared';
 import {cn} from '../lib/cn.js';
 import {Button, Chip, CircularGauge, Led, RockerToggle, RotaryKnob} from './kit.js';
@@ -134,7 +135,7 @@ export function ProjectModule({
               <div className="flex items-center gap-2">
                 <Led status={projectStatus} pulse={busy} ring={!!on || !!busy} />
                 <div className="flex min-w-0 items-center gap-2">
-                  {favorite && <span className="text-amber">★</span>}
+                  {favorite && <Star size={14} weight="fill" className="text-amber" />}
                   <span className="font-ui text-[15px] font-semibold uppercase tracking-[0.08em] leading-none text-ink transition-colors duration-150 group-hover/header:text-phosphor group-active/header:text-phosphor-dim">
                     {name}
                   </span>

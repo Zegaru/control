@@ -1,4 +1,5 @@
 import type {ComponentProps, ReactNode} from 'react';
+import {X} from '@phosphor-icons/react';
 import {Button as BaseButton} from '@base-ui/react/button';
 import {Combobox as BaseCombobox} from '@base-ui/react/combobox';
 import {Dialog} from '@base-ui/react/dialog';
@@ -504,10 +505,10 @@ export function SideDrawer({
               <div className="flex shrink-0 items-center gap-2">
                 {headerRight}
                 <Drawer.Close
-                  render={<Button variant="icon" className="px-2 text-lg text-ink-dim" />}
+                  render={<Button variant="icon" className="px-2 text-ink-dim" />}
                   aria-label="Close"
                 >
-                  ✕
+                  <X size={16} />
                 </Drawer.Close>
               </div>
             </header>

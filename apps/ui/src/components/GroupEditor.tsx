@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { CaretDown, CaretUp, X } from '@phosphor-icons/react'
 import type { Group, GroupStep } from '@control/shared'
 import { api } from '../api.js'
 import { useAllActions } from '../useAllActions.js'
@@ -102,10 +103,10 @@ export function GroupEditor({
               options={waitOptions}
             />
             <Button variant="icon" onClick={() => move(i, -1)} title="Up">
-              ↑
+              <CaretUp size={16} />
             </Button>
             <Button variant="icon" onClick={() => move(i, 1)} title="Down">
-              ↓
+              <CaretDown size={16} />
             </Button>
             <Button
               variant="icon"
@@ -113,7 +114,7 @@ export function GroupEditor({
               title="Remove"
               className="text-danger hover:not-data-disabled:text-danger"
             >
-              ✕
+              <X size={14} />
             </Button>
           </li>
         ))}

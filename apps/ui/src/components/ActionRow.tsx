@@ -1,5 +1,6 @@
 import {useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
+import {GearSix, Star} from '@phosphor-icons/react';
 import type {ActionWithRun} from '@control/shared';
 import {api} from '../api.js';
 import {Chip, Led, statusLabel} from './kit.js';
@@ -74,9 +75,11 @@ export function ActionRow({
       )}
 
       <Button variant="icon" onClick={toggleFav} title="Favorite" className="text-sm">
-        <span className={action.favorite ? 'text-amber' : 'text-ink-faint'}>
-          {action.favorite ? '★' : '☆'}
-        </span>
+        <Star
+          size={16}
+          weight={action.favorite ? 'fill' : 'regular'}
+          className={action.favorite ? 'text-amber' : 'text-ink-faint'}
+        />
       </Button>
 
       {!compact && (
@@ -89,7 +92,7 @@ export function ActionRow({
           className="text-sm"
           title="Edit action"
         >
-          ⚙
+          <GearSix size={16} />
         </Button>
       )}
 

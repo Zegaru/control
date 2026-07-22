@@ -1,5 +1,13 @@
 import {lazy, Suspense, useEffect, useRef, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
+import {
+  GearSix,
+  Hexagon,
+  Plugs,
+  SquaresFour,
+  Stack,
+  type Icon,
+} from '@phosphor-icons/react';
 import {api} from './api.js';
 import {SocketProvider} from './socket.js';
 import {AgentStatus} from './components/AgentStatus.js';
@@ -69,12 +77,12 @@ export type View =
   | {kind: 'ports'}
   | {kind: 'settings'};
 
-const NAV: {key: Exclude<View['kind'], 'project'>; label: string; icon: string}[] = [
-  {key: 'overview', label: 'Overview', icon: '▦'},
-  {key: 'groups', label: 'Groups', icon: '⧉'},
-  {key: 'docker', label: 'Docker', icon: '⬢'},
-  {key: 'ports', label: 'Ports', icon: '⊟'},
-  {key: 'settings', label: 'Settings', icon: '⚙'},
+const NAV: {key: Exclude<View['kind'], 'project'>; label: string; icon: Icon}[] = [
+  {key: 'overview', label: 'Overview', icon: SquaresFour},
+  {key: 'groups', label: 'Groups', icon: Stack},
+  {key: 'docker', label: 'Docker', icon: Hexagon},
+  {key: 'ports', label: 'Ports', icon: Plugs},
+  {key: 'settings', label: 'Settings', icon: GearSix},
 ];
 
 export function App() {

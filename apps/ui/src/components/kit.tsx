@@ -1,5 +1,6 @@
 import {useEffect, useId, useRef, useState, type PointerEvent, type ReactNode} from 'react';
 import {Switch} from '@base-ui/react/switch';
+import type {Icon} from '@phosphor-icons/react';
 import type {RunStatus} from '@control/shared';
 import {cn} from '../lib/cn.js';
 import {Button} from './ui.js';
@@ -811,12 +812,12 @@ export function TerminalScreen({
 }
 
 export function NavItem({
-  icon,
+  icon: Icon,
   label,
   active,
   onClick,
 }: {
-  icon: ReactNode;
+  icon: Icon;
   label: string;
   active: boolean;
   onClick: () => void;
@@ -829,7 +830,7 @@ export function NavItem({
       className="nav-push"
     >
       <span className="nav-push-icon" aria-hidden>
-        {icon}
+        <Icon size={18} weight={active ? 'fill' : 'regular'} />
       </span>
       {label}
     </Button>

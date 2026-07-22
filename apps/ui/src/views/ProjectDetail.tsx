@@ -1,5 +1,6 @@
 import {useMemo, useState} from 'react';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import {ArrowLeft, ArrowsClockwise, Star, X} from '@phosphor-icons/react';
 import type {Environment} from '@control/shared';
 import {api, formatApiError} from '../api.js';
 import {Chip, Panel, Button, TextInput} from '../components/kit.js';
@@ -145,8 +146,13 @@ export function ProjectDetail({
       <Panel className="shrink-0">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <Button variant="ghost" onClick={onBack} className="mb-2 px-0 py-0 text-sm">
-              ← Overview
+            <Button
+              variant="ghost"
+              onClick={onBack}
+              className="mb-2 inline-flex items-center gap-1.5 px-0 py-0 text-sm"
+            >
+              <ArrowLeft size={14} />
+              Overview
             </Button>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold">{p.name}</h1>
@@ -155,9 +161,11 @@ export function ProjectDetail({
                 onClick={() => toggleFav.mutate(!p.favorite)}
                 title="Favorite project"
               >
-                <span className={p.favorite ? 'text-amber' : 'text-ink-faint'}>
-                  {p.favorite ? '★' : '☆'}
-                </span>
+                <Star
+                  size={16}
+                  weight={p.favorite ? 'fill' : 'regular'}
+                  className={p.favorite ? 'text-amber' : 'text-ink-faint'}
+                />
               </Button>
             </div>
             <div className="mt-2 rounded-md border border-panel-edge bg-panel px-3 py-2 font-mono text-[11px] text-ink-faint">
@@ -170,9 +178,16 @@ export function ProjectDetail({
               onClick={() => rescan.mutate()}
               disabled={rescan.isPending}
               focusableWhenDisabled
-              className="rounded border border-panel-edge px-3 py-1.5"
+              className="inline-flex items-center gap-1.5 rounded border border-panel-edge px-3 py-1.5"
             >
-              {rescan.isPending ? 'Scanning…' : '↻ Re-scan'}
+              {rescan.isPending ? (
+                'Scanning…'
+              ) : (
+                <>
+                  <ArrowsClockwise size={14} />
+                  Re-scan
+                </>
+              )}
             </Button>
             <Button
               variant="ghost"
@@ -209,7 +224,7 @@ export function ProjectDetail({
                     }
                     className="text-ink-faint hover:not-data-disabled:text-danger"
                   >
-                    ✕
+                    <X size={12} />
                   </Button>
                 </span>
               ))}
@@ -273,7 +288,7 @@ export function ProjectDetail({
                     }}
                     className="text-ink-faint hover:not-data-disabled:text-danger"
                   >
-                    ✕
+                    <X size={12} />
                   </Button>
                 </span>
               ))}
@@ -341,7 +356,7 @@ export function ProjectDetail({
                         title={isDefault ? 'Default for Overview' : 'Set as Overview default'}
                         className={isDefault ? 'text-phosphor' : 'text-ink-faint'}
                       >
-                        {isDefault ? '★' : '☆'}
+                        <Star size={16} weight={isDefault ? 'fill' : 'regular'} />
                       </Button>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 text-sm text-ink">

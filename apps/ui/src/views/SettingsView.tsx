@@ -1,5 +1,6 @@
 import {useEffect, useMemo, useState} from 'react';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import {X} from '@phosphor-icons/react';
 import {LOG_RETENTION_STEPS} from '@control/shared';
 import {api} from '../api.js';
 import {Chip, Led, Panel, RockerToggle, RotaryKnob, Button, TextInput} from '../components/kit.js';
@@ -121,9 +122,7 @@ export function SettingsView() {
                   className="group inline-flex items-center gap-1.5 rounded border border-panel-edge bg-bezel px-2 py-0.5 font-mono text-[11px] text-ink-dim hover:border-danger/50 hover:text-danger"
                 >
                   {g}
-                  <span className="font-ui text-[9px] text-ink-faint group-hover:text-danger">
-                    ×
-                  </span>
+                  <X size={10} className="text-ink-faint group-hover:text-danger" />
                 </button>
               ))
             )}

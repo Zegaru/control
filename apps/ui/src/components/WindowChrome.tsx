@@ -1,4 +1,5 @@
 import {useEffect, useState, type ReactNode} from 'react';
+import {X} from '@phosphor-icons/react';
 import {cn} from '../lib/cn.js';
 
 async function getWindow() {
@@ -55,7 +56,7 @@ export function WindowChrome() {
           )}
         </WindowControlButton>
         <WindowControlButton label="Close" onClick={close} variant="close">
-          <span className="text-xl leading-none">×</span>
+          <X size={14} weight="bold" />
         </WindowControlButton>
       </div>
     </header>

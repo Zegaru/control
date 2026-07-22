@@ -606,13 +606,12 @@ textarea,
 }
 
 .nav-push-icon {
-  width: 1rem;
+  display: inline-flex;
+  width: 1.125rem;
+  height: 1.125rem;
   flex-shrink: 0;
-  text-align: center;
-}
-
-.nav-push[aria-current='page'] .nav-push-icon {
-  filter: drop-shadow(0 0 6px var(--color-amber));
+  align-items: center;
+  justify-content: center;
 }
 
 /* Portrait / companion: nav bank becomes a compact horizontal strip.

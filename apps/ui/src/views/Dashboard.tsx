@@ -1,5 +1,6 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
+import {ArrowLeft} from '@phosphor-icons/react';
 import type {ActionWithRun, ContainerInfo, ProjectTree, RunStatus} from '@control/shared';
 import {isActiveStatus, resolveDashboardEnvironmentId} from '@control/shared';
 import {api} from '../api.js';
@@ -481,7 +482,10 @@ export function Dashboard({
               selectedRunId && selectedEvent ? (
                 <div className="flex min-w-0 items-center gap-3">
                   <BacklitButton size="sm" onClick={() => setSelectedRunId(null)}>
-                    ← Back
+                    <span className="inline-flex items-center gap-1.5">
+                      <ArrowLeft size={14} />
+                      Back
+                    </span>
                   </BacklitButton>
                   <span className="flex min-w-0 flex-1 items-center gap-2 text-[10px] uppercase tracking-wider text-ink-faint">
                     <span className="shrink-0 p-1">
