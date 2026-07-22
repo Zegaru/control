@@ -3,7 +3,7 @@ import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {X} from '@phosphor-icons/react';
 import {LOG_RETENTION_STEPS} from '@control/shared';
 import {api} from '../api.js';
-import {Chip, Led, Panel, RockerToggle, RotaryKnob, Button, TextInput} from '../components/kit.js';
+import {Chip, Led, Panel, RockerToggle, RotaryKnob, Button, TextInput, Skeleton} from '../components/kit.js';
 import {isTauri} from '../lib/tauri.js';
 
 export function SettingsView() {
@@ -110,7 +110,13 @@ export function SettingsView() {
           </div>
 
           <div className="bezel-recessed flex min-h-30 flex-wrap content-start gap-1.5 rounded-md border border-panel-edge/60 px-3 py-3">
-            {(settings?.ignoreGlobs ?? []).length === 0 ? (
+            {settingsQ.isPending ? (
+              <>
+                <Skeleton className="h-6 w-24" />
+                <Skeleton className="h-6 w-32" />
+                <Skeleton className="h-6 w-20" />
+              </>
+            ) : (settings?.ignoreGlobs ?? []).length === 0 ? (
               <span className="text-xs text-ink-faint">No ignore patterns.</span>
             ) : (
               (settings?.ignoreGlobs ?? []).map((g) => (

@@ -11,7 +11,7 @@ import {
 import {api} from './api.js';
 import {SocketProvider} from './socket.js';
 import {AgentStatus} from './components/AgentStatus.js';
-import {NavItem} from './components/kit.js';
+import {NavItem, ViewLoading} from './components/kit.js';
 import {WindowChrome} from './components/WindowChrome.js';
 import {cn} from './lib/cn.js';
 import {isTauri} from './lib/tauri.js';
@@ -33,7 +33,7 @@ const SettingsView = lazy(() =>
 );
 
 function ViewFallback() {
-  return <div className="p-4 font-ui text-sm text-ink-dim">Loading…</div>;
+  return <ViewLoading />;
 }
 
 function DaemonBanner({show}: {show: boolean}) {

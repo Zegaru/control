@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { Group } from '@control/shared'
 import { api } from '../api.js'
-import { Led, Panel, Button } from '../components/kit.js'
+import { Led, Panel, Button, PanelLoading } from '../components/kit.js'
 import { useAllActions } from '../useAllActions.js'
 import { GroupEditor } from '../components/GroupEditor.js'
 
@@ -43,7 +43,13 @@ export function GroupsView() {
         </p>
       </Panel>
 
-      {(groups.data ?? []).length === 0 && (
+      {groups.isPending && (
+        <Panel>
+          <PanelLoading />
+        </Panel>
+      )}
+
+      {!groups.isPending && groups.data !== undefined && groups.data.length === 0 && (
         <Panel>
           <p className="py-6 text-center text-sm text-ink-faint">
             No launch groups yet.

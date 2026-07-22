@@ -3,7 +3,7 @@ import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {ArrowLeft, ArrowsClockwise, Star, X} from '@phosphor-icons/react';
 import type {Environment} from '@control/shared';
 import {api, formatApiError} from '../api.js';
-import {Chip, Panel, Button, TextInput} from '../components/kit.js';
+import {Chip, Panel, Button, TextInput, ViewLoading} from '../components/kit.js';
 import {cn} from '../lib/cn.js';
 import {ActionRow} from '../components/ActionRow.js';
 import {AddActionDialog} from '../components/AddActionDialog.js';
@@ -103,7 +103,22 @@ export function ProjectDetail({
     return [...byPort.entries()].filter(([port]) => !saved[String(port)]).sort(([a], [b]) => a - b);
   }, [portsQ.data, projectId, tree.data?.portLabels]);
 
-  if (!tree.data) return <div className="text-sm text-ink-dim">Loading…</div>;
+  if (tree.isPending) return <ViewLoading label="Loading project" />;
+  if (tree.isError) {
+    return (
+      <div className="flex flex-col gap-3 p-4" role="alert">
+        <p className="text-sm text-danger">
+          Could not load this project.{' '}
+          {tree.error instanceof Error ? tree.error.message : 'Try going back.'}
+        </p>
+        <Button variant="ghost" onClick={onBack} className="w-fit">
+          <ArrowLeft size={14} />
+          Back
+        </Button>
+      </div>
+    );
+  }
+  if (!tree.data) return <ViewLoading label="Loading project" />;
   const p = tree.data;
 
   const singleRootModule =

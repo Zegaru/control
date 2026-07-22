@@ -2,7 +2,7 @@ import type {ReactNode} from 'react';
 import {Star} from '@phosphor-icons/react';
 import {isActiveStatus, type RunStatus} from '@control/shared';
 import {cn} from '../lib/cn.js';
-import {Button, Chip, CircularGauge, Led, RockerToggle, RotaryKnob} from './kit.js';
+import {Button, Chip, CircularGauge, Led, RockerToggle, RotaryKnob, Skeleton} from './kit.js';
 
 export type ProjectService = {
   key: string;
@@ -80,7 +80,7 @@ export function ProjectModule({
   stacks = [],
   children,
 }: {
-  variant?: 'default' | 'add';
+  variant?: 'default' | 'add' | 'loading';
   name?: string;
   path?: string;
   stacks?: string[];
@@ -109,6 +109,31 @@ export function ProjectModule({
         <span className="text-3xl">+</span>
         <span className="font-ui text-[12px] uppercase tracking-wider">Add Project</span>
       </Button>
+    );
+  }
+
+  if (variant === 'loading') {
+    return (
+      <div
+        role="status"
+        aria-label="Loading project"
+        className="bezel-raised flex h-full min-h-0 flex-col overflow-visible rounded-lg p-1.5"
+      >
+        <div className="bezel-recessed flex min-h-0 flex-1 flex-col overflow-visible rounded-md bg-bezel">
+          <div className="flex shrink-0 items-start gap-2 border-b border-panel-edge px-2 py-2">
+            <Led status="starting" pulse />
+            <div className="min-w-0 flex-1 space-y-2">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-3 w-full" />
+            </div>
+          </div>
+          <div className="flex flex-1 flex-col gap-2 px-2 py-2">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-5/6" />
+          </div>
+        </div>
+      </div>
     );
   }
 

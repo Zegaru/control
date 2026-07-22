@@ -2,7 +2,7 @@ import {useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import type {PortOwner} from '@control/shared';
 import {api} from '../api.js';
-import {Chip, Panel, Button} from '../components/kit.js';
+import {Chip, Panel, Button, PanelLoading} from '../components/kit.js';
 import {cn} from '../lib/cn.js';
 
 const ownerTone = (owner: PortOwner['owner']) =>
@@ -62,7 +62,13 @@ export function PortsView({onOpenRun}: {onOpenRun: (runId: string) => void}) {
         </div>
 
         <div className="mt-4 border-t border-panel-edge pt-3 flex-1 overflow-y-auto">
-          {rows.length === 0 ? (
+          {ports.isPending ? (
+            <PanelLoading />
+          ) : ports.isError ? (
+            <p className="py-6 text-center text-sm text-danger" role="alert">
+              Could not load ports.
+            </p>
+          ) : rows.length === 0 ? (
             <p className="py-6 text-center text-sm text-ink-faint">No ports in use.</p>
           ) : (
             <table className="w-full text-sm">

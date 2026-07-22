@@ -2,7 +2,7 @@ import {useEffect, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import type {ContainerHealth, ContainerInfo, ContainerState} from '@control/shared';
 import {api} from '../api.js';
-import {Chip, Led, Panel, Button, RockerToggle} from '../components/kit.js';
+import {Chip, Led, Panel, Button, RockerToggle, PanelLoading} from '../components/kit.js';
 
 function dockerLed(state: ContainerState, health: ContainerHealth) {
   if (state !== 'running') return 'idle';
@@ -138,13 +138,20 @@ export function DockerView({onOpenContainer}: {onOpenContainer: (id: string) => 
         </div>
       </Panel>
 
-      {available && list.length === 0 && (
+      {available && containers.isPending && (
+        <Panel>
+          <PanelLoading />
+        </Panel>
+      )}
+
+      {available && !containers.isPending && containers.isSuccess && list.length === 0 && (
         <Panel>
           <p className="py-6 text-center text-sm text-ink-faint">No containers.</p>
         </Panel>
       )}
 
       {available &&
+        !containers.isPending &&
         [...groups.entries()].map(([key, cs]) => (
           <Panel key={key} title={nameFor(key)}>
             <div className="space-y-2">

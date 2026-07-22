@@ -633,6 +633,24 @@ export function Dashboard({
           ref={projectListRef}
           className="flex min-w-0 gap-2 max-lg:flex-col max-lg:overflow-visible lg:min-h-0 lg:flex-row lg:overflow-x-auto lg:overflow-y-hidden"
         >
+          {projects.isPending && (
+            <>
+              <div className="flex w-full shrink-0 flex-col max-lg:h-auto max-lg:min-h-[220px] lg:w-72 lg:min-h-0 lg:self-stretch">
+                <ProjectModule variant="loading" />
+              </div>
+              <div className="flex w-full shrink-0 flex-col max-lg:h-auto max-lg:min-h-[220px] lg:w-72 lg:min-h-0 lg:self-stretch">
+                <ProjectModule variant="loading" />
+              </div>
+              <div className="flex w-full shrink-0 flex-col max-lg:h-auto max-lg:min-h-[220px] lg:w-72 lg:min-h-0 lg:self-stretch">
+                <ProjectModule variant="loading" />
+              </div>
+            </>
+          )}
+          {projects.isError && (
+            <p className="text-sm text-danger" role="alert">
+              Could not load projects.
+            </p>
+          )}
           {projects.data !== undefined && projects.data.length === 0 && (
             <div className="bezel-raised flex w-full shrink-0 flex-col justify-center rounded-lg p-1.5 max-lg:min-h-40 lg:min-w-0 lg:flex-1 lg:self-stretch">
               <div className="bezel-recessed flex h-full flex-col justify-center gap-3 rounded-md bg-bezel px-4 py-4">
@@ -710,7 +728,7 @@ export function Dashboard({
             );
           })}
 
-          {!(projects.data !== undefined && projects.data.length === 0) && (
+          {(projects.isError || (projects.data !== undefined && projects.data.length > 0)) && (
             <div className="flex w-full shrink-0 flex-col max-lg:min-h-[120px] lg:w-72 lg:self-stretch">
               <ProjectModule variant="add" onClick={() => setAdding(true)} />
             </div>

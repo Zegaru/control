@@ -139,6 +139,39 @@ export function Panel({
   );
 }
 
+export function Skeleton({className}: {className?: string}) {
+  return (
+    <div
+      aria-hidden
+      className={cn('animate-pulse rounded-md bg-ink-faint/10', className)}
+    />
+  );
+}
+
+export function ViewLoading({label = 'Loading'}: {label?: string}) {
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="flex items-center gap-2 p-4"
+    >
+      <Led status="starting" pulse ring />
+      <span className="font-ui text-sm uppercase tracking-[0.18em] text-ink-dim">{label}</span>
+    </div>
+  );
+}
+
+export function PanelLoading({rows = 4}: {rows?: number}) {
+  return (
+    <div role="status" aria-label="Loading" className="space-y-2">
+      {Array.from({length: rows}, (_, i) => (
+        <Skeleton key={i} className="h-10 w-full" />
+      ))}
+      <Skeleton className="h-10 w-2/3" />
+    </div>
+  );
+}
+
 /** Chunky on/off rocker. `on` reflects running state; `busy` shows amber. */
 export function RockerToggle({
   on,
