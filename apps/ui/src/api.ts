@@ -137,6 +137,7 @@ export const api = {
 
   dockerStatus: () => req<DockerStatus>('/docker/status'),
   startDocker: () => req<{ ok: boolean }>('/docker/start', { method: 'POST' }),
+  stopDocker: () => req<{ ok: boolean }>('/docker/stop', { method: 'POST' }),
   containers: () => req<ContainerInfo[]>('/docker/containers'),
 
   getSettings: () => req<Settings>('/settings'),

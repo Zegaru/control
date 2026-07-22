@@ -105,6 +105,41 @@ export async function startDockerEngine(): Promise<void> {
   spawn('systemctl', ['start', 'docker'], { detached: true, stdio: 'ignore' }).unref()
 }
 
+/**
+ * Quit Docker Desktop (Windows/macOS) or `systemctl stop docker` (Linux).
+ * Fire-and-forget — the engine pipe may linger briefly while Desktop exits.
+ * Refuses remote engines (`DOCKER_HOST`).
+ */
+export async function stopDockerEngine(): Promise<void> {
+  const status = await getDockerStatus()
+  if (!status.available) return
+
+  if (process.env.DOCKER_HOST) {
+    throw new Error('Cannot stop a remote Docker engine (DOCKER_HOST is set).')
+  }
+
+  client = null
+
+  if (process.platform === 'win32') {
+    const exe = dockerDesktopWindowsPaths().find((p) => existsSync(p))
+    if (!exe) {
+      throw new Error('Docker Desktop not found.')
+    }
+    spawn(exe, ['-Quit'], { detached: true, stdio: 'ignore', windowsHide: true }).unref()
+    return
+  }
+
+  if (process.platform === 'darwin') {
+    spawn('osascript', ['-e', 'quit app "Docker"'], {
+      detached: true,
+      stdio: 'ignore',
+    }).unref()
+    return
+  }
+
+  spawn('systemctl', ['stop', 'docker'], { detached: true, stdio: 'ignore' }).unref()
+}
+
 function mapState(state: string): ContainerState {
   const known: ContainerState[] = [
     'created',

@@ -42,7 +42,12 @@ import { supervisor } from './supervisor.js'
 import { startGroup, stopGroup } from './groupRunner.js'
 import { startProjectPower, stopProjectPower } from './projectPower.js'
 import { claimedPorts, getPortMap } from './ports.js'
-import { getDockerStatus, listContainers, startDockerEngine } from './docker.js'
+import {
+  getDockerStatus,
+  listContainers,
+  startDockerEngine,
+  stopDockerEngine,
+} from './docker.js'
 import { buildComposeProjectMatcher } from './registry.js'
 import { getSettings, patchSettings } from './settings.js'
 import { version } from './version.js'
@@ -238,6 +243,15 @@ api.get('/docker/status', async (c) => c.json(await getDockerStatus()))
 api.post('/docker/start', async (c) => {
   try {
     await startDockerEngine()
+    return c.json({ ok: true })
+  } catch (err) {
+    throw new HttpError(500, err instanceof Error ? err.message : String(err))
+  }
+})
+
+api.post('/docker/stop', async (c) => {
+  try {
+    await stopDockerEngine()
     return c.json({ ok: true })
   } catch (err) {
     throw new HttpError(500, err instanceof Error ? err.message : String(err))
