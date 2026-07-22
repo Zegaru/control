@@ -3,7 +3,13 @@ dist/
 build/
 *.tsbuildinfo
 .DS_Store
+Thumbs.db
 *.log
+coverage/
+.vite/
+.idea/
+.vscode/*
+!.vscode/extensions.json
 
 # CONTROL local daemon data (SQLite db, run logs)
 .control-data/
@@ -20,4 +26,5 @@ apps/shell/runtime/
 
 # env
 .env
-.env.local
+.env.*
+!.env.example

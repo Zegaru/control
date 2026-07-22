@@ -84,7 +84,6 @@ const BRAND_TAGLINES = [
 const LONGEST_TAGLINE = BRAND_TAGLINES.reduce((a, b) => (a.length >= b.length ? a : b));
 
 function pickTagline(exclude?: string): string {
-  if (BRAND_TAGLINES.length === 1) return BRAND_TAGLINES[0];
   const pool = exclude
     ? BRAND_TAGLINES.filter((line) => line !== exclude)
     : [...BRAND_TAGLINES];

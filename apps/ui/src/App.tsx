@@ -187,7 +187,6 @@ export function App() {
               <Dashboard
                 onOpenProject={(projectId) => setView({kind: 'project', projectId})}
                 onOpenRun={openRun}
-                onOpenContainer={openContainer}
               />
             )}
             {view.kind === 'project' && (

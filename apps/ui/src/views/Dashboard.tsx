@@ -94,11 +94,9 @@ function buildRuntimeServices(
 export function Dashboard({
   onOpenProject,
   onOpenRun,
-  onOpenContainer,
 }: {
   onOpenProject: (id: string) => void;
   onOpenRun: (runId: string) => void;
-  onOpenContainer: (id: string) => void;
 }) {
   const qc = useQueryClient();
   const {events, clearEvents} = useSocket();
@@ -168,7 +166,6 @@ export function Dashboard({
       }
     }
   }
-  const favorites = allActions.filter((a) => a.action.favorite);
   const activeRuns = allActions.filter((a) => a.action.activeRun);
 
   const recentRuns = useMemo(() => {
