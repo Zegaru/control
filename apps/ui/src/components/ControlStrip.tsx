@@ -72,12 +72,12 @@ const BRAND_TAGLINES = [
   'Processes accounted for.',
   'Nothing unsupervised.',
   'Hold the line.',
-  'Daemon standing by.',
+  'Standing by.',
   'Keep the lights green.',
   'Stack under watch.',
   "Quiet until it isn't.",
   'Local-first. Always.',
-  'No orphaned PIDs.',
+  'Nothing left running wild.',
   'Watching the stack.',
 ] as const;
 

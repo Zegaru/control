@@ -74,7 +74,7 @@ export function CommandPalette({
           else if (e.key === 'ArrowUp') setSel((s) => Math.max(s - 1, 0))
           else if (e.key === 'Enter') void run(sel)
         }}
-        placeholder="Start an action…  (e.g. ent-agi web)"
+        placeholder="Start a command…  (e.g. my-app web)"
         className="rounded-none border-0 border-b border-panel-edge bg-transparent px-4 py-3 focus:border-phosphor-dim"
       />
       <ul className="max-h-[50vh] overflow-y-auto">

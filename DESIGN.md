@@ -1,12 +1,8 @@
-# CONTROL — Design & Requirements
-
-
+# CONTROL
 
 **Run and track every local service without living in a console.**
 
-
-
-A local-first command center for every dev server across your projects — host processes and Docker stacks alike. Start/stop with one click; the daemon owns supervision so closing the UI never kills your servers.
+A local-first command center for every dev server across your projects: host processes and Docker stacks alike. Start/stop with one click; the daemon owns supervision so closing the UI never kills your servers.
 
 
 

@@ -54,7 +54,9 @@ function DaemonBanner({show}: {show: boolean}) {
         open ? 'translate-y-0 opacity-100' : '-translate-y-1 opacity-0',
       )}
     >
-      Cannot reach the CONTROL daemon. Start it with <code>pnpm dev:daemon</code>.
+      {isTauri()
+        ? 'CONTROL is not running. Use Restart from the tray menu, then try again.'
+        : 'CONTROL is not running. Open the desktop app, or start CONTROL and refresh this page.'}
     </div>
   );
 }
@@ -179,7 +181,7 @@ export function App() {
             <div className="mt-auto pt-4 max-lg:hidden">
               <AgentStatus
                 online={daemonUp}
-                label={daemonUp ? `Agent v${health.data?.version}` : 'Agent Offline'}
+                label={daemonUp ? `CONTROL v${health.data?.version}` : 'CONTROL Offline'}
               />
             </div>
           </aside>

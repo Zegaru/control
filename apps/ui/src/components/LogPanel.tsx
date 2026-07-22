@@ -198,8 +198,8 @@ export function LogPanel({runId, containerId}: {runId?: string; containerId?: st
                 canAttach
                   ? attached
                     ? 'Stop sending keyboard input to this run'
-                    : 'Forward keyboard input to this run (not a command shell)'
-                  : 'Attach requires a live PTY (not available for adopted or stopped runs)'
+                    : 'Send keyboard input to this run'
+                  : 'Attach only works while this run is live'
               }
               onClick={toggleAttach}
               className="px-2 py-0.5 text-[10px] uppercase tracking-wider"
@@ -210,14 +210,14 @@ export function LogPanel({runId, containerId}: {runId?: string; containerId?: st
               <span className="text-[10px] text-phosphor">Click log pane, then type</span>
             ) : (
               <span className="text-[10px] text-ink-faint">
-                Sends keys to the running command — for prompts and Ctrl+C, not a shell
+                Sends keys for prompts and Ctrl+C. Not a full shell.
               </span>
             )}
           </div>
           {attached ? (
             <span className="text-[10px] text-amber">
-              Dev servers (Vite, etc.) usually ignore keyboard input. Ctrl+C interrupts unless
-              text is selected.
+              Many dev servers ignore keyboard input. Ctrl+C still interrupts unless text is
+              selected.
             </span>
           ) : null}
         </div>

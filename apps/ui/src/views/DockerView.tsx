@@ -58,7 +58,7 @@ export function DockerView({onOpenContainer}: {onOpenContainer: (id: string) => 
     groups.get(key)!.push(c);
   }
   const nameFor = (id: string) =>
-    id === '__other__' ? 'Other / unmapped' : projects.data?.find((p) => p.id === id)?.name ?? id;
+    id === '__other__' ? 'Not linked to a project' : projects.data?.find((p) => p.id === id)?.name ?? id;
 
   const engineLed =
     pending === 'start'
@@ -78,11 +78,11 @@ export function DockerView({onOpenContainer}: {onOpenContainer: (id: string) => 
           : 'Offline';
   const engineHint =
     pending === 'start'
-      ? 'Waiting for engine pipe'
+      ? 'Waiting for Docker'
       : pending === 'stop'
         ? 'Quitting Docker Desktop'
         : available
-          ? 'Engine reachable'
+          ? 'Connected'
           : 'No connection to Docker Desktop';
 
   return (
@@ -115,7 +115,7 @@ export function DockerView({onOpenContainer}: {onOpenContainer: (id: string) => 
             <>
               <div className="bezel-recessed rounded-md border border-panel-edge/60 px-3.5 py-3">
                 <div className="font-ui text-[9px] uppercase tracking-[0.22em] text-ink-faint">
-                  Fault
+                  Status
                 </div>
                 <code className="mt-1.5 block break-all font-mono text-[11px] leading-relaxed text-amber">
                   {status.data.error}
@@ -124,8 +124,8 @@ export function DockerView({onOpenContainer}: {onOpenContainer: (id: string) => 
 
               <p className="text-sm leading-relaxed text-ink-dim">
                 {pending === 'start'
-                  ? 'Docker Desktop is launching — the engine can take up to a minute to come online.'
-                  : 'Flip the rocker to start Docker Desktop. Flip it off to quit. Remote engines (DOCKER_HOST) cannot be started or stopped from here.'}
+                  ? 'Docker Desktop is launching. It can take up to a minute to come online.'
+                  : 'Use the switch to start or quit Docker Desktop. Remote Docker setups cannot be controlled from here.'}
               </p>
             </>
           )}

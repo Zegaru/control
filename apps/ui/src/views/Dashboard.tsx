@@ -641,12 +641,10 @@ export function Dashboard({
             <div className="bezel-raised flex w-full shrink-0 flex-col justify-center rounded-lg p-1.5 max-lg:min-h-40 lg:min-w-0 lg:flex-1 lg:self-stretch">
               <div className="bezel-recessed flex h-full flex-col justify-center gap-3 rounded-md bg-bezel px-4 py-4">
                 <div className="font-ui text-[11px] uppercase tracking-[0.2em] text-ink-dim">
-                  Why CONTROL
+                  No projects yet
                 </div>
                 <p className="max-w-xl text-[13px] leading-relaxed text-ink">
-                  Run and track every local service without living in a console. Agents and tools
-                  scatter process state across weak terminals — CONTROL keeps projects, ports, and
-                  what&apos;s running in one place.
+                  Add a project folder to run and track its services, ports, and logs in one place.
                 </p>
                 <div className="flex justify-center mt-4">
                   <BacklitButton tone="phosphor" onClick={() => setAdding(true)}>

@@ -1,16 +1,16 @@
-# CONTROL — Local Dev Command Center
+# CONTROL
 
 **Run and track every local service without living in a console.**
 
 Local work no longer lives only in an editor terminal. Agents, chat apps, and
-browser tools start services in scattered consoles that are hard to supervise —
-and on days you never open a console at all, you still need to know what’s
+browser tools start services in scattered consoles that are hard to supervise,
+and on days you never open a console at all you still need to know what’s
 running. CONTROL is the local command center for that map: projects, scripts,
 ports, and process state in one place, so you don’t keep it in your head.
 
-A local-first daemon owns process supervision (host processes and Docker
-stacks); the React UI is a thin client over it, so closing the UI never kills
-your servers.
+A local daemon owns process supervision (host processes and Docker stacks).
+The React UI is a thin client over it, so closing the UI never kills your
+servers.
 
 See [DESIGN.md](./DESIGN.md) for product goals, design & requirements.
 Agent/CI conventions: [AGENTS.md](./AGENTS.md).

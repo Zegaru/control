@@ -38,8 +38,8 @@ export function GroupsView() {
     <div className="space-y-2">
       <Panel title="Launch Groups" right={<Button onClick={() => setEditing('new')}>+ New Group</Button>}>
         <p className="mt-1 text-sm text-ink-dim">
-          Start several actions in order — e.g. bring up infra, wait until it's healthy, then
-          start web + worker.
+          Start several commands in order. For example: bring up infra, wait until it is healthy,
+          then start the web app.
         </p>
       </Panel>
 
@@ -93,7 +93,7 @@ export function GroupsView() {
                           {fa.action.name}
                         </>
                       ) : (
-                        <span className="text-ink-faint">missing action</span>
+                        <span className="text-ink-faint">missing command</span>
                       )}
                     </span>
                     {s.waitFor !== 'none' && (

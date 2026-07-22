@@ -51,9 +51,8 @@ export function PortsView({onOpenRun}: {onOpenRun: (runId: string) => void}) {
         }
       >
         <p className="text-sm leading-relaxed text-ink-dim">
-          Listening ports attributed to a CONTROL-managed run, a Docker container, or an external
-          host process. Docker-forwarded ports come from the Engine API so WSL2 relays never
-          masquerade as the owner.
+          Every listening port and what owns it: a run you started, a Docker container, or
+          something else on this machine.
         </p>
 
         <div className="mt-3 flex flex-wrap gap-2 overflow-visible py-0.5">

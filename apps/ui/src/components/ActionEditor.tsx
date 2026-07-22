@@ -85,7 +85,7 @@ export function ActionEditor({
           />
           {action.source === 'detected' && (
             <span className="mt-1 block text-[10px] text-ink-faint">
-              Detected action — a re-scan preserves this override.
+              Detected from the project. Your edits stay after a re-scan.
             </span>
           )}
         </label>
@@ -108,7 +108,7 @@ export function ActionEditor({
           </label>
         </div>
         <label className="block">
-          <span className="mb-1 block text-xs text-ink-dim">Env overrides (KEY=value per line)</span>
+          <span className="mb-1 block text-xs text-ink-dim">Env vars (KEY=value per line)</span>
           <textarea
             value={env}
             onChange={(e) => setEnv(e.target.value)}

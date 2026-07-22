@@ -61,7 +61,7 @@ export function AgentStatus({online, label}: {online: boolean; label?: string}) 
             online ? 'text-phosphor text-glow' : 'text-ink-dim'
           )}
         >
-          {label ?? (online ? 'Agent Running' : 'Agent Offline')}
+          {label ?? (online ? 'CONTROL Online' : 'CONTROL Offline')}
         </span>
         <span
           className={cn(

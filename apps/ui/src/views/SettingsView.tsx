@@ -153,7 +153,7 @@ export function SettingsView() {
           </div>
           <p className="text-[11px] leading-relaxed text-ink-faint">
             Exact folder names or simple globs (<code>*</code>, <code>**</code>). Click a tag to
-            eject it from the bank. Re-scan projects to apply.
+            remove it. Re-scan projects to apply.
           </p>
         </div>
       </Panel>
@@ -229,7 +229,7 @@ export function SettingsView() {
                   ? autostartOn
                     ? 'CONTROL launches with Windows'
                     : 'Manual launch only'
-                  : 'Available inside the CONTROL desktop shell'}
+                  : 'Open the CONTROL desktop app to use this'}
               </div>
             </div>
           </div>
@@ -237,7 +237,7 @@ export function SettingsView() {
           <div className="flex items-center gap-3 self-end overflow-visible sm:self-center">
             {!inShell && (
               <span className="font-ui text-[10px] uppercase tracking-[0.16em] text-ink-faint">
-                Shell offline
+                Desktop app only
               </span>
             )}
             <div className="overflow-visible p-2">
@@ -256,7 +256,7 @@ export function SettingsView() {
           </p>
         )}
         <p className="mt-3 text-[11px] leading-relaxed text-ink-faint">
-          Same circuit as the tray menu. Flip the rocker to arm or disarm login launch.
+          Same setting as the tray menu. Flip the rocker to turn login launch on or off.
         </p>
       </Panel>
     </div>

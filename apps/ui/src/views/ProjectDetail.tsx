@@ -190,11 +190,10 @@ export function ProjectDetail({
 
       <div className="grid min-h-0 flex-1 grid-cols-[minmax(260px,1fr)_minmax(0,2fr)] gap-2">
         <div className="flex min-h-0 flex-col gap-2 overflow-hidden">
-          <Panel title="Docker compose projects claimed by this project" className="shrink-0">
+          <Panel title="Compose projects" className="shrink-0">
             <p className="mb-2 text-[11px] text-ink-faint">
-              Containers with these <code>com.docker.compose.project</code> labels are attributed
-              here. Useful when a repo's infra splits into multiple compose projects (CONTROL
-              otherwise guesses from folder names).
+              Link compose project names so their containers show up here. Add a name if CONTROL
+              guessed wrong from the folder.
             </p>
             <div className="flex flex-wrap items-center gap-2">
               {(p.composeProjects ?? []).map((claim) => (
@@ -317,8 +316,8 @@ export function ProjectDetail({
 
           <Panel title="Environments" className="flex min-h-0 flex-1 flex-col">
             <p className="mb-3 shrink-0 text-[11px] text-ink-faint">
-              Named env + startup target for Dashboard ON. Star one as the default; override it from
-              the Dashboard selector.
+              Named setups for what Overview turns on. Star one as the default; change it from the
+              Overview selector.
             </p>
             {p.environments.length === 0 ? (
               <p className="mb-3 text-sm text-ink-faint">No environments yet.</p>
@@ -339,7 +338,7 @@ export function ProjectDetail({
                       <Button
                         variant="icon"
                         onClick={() => setDefaultEnv.mutate(isDefault ? null : env.id)}
-                        title={isDefault ? 'Default for Dashboard' : 'Set as Dashboard default'}
+                        title={isDefault ? 'Default for Overview' : 'Set as Overview default'}
                         className={isDefault ? 'text-phosphor' : 'text-ink-faint'}
                       >
                         {isDefault ? '★' : '☆'}
@@ -400,7 +399,7 @@ export function ProjectDetail({
             {p.modules.length === 0 ? (
               <>
                 <p className="mb-3 text-sm text-ink-faint">
-                  No stack markers found. Add custom commands to run from this project root.
+                  No commands found. Add custom commands to run from this project root.
                 </p>
                 <Button
                   variant="ghost"
