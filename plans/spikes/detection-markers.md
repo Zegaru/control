@@ -7,12 +7,12 @@
 | package.json / compose / Makefile / Cargo / Go / pyproject | ✅ | ✅ |
 | justfile | listed | ❌ |
 | Expo / RN (`app.json`, `metro.config.js`) | listed | ❌ |
-| `.claude/launch.json` | highest-confidence | ❌ |
+| `.claude/launch.json` | highest-confidence | ✅ done (plan 036) |
 | turbo/nx/lerna workspace expansion | open question §12 | ❌ |
 
 ## Priority order
 
-1. **`.claude/launch.json`** — explicit dev-server entries, lowest false-positive rate.
+1. **`.claude/launch.json`** — ✅ done (plan 036): explicit dev-server entries imported as primary actions.
 2. **pnpm/npm workspace package globs** — monorepo onboarding gap.
 3. **justfile** — parse targets matching `dev|start|serve`.
 4. **Expo** — lower priority; noisier heuristics.
@@ -23,4 +23,4 @@ Turbo root `dev` vs per-module scripts → detect both; let favorites decide.
 
 ## Recommendation
 
-**First implementation PR: `.claude/launch.json` only** (M). Follow with workspace glob expansion (M–L).
+**`.claude/launch.json` is implemented.** Next: workspace glob expansion (M–L), then justfile targets.

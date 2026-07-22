@@ -123,6 +123,56 @@ function gradleWrapperCommand(dir: string): string {
   return existsInDir(dir, 'gradlew') ? './gradlew' : 'gradle'
 }
 
+function slugifyLaunchName(name: string): string {
+  return name.replace(/[^A-Za-z0-9._-]/g, '-')
+}
+
+function joinLaunchCommand(executable: string, args: string[]): string {
+  const quoted = args.map((arg) => (/\s/.test(arg) ? `"${arg}"` : arg))
+  return [executable, ...quoted].join(' ')
+}
+
+/** Parse `.claude/launch.json` into primary script actions (no env/cwd import). */
+function parseClaudeLaunchActions(
+  dir: string,
+  keyPrefix: string,
+): { stack: boolean; actions: DetectedAction[] } {
+  const launchPath = join(dir, '.claude', 'launch.json')
+  const data = readJson(launchPath)
+  if (!data) return { stack: false, actions: [] }
+
+  const actions: DetectedAction[] = []
+  const configs = data.configurations
+  if (!Array.isArray(configs)) return { stack: true, actions }
+
+  for (const raw of configs) {
+    if (!raw || typeof raw !== 'object') continue
+    const cfg = raw as Record<string, unknown>
+    const name = typeof cfg.name === 'string' ? cfg.name.trim() : ''
+    const runtimeExecutable =
+      typeof cfg.runtimeExecutable === 'string' ? cfg.runtimeExecutable.trim() : ''
+    if (!name || !runtimeExecutable) continue
+
+    const runtimeArgs = Array.isArray(cfg.runtimeArgs)
+      ? cfg.runtimeArgs.filter((a): a is string => typeof a === 'string')
+      : []
+    const slug = slugifyLaunchName(name)
+    const action: DetectedAction = {
+      naturalKey: `${keyPrefix}:claude-launch:${slug}`,
+      name,
+      command: joinLaunchCommand(runtimeExecutable, runtimeArgs),
+      type: 'script',
+      primary: true,
+    }
+    if (typeof cfg.port === 'number' && Number.isFinite(cfg.port) && cfg.port > 0) {
+      action.portHint = cfg.port
+    }
+    actions.push(action)
+  }
+
+  return { stack: true, actions }
+}
+
 /** Detect stacks + actions for a single directory (one module). */
 function detectModuleAt(dir: string, rootDir: string): DetectedModule | null {
   const relPath = relative(rootDir, dir).split(sep).join('/')
@@ -516,6 +566,13 @@ function detectModuleAt(dir: string, rootDir: string): DetectedModule | null {
         primary: true,
       })
     }
+  }
+
+  // --- Claude Code launch.json ---
+  const claudeLaunch = parseClaudeLaunchActions(dir, keyPrefix)
+  if (claudeLaunch.stack) {
+    stacks.push({ kind: 'claude-launch', confidence: 1 })
+    actions.push(...claudeLaunch.actions)
   }
 
   if (stacks.length === 0) return null

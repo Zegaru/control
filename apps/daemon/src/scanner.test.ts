@@ -88,3 +88,117 @@ describe('scanProject stack detection', () => {
     expect(kinds).toEqual(expect.arrayContaining(['terraform', 'nix', 'just']))
   })
 })
+
+describe('scanProject .claude/launch.json', () => {
+  function writeLaunchJson(dir: string, content: string) {
+    mkdirSync(join(dir, '.claude'))
+    writeFileSync(join(dir, '.claude', 'launch.json'), content, 'utf8')
+  }
+
+  it('imports two configs as primary actions', () => {
+    const dir = makeProject({})
+    writeLaunchJson(
+      dir,
+      JSON.stringify({
+        version: '0.0.1',
+        configurations: [
+          {
+            name: 'my-app',
+            runtimeExecutable: 'npm',
+            runtimeArgs: ['run', 'dev'],
+            port: 3000,
+          },
+          {
+            name: 'api server',
+            runtimeExecutable: 'node',
+            runtimeArgs: ['server.js'],
+          },
+        ],
+      }),
+    )
+    const modules = scanProject(dir, 1, [])
+    expect(modules).toHaveLength(1)
+    expect(modules[0]?.stacks.some((s) => s.kind === 'claude-launch')).toBe(true)
+    const actions = modules[0]?.actions ?? []
+    expect(actions).toHaveLength(2)
+    expect(actions[0]).toMatchObject({
+      naturalKey: '.:claude-launch:my-app',
+      name: 'my-app',
+      command: 'npm run dev',
+      type: 'script',
+      primary: true,
+      portHint: 3000,
+    })
+    expect(actions[1]).toMatchObject({
+      naturalKey: '.:claude-launch:api-server',
+      name: 'api server',
+      command: 'node server.js',
+      type: 'script',
+      primary: true,
+    })
+    expect(actions[1]?.portHint).toBeUndefined()
+  })
+
+  it('skips url-only configs without runtimeExecutable', () => {
+    const dir = makeProject({})
+    writeLaunchJson(
+      dir,
+      JSON.stringify({
+        version: '0.0.1',
+        configurations: [
+          { name: 'preview', url: 'http://localhost:5173' },
+          {
+            name: 'app',
+            runtimeExecutable: 'npm',
+            runtimeArgs: ['run', 'dev'],
+          },
+        ],
+      }),
+    )
+    const actions = scanProject(dir, 1, [])[0]?.actions ?? []
+    expect(actions).toHaveLength(1)
+    expect(actions[0]?.name).toBe('app')
+  })
+
+  it('ignores invalid launch.json without throwing', () => {
+    const dir = makeProject({
+      'package.json': JSON.stringify({ scripts: { start: 'node .' } }),
+    })
+    writeLaunchJson(dir, '{ not valid json')
+    expect(() => scanProject(dir, 1, [])).not.toThrow()
+    const modules = scanProject(dir, 1, [])
+    expect(modules[0]?.stacks.some((s) => s.kind === 'claude-launch')).toBe(false)
+    expect(modules[0]?.actions.some((a) => a.naturalKey.includes('claude-launch'))).toBe(false)
+  })
+
+  it('detects launch-only modules without package.json', () => {
+    const dir = makeProject({})
+    writeLaunchJson(
+      dir,
+      JSON.stringify({
+        version: '0.0.1',
+        configurations: [
+          {
+            name: 'solo',
+            runtimeExecutable: 'pnpm',
+            runtimeArgs: ['dev'],
+            port: 8080,
+          },
+        ],
+      }),
+    )
+    const modules = scanProject(dir, 1, [])
+    expect(modules).toHaveLength(1)
+    expect(modules[0]?.stacks).toEqual([{ kind: 'claude-launch', confidence: 1 }])
+    expect(modules[0]?.actions).toEqual([
+      {
+        naturalKey: '.:claude-launch:solo',
+        name: 'solo',
+        command: 'pnpm dev',
+        type: 'script',
+        primary: true,
+        portHint: 8080,
+      },
+    ])
+  })
+})

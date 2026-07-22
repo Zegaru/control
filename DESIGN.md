@@ -274,7 +274,7 @@ Pure TS module in the daemon. Input: a project root. Output: modules + suggested
 
 | `android/gradlew`, `ios/*.xcworkspace` | Mobile native | gradle tasks (xcode actions flagged mac-only) |
 
-| `.claude/launch.json` | explicit dev-server config | import entries directly (highest-confidence signal) |
+| `.claude/launch.json` | explicit dev-server config | **implemented** — imported as primary actions (`claude-launch` stack) |
 
 
 
