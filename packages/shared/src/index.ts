@@ -455,5 +455,10 @@ export const wsClientMessageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('unsubscribe.logs'), runId: z.string() }),
   z.object({ type: z.literal('subscribe.container'), containerId: z.string() }),
   z.object({ type: z.literal('unsubscribe.container'), containerId: z.string() }),
+  z.object({
+    type: z.literal('run.stdin'),
+    runId: z.string().min(1),
+    data: z.string(),
+  }),
 ])
 export type WsClientMessage = z.infer<typeof wsClientMessageSchema>

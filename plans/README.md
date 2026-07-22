@@ -18,13 +18,15 @@ These plans cover **all** vetted audit findings (correctness, security, perf, te
 | 008 | Refresh DESIGN/README/UI design docs to match M0–M6 | P2 | S | — | DONE |
 | 009 | AGENTS.md + lint/format + GitHub Actions CI | P2 | M | 001 | DONE |
 | 010 | Direction spikes: env files, PTY attach, detection, ports | P3 | L | 008, 001 | DONE |
+| 011 | Optional PTY attach + fix xterm copy | P2 | M | — | DONE |
+| 012 | Per-project port labels (Dashboard + Port Map) | P2 | M | — | TODO |
 
 ## Direction spikes (`plans/spikes/`)
 
 | Spike | Recommendation |
 |-------|----------------|
-| [env-files](spikes/env-files.md) | Ship next (plan 011) |
-| [pty-attach](spikes/pty-attach.md) | Defer until after env files |
+| [env-files](spikes/env-files.md) | Ship next as plan **013** (012 taken by port labels) |
+| [pty-attach](spikes/pty-attach.md) | Done — [011](011-pty-attach-and-xterm-copy.md) |
 | [detection-markers](spikes/detection-markers.md) | First PR: `.claude/launch.json` |
 | [cross-platform-ports](spikes/cross-platform-ports.md) | Defer; parser tests first |
 
@@ -50,6 +52,8 @@ Status values: `TODO` | `IN PROGRESS` | `DONE` | `BLOCKED` (one-line reason) | `
 | 14 | Stale DESIGN / README | 008 |
 | 15 | No AGENTS.md / CI (+ lint) | 009 |
 | — | Direction: env files, PTY, detection, cross-platform ports | 010 |
+| — | PTY attach + xterm clipboard/copy | 011 |
+| — | Per-project port labels | 012 |
 | — | Docker list fan-out + registry N+1 active runs | 006 |
 | — | AgentStatus 55ms setState loop | 005 |
 
@@ -63,6 +67,9 @@ Status values: `TODO` | `IN PROGRESS` | `DONE` | `BLOCKED` (one-line reason) | `
 - **008 before 010**: spikes should cite honest backlog labels.
 - **009 needs 001**: CI runs `pnpm test`.
 - **003 and 002** can proceed in parallel after 001; if `force` restart must stop adopted runs, prefer 002 first or keep force limited to live handles (003 STOP text).
+- **011** does not depend on env-files (operator pulled attach + xterm copy ahead of the spike deferral). Env-files implementation should be numbered **013** when opened (012 is port labels).
+- **011** must not grow into a free-standing shell or PTY resize — see plan STOP / out of scope.
+- **012** is independent: project JSON `portLabels` + port-map overlay; does not touch host port scanning.
 
 Suggested parallel tracks after 001:
 
@@ -85,7 +92,7 @@ Then: 009 (after 001; ideally after lint-noise known)
 | Zod v3 → v4 migration | **Deferred** — not worth blocking correctness; revisit when shared schemas churn heavily |
 | Split `registry.ts` / `kit.tsx` / Dashboard god-modules | **Deferred** — high merge risk; do **after** 001 characterization + 006 batching; open a new plan if still painful |
 | Compose project name collision (MED confidence) | **Deferred** — re-audit after 002/power-stop usage; not planned until reproduced |
-| Full interactive terminal product | **Rejected** as scope — PTY spike in 010 is attach-only |
+| Full interactive terminal product | **Rejected** as scope — PTY spike in 010 is attach-only; 011 implements attach + copy, not a free shell |
 
 ## How to execute
 

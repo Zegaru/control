@@ -15,6 +15,7 @@ import { isHttpHealthy, isPortListening } from './health.js'
 import { HEALTH_GRACE_MS, nextHealthStatus } from './healthStatus.js'
 import { pidAlive } from './pid.js'
 import { pruneRunsForAction } from './settings.js'
+import { writePty } from './ptyWrite.js'
 
 const isWin = process.platform === 'win32'
 const GRACEFUL_STOP_MS = 5000
@@ -140,6 +141,12 @@ class Supervisor {
     }
 
     return this.stopAdopted(runId)
+  }
+
+  /** Write stdin to a live PTY. No-op when the run has no in-memory handle. */
+  write(runId: string, data: string): boolean {
+    const handle = this.handles.get(runId)
+    return writePty(handle?.proc ?? null, data)
   }
 
   /** Stop a run re-attached after daemon restart (no in-memory PTY handle). */

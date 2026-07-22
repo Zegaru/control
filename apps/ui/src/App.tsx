@@ -94,7 +94,11 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    const onContextMenu = (e: MouseEvent) => e.preventDefault();
+    const onContextMenu = (e: MouseEvent) => {
+      const t = e.target;
+      if (t instanceof Element && t.closest('.xterm')) return;
+      e.preventDefault();
+    };
     window.addEventListener('contextmenu', onContextMenu);
     return () => window.removeEventListener('contextmenu', onContextMenu);
   }, []);

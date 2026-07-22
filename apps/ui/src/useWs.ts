@@ -37,6 +37,7 @@ let eventSeq = 0
 export function useDaemonSocket(): {
   subscribeLogs: (runId: string, cb: LogListener) => () => void
   subscribeContainer: (containerId: string, cb: LogListener) => () => void
+  sendStdin: (runId: string, data: string) => void
   events: EventLogEntry[]
   clearEvents: () => void
 } {
@@ -130,6 +131,18 @@ export function useDaemonSocket(): {
     }
   }, [qc, scheduleRunInvalidation])
 
+  const send = useCallback((msg: WsClientMessage) => {
+    const ws = socketRef.current
+    if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg))
+  }, [])
+
+  const sendStdin = useCallback(
+    (runId: string, data: string) => {
+      send({ type: 'run.stdin', runId, data })
+    },
+    [send],
+  )
+
   const subscribeLogs = (runId: string, cb: LogListener) => {
     let set = logListeners.current.get(runId)
     if (!set) {
@@ -166,10 +179,5 @@ export function useDaemonSocket(): {
     }
   }
 
-  const send = (msg: WsClientMessage) => {
-    const ws = socketRef.current
-    if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg))
-  }
-
-  return { subscribeLogs, subscribeContainer, events, clearEvents }
+  return { subscribeLogs, subscribeContainer, sendStdin, events, clearEvents }
 }

@@ -80,6 +80,8 @@ export function attachWebSocket(server: Server): void {
         const streams = containerStreams.get(ws)!
         streams.get(msg.containerId)?.()
         streams.delete(msg.containerId)
+      } else if (msg.type === 'run.stdin') {
+        supervisor.write(msg.runId, msg.data)
       }
     })
 

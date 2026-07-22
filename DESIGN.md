@@ -34,7 +34,7 @@ Status: **implemented through M6** (see [README.md](./README.md) Status). Former
 
 - Not a production process manager (no clustering, zero-downtime reload, or deployment).
 
-- Not a terminal replacement — logs are viewable, but interactive REPL input is out of scope for v1 (PTY write support can come later).
+- Not a terminal replacement — logs are viewable by default; optional **Attach** sends stdin to a live host run’s PTY (default off; adopted runs unsupported). Not a free-standing shell or full terminal emulator.
 
 - Not multi-user / remote. Localhost, single developer, v1 has no auth.
 
