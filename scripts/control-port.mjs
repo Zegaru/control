@@ -7,10 +7,31 @@
  * preferred+1, preferred+2, … until a free port is found.
  */
 import { spawnSync } from 'node:child_process'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { createConnection } from 'node:net'
+import { join } from 'node:path'
 
 export const DEFAULT_PORT = 4400
 export const MAX_PORT_BUMP = 50
+
+export function devPortFilePath(repoRoot) {
+  return join(repoRoot, '.control-dev-port')
+}
+
+export function writeDevPort(repoRoot, port) {
+  writeFileSync(devPortFilePath(repoRoot), `${port}\n`, 'utf8')
+}
+
+export function readDevPort(repoRoot) {
+  try {
+    const raw = readFileSync(devPortFilePath(repoRoot), 'utf8').trim()
+    const port = Number(raw)
+    if (!Number.isInteger(port) || port < 1 || port > 65535) return null
+    return port
+  } catch {
+    return null
+  }
+}
 
 /** Cmdline fingerprints for the CONTROL daemon (tsx / bundled / staged). */
 const DAEMON_CMDLINE_RE =

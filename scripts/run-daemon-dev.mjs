@@ -11,7 +11,7 @@ import { createRequire } from 'node:module'
 import { spawn } from 'node:child_process'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { ensureDevPort } from './control-port.mjs'
+import { ensureDevPort, writeDevPort } from './control-port.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const daemonRoot = join(here, '..', 'apps', 'daemon')
@@ -25,6 +25,12 @@ try {
   console.error(`[control] ${err.message}`)
   process.exit(1)
 }
+
+const repoRoot = join(here, '..')
+writeDevPort(repoRoot, port)
+console.log(
+  `[control] CONTROL_PORT=${port} — split-terminal UI reads .control-dev-port (or set CONTROL_PORT / CONTROL_DAEMON_URL)`,
+)
 
 const child = spawn(
   process.execPath,

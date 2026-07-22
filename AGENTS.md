@@ -41,7 +41,9 @@ Assume the app is **already running** during agent sessions unless the user expl
 | `CONTROL_DATA_DIR` | Daemon state dir (default `~/.control`) |
 | `CONTROL_PORT` | Daemon port (default `4400`) |
 | `CONTROL_HOST` | Bind host — **loopback only** (`127.0.0.1`, `localhost`, `::1`) |
+| `CONTROL_DAEMON_URL` | Full daemon base URL (e.g. `http://127.0.0.1:4400`); UI proxy prefers this over `CONTROL_PORT` |
 | `CONTROL_HOME` | Shell: path to CONTROL tree with `apps/daemon` |
+| `CONTROL_DEV` | Set by `pnpm dev` combined script; marks combined dev mode |
 
 ## Ports
 

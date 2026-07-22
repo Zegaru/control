@@ -28,3 +28,6 @@ apps/shell/runtime/
 .env
 .env.*
 !.env.example
+
+# dev daemon port (written by pnpm dev:daemon for split-terminal UI proxy)
+.control-dev-port

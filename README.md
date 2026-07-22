@@ -51,7 +51,7 @@ Run pieces individually:
 ```bash
 pnpm dev:daemon       # daemon only (clear stale CONTROL, or bump past busy ports)
 pnpm kill:daemon      # free CONTROL_PORT only if a CONTROL daemon owns it
-pnpm dev:ui           # UI dev server only (proxies /api + /ws to :4400)
+pnpm dev:ui           # UI dev server only (proxies /api + /ws to daemon port)
 pnpm typecheck        # all packages
 pnpm test             # vitest characterization suite
 pnpm lint             # biome check
@@ -115,9 +115,10 @@ apps/shell/      Tauri desktop shell + NSIS installer (staged runtime under runt
 packages/shared/ Zod schemas + types shared across the API boundary
 ```
 
-Daemon state lives in `~/.control/` (SQLite db + per-run log files). Override the
-location with `CONTROL_DATA_DIR`, the port with `CONTROL_PORT`, and the bind
-host with `CONTROL_HOST` (loopback only: `127.0.0.1`, `localhost`, or `::1`).
+Daemon state lives in `~/.control/` (SQLite db + per-run log files). For local
+overrides see [AGENTS.md](./AGENTS.md) and [`.env.example`](./.env.example).
+Split terminals (`dev:daemon` then `dev:ui`) stay in sync via `.control-dev-port`
+written when the daemon starts; `pnpm dev` sets env for both processes.
 
 ## Contributing
 
