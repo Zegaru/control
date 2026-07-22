@@ -6,8 +6,9 @@
   "type": "module",
   "main": "./src/index.ts",
   "scripts": {
-    "dev": "tsx src/index.ts",
+    "dev": "node ../../scripts/kill-daemon.mjs && tsx src/index.ts",
     "start": "tsx src/index.ts",
+    "kill": "node ../../scripts/kill-daemon.mjs",
     "build": "tsc",
     "typecheck": "tsc --noEmit"
   },
