@@ -80,7 +80,8 @@ issue for an undisclosed vulnerability.
 
 ## Cutting a release
 
-Maintainers only. CONTROL ships a Windows NSIS installer from GitHub Actions.
+Maintainers only. CONTROL ships a Windows NSIS installer and a portable zip
+from GitHub Actions. Both bundle Node — end users do not need Node on PATH.
 
 1. Update `[Unreleased]` notes in [`CHANGELOG.md`](./CHANGELOG.md), then move
    them under a new `## [x.y.z] — YYYY-MM-DD` section and refresh the compare
@@ -89,6 +90,9 @@ Maintainers only. CONTROL ships a Windows NSIS installer from GitHub Actions.
    ```bash
    pnpm bump x.y.z
    ```
+   If you change the vendored Node pin in `scripts/stage-runtime.mjs`
+   (`BUNDLED_NODE_VERSION`), note it in the changelog — natives must be
+   re-staged on Windows.
 3. Commit on `main` (include the changelog + bump).
 4. Tag and push:
    ```bash
@@ -96,8 +100,10 @@ Maintainers only. CONTROL ships a Windows NSIS installer from GitHub Actions.
    git push origin main --tags
    ```
 5. The [Release](https://github.com/Zegaru/control/actions/workflows/release.yml)
-   workflow builds on `windows-latest` and publishes
-   `Control_*_x64-setup.exe` plus `SHA256SUMS` to the GitHub Release.
+   workflow builds on `windows-latest` and publishes:
+   - `Control_*_x64-setup.exe` (NSIS installer)
+   - `Control-*-portable-win-x64.zip` (unzip and run `Control.exe`)
+   - `SHA256SUMS` for both
 
 Installers are **unsigned** for now — SmartScreen may warn until Authenticode
 signing is added.

@@ -24,6 +24,9 @@ apps/shell/src-tauri/target/
 # (rebuilt by scripts/stage-runtime.mjs during `pnpm --filter @control/shell build`)
 apps/shell/runtime/
 
+# Release assembly output (NSIS collect + portable zip)
+dist-release/
+
 # env
 .env
 .env.*

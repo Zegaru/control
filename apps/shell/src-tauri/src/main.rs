@@ -75,13 +75,24 @@ fn find_monorepo_home() -> Option<PathBuf> {
     }
 }
 
-/// Resolve `node.exe` on Windows so we don't pick up a `.cmd` shim that mangles
-/// backslash paths (symptom: `EISDIR … lstat 'C:'`).
-fn node_program() -> PathBuf {
+/// Prefer vendored Node under CONTROL_HOME (release installs / portable).
+/// Fall back to PATH for monorepo dev when no bundled runtime exists.
+fn node_program(home: &Path) -> PathBuf {
     #[cfg(windows)]
     {
+        let bundled = home.join("node").join("node.exe");
+        if bundled.is_file() {
+            return bundled;
+        }
         if let Some(path) = which_node_exe() {
             return path;
+        }
+    }
+    #[cfg(not(windows))]
+    {
+        let bundled = home.join("node").join("node");
+        if bundled.is_file() {
+            return bundled;
         }
     }
     PathBuf::from("node")
@@ -112,7 +123,8 @@ fn spawn_daemon(home: &Path) -> std::io::Result<Child> {
     let src_entry = daemon_dir.join("src").join("index.ts");
     let log_path = std::env::temp_dir().join("control-daemon.log");
 
-    let mut cmd = Command::new(node_program());
+    let node_bin = node_program(home);
+    let mut cmd = Command::new(&node_bin);
     let entry_label: String;
     // Dev shell builds: run TypeScript sources so daemon changes apply without
     // rebuilding dist/ (stale dist caused empty PATCH updates for new fields).
@@ -138,7 +150,8 @@ fn spawn_daemon(home: &Path) -> std::io::Result<Child> {
     if let Ok(mut header) = std::fs::File::create(&log_path) {
         let _ = writeln!(
             header,
-            "[control-shell] spawning node → {entry_label}\n[control-shell] cwd {}\n",
+            "[control-shell] node {}\n[control-shell] spawning → {entry_label}\n[control-shell] cwd {}\n",
+            node_bin.display(),
             daemon_dir.display()
         );
     }
@@ -393,7 +406,7 @@ fn load_when_ready(app: &AppHandle) {
         } else if let Some(win) = handle.get_webview_window("main") {
             let _ = win.eval(
                 "document.getElementById('status').textContent = \
-                 'Daemon did not start — is Node.js ≥22 on PATH? See %TEMP%\\\\control-daemon.log';",
+                 'Daemon did not start — bundled Node missing and no node on PATH. See %TEMP%\\\\control-daemon.log';",
             );
         }
     });
