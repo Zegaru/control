@@ -3,6 +3,7 @@ import {isActiveStatus} from '@control/shared';
 import {api} from '../api.js';
 import {LogPanel} from './LogPanel.js';
 import {Led, statusColor, statusLabel, Button} from './kit.js';
+import {PortLink} from './PortLink.js';
 import {SideDrawer} from './ui.js';
 
 export function RunDrawer({
@@ -48,15 +49,13 @@ export function RunDrawer({
             {statusLabel(run?.status ?? 'idle')}
           </span>
           {run?.ports.map((p) => (
-            <a
+            <PortLink
               key={p}
-              href={`http://localhost:${p}`}
-              target="_blank"
-              rel="noreferrer"
+              port={p}
               className="rounded border border-phosphor-dim px-2 py-0.5 text-[12px] text-phosphor"
             >
               :{p} ↗
-            </a>
+            </PortLink>
           ))}
         </>
       }

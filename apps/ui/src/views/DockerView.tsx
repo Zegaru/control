@@ -3,6 +3,7 @@ import {useQuery} from '@tanstack/react-query';
 import type {ContainerHealth, ContainerInfo, ContainerState} from '@control/shared';
 import {api} from '../api.js';
 import {Chip, Led, Panel, Button, RockerToggle, PanelLoading} from '../components/kit.js';
+import {PortLink} from '../components/PortLink.js';
 
 function dockerLed(state: ContainerState, health: ContainerHealth) {
   if (state !== 'running') return 'idle';
@@ -176,15 +177,13 @@ export function DockerView({onOpenContainer}: {onOpenContainer: (id: string) => 
                     {c.ports
                       .filter((p) => p.publicPort != null)
                       .map((p) => (
-                        <a
+                        <PortLink
                           key={`${p.publicPort}/${p.protocol}`}
-                          href={`http://localhost:${p.publicPort}`}
-                          target="_blank"
-                          rel="noreferrer"
+                          port={p.publicPort!}
                           className="rounded border border-phosphor-dim px-2 py-0.5 text-[12px] text-phosphor"
                         >
                           :{p.publicPort}
-                        </a>
+                        </PortLink>
                       ))}
                   </div>
                   <Button

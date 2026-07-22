@@ -3,6 +3,7 @@ import type {ContainerHealth, ContainerState} from '@control/shared';
 import {api} from '../api.js';
 import {LogPanel} from './LogPanel.js';
 import {Led, statusColor} from './kit.js';
+import {PortLink} from './PortLink.js';
 import {SideDrawer} from './ui.js';
 
 function dockerLed(state: ContainerState, health: ContainerHealth) {
@@ -49,15 +50,13 @@ export function ContainerDrawer({
           {c?.ports
             .filter((p) => p.publicPort != null)
             .map((p) => (
-              <a
+              <PortLink
                 key={p.publicPort}
-                href={`http://localhost:${p.publicPort}`}
-                target="_blank"
-                rel="noreferrer"
+                port={p.publicPort!}
                 className="rounded border border-phosphor-dim px-2 py-0.5 text-[12px] text-phosphor"
               >
                 :{p.publicPort} ↗
-              </a>
+              </PortLink>
             ))}
         </>
       }

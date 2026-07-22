@@ -3,6 +3,7 @@ import {useQuery} from '@tanstack/react-query';
 import type {PortOwner} from '@control/shared';
 import {api} from '../api.js';
 import {Chip, Panel, Button, PanelLoading} from '../components/kit.js';
+import {PortLink} from '../components/PortLink.js';
 import {cn} from '../lib/cn.js';
 
 const ownerTone = (owner: PortOwner['owner']) =>
@@ -98,14 +99,9 @@ export function PortsView({onOpenRun}: {onOpenRun: (runId: string) => void}) {
                     </td>
                     <td className="py-2 font-mono text-ink-faint">{o.pid ?? '—'}</td>
                     <td className="py-2 text-right">
-                      <a
-                        href={`http://localhost:${o.port}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mr-3 text-phosphor"
-                      >
+                      <PortLink port={o.port} className="mr-3 text-phosphor">
                         open ↗
-                      </a>
+                      </PortLink>
                       {o.runId && (
                         <Button
                           variant="ghost"

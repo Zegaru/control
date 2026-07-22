@@ -3,6 +3,7 @@ import {Star} from '@phosphor-icons/react';
 import {isActiveStatus, type RunStatus} from '@control/shared';
 import {cn} from '../lib/cn.js';
 import {Button, Chip, CircularGauge, Led, RockerToggle, RotaryKnob, Skeleton} from './kit.js';
+import {PortLink} from './PortLink.js';
 
 export type ProjectService = {
   key: string;
@@ -221,16 +222,13 @@ export function ProjectModule({
                     {svc.ports && svc.ports.length > 0 && (
                       <span className="flex shrink-0 gap-1">
                         {svc.ports.map((p) => (
-                          <a
+                          <PortLink
                             key={p}
-                            href={`http://localhost:${p}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={(e) => e.stopPropagation()}
+                            port={p}
                             className="rounded outline-none hover:brightness-125 focus-visible:ring-1 focus-visible:ring-phosphor"
                           >
                             <Chip tone="phosphor">:{p}</Chip>
-                          </a>
+                          </PortLink>
                         ))}
                       </span>
                     )}
