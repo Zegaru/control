@@ -102,7 +102,7 @@ export function Panel({
       <Screw className="bottom-2 right-2" />
 
       <div className="bezel-recessed flex min-h-0 flex-1 flex-col overflow-visible rounded-2xl bg-bezel">
-        <div className={`h-full min-h-0 flex-1 ${crt ? 'crt-frame p-0' : 'p-4'}`}>
+        <div className={`h-full min-h-0 flex-1 ${crt ? 'crt-frame p-0' : 'p-0'}`}>
           <div className="bezel-recessed h-full min-h-0 rounded-2xl border-0! bg-bezel p-4">
             <div
               className={
@@ -587,6 +587,16 @@ function rubberband(overshoot: number, dimension: number, constant = 0.55): numb
   return (overshoot * dimension * constant) / (dimension + constant * Math.abs(overshoot));
 }
 
+/**
+ * Rubber-band past a knob end stop, capped so the pointer never crosses
+ * middle-bottom (±180°). Without the cap, large drags wrap into the opposite half.
+ */
+function cappedRubberband(overshoot: number, maxOvershoot: number): number {
+  if (maxOvershoot <= 0) return 0;
+  const sign = Math.sign(overshoot) || 1;
+  return sign * Math.min(Math.abs(rubberband(overshoot, maxOvershoot)), maxOvershoot);
+}
+
 /** Stepped rotary for discrete hardware filters (e.g. log level). */
 export function RotaryKnob({
   value,
@@ -608,19 +618,21 @@ export function RotaryKnob({
   const ring = size === 'sm' ? 40 : 50;
   // Sweep from ~-120° to +120° across steps
   const stepAngle = (i: number) => (steps <= 1 ? 0 : -120 + (240 * i) / (steps - 1));
+  // 60° past either end stop ⇒ middle-bottom; expressed in step units.
+  const maxOvershoot = steps <= 1 ? 0 : 0.25 * (steps - 1);
   const dragRef = useRef<{startY: number; startValue: number} | null>(null);
   const movedRef = useRef(false);
   const [dragStep, setDragStep] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
   const displayStep = dragStep ?? clamped;
-  const angle = stepAngle(
+  const visualStep =
     displayStep < 0
-      ? rubberband(displayStep, steps)
+      ? cappedRubberband(displayStep, maxOvershoot)
       : displayStep > steps - 1
-        ? steps - 1 + rubberband(displayStep - (steps - 1), steps)
-        : displayStep,
-  );
+        ? steps - 1 + cappedRubberband(displayStep - (steps - 1), maxOvershoot)
+        : displayStep;
+  const angle = stepAngle(visualStep);
 
   const setFromDelta = (deltaY: number) => {
     if (disabled || !dragRef.current) return;
@@ -643,6 +655,10 @@ export function RotaryKnob({
   return (
     <div className={cn('flex flex-col items-center', disabled && 'opacity-40')}>
       <div className="knob-wrap relative shrink-0" style={{width: ring, height: ring}}>
+        {/* Travel arc −120°…+120° (CSS angles from top); dead zone at bottom stays open */}
+        <svg className="knob-arc pointer-events-none absolute inset-0" viewBox="0 0 40 40" aria-hidden>
+          <path className="knob-arc-path" d="M 4.41 29 A 18 18 0 1 1 35.59 29" fill="none" />
+        </svg>
         <div className="knob-marks pointer-events-none absolute inset-0" aria-hidden>
           {Array.from({length: steps}, (_, i) => (
             <span
@@ -660,10 +676,9 @@ export function RotaryKnob({
           aria-valuemax={steps - 1}
           aria-valuenow={clamped}
           className={cn(
-            'knob absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full',
+            'knob absolute inset-0 rounded-full',
             disabled ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'
           )}
-          style={{width: px, height: px}}
           onPointerDown={(e) => {
             if (disabled) return;
             e.currentTarget.setPointerCapture(e.pointerId);
@@ -689,8 +704,15 @@ export function RotaryKnob({
           }}
         >
           <span
-            className={cn('knob-face absolute inset-0 rounded-full', isDragging && 'knob-face-dragging')}
-            style={{transform: `rotate(${angle}deg)`}}
+            className={cn(
+              'knob-face absolute left-1/2 top-1/2 rounded-full',
+              isDragging && 'knob-face-dragging'
+            )}
+            style={{
+              width: px,
+              height: px,
+              transform: `translate(-50%, -50%) rotate(${angle}deg)`,
+            }}
           >
             <span className="knob-tick" aria-hidden />
           </span>
