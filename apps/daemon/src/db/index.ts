@@ -29,6 +29,7 @@ ensureColumn('projects', 'compose_projects', "compose_projects TEXT NOT NULL DEF
 ensureColumn('projects', 'port_labels', "port_labels TEXT NOT NULL DEFAULT '{}'")
 ensureColumn('projects', 'selected_environment_id', 'selected_environment_id TEXT')
 ensureColumn('projects', 'default_environment_id', 'default_environment_id TEXT')
+ensureColumn('actions', 'env_files', 'env_files TEXT')
 
 export const db = drizzle(sqlite, { schema })
 export { schema }

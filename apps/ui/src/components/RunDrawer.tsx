@@ -1,4 +1,5 @@
 import {useQuery, useQueryClient} from '@tanstack/react-query';
+import {isActiveStatus} from '@control/shared';
 import {api} from '../api.js';
 import {LogPanel} from './LogPanel.js';
 import {Led, statusColor, statusLabel, Button} from './kit.js';
@@ -16,8 +17,14 @@ export function RunDrawer({
   onOpenChangeComplete?: (open: boolean) => void;
 }) {
   const qc = useQueryClient();
-  const runs = useQuery({queryKey: ['runs'], queryFn: api.activeRuns});
-  const run = runs.data?.find((r) => r.id === runId);
+  const active = useQuery({queryKey: ['runs'], queryFn: api.activeRuns});
+  const detail = useQuery({
+    queryKey: ['run', runId],
+    queryFn: () => api.getRun(runId),
+    enabled: !!runId,
+  });
+  const run = active.data?.find((r) => r.id === runId) ?? detail.data;
+  const canStop = !!run && isActiveStatus(run.status);
 
   const stop = async (force: boolean) => {
     await api.stopRun(runId, force);
@@ -54,7 +61,7 @@ export function RunDrawer({
         </>
       }
       headerRight={
-        run ? (
+        canStop ? (
           <>
             <Button
               variant="ghost"

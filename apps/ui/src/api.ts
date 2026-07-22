@@ -9,10 +9,12 @@ import type {
   Environment,
   Group,
   HostMetrics,
+  Module,
   ProjectMetricsSnapshot,
   PatchActionBody,
   PatchEnvironmentBody,
   PatchGroupBody,
+  PatchModuleBody,
   PatchProjectBody,
   PatchSettingsBody,
   PortOwner,
@@ -104,10 +106,15 @@ export const api = {
     req<Environment>(`/environments/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteEnvironment: (id: string) => req<void>(`/environments/${id}`, { method: 'DELETE' }),
 
+  patchModule: (id: string, body: PatchModuleBody) =>
+    req<Module>(`/modules/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+
   createAction: (body: CreateActionBody) =>
     req<Action>('/actions', { method: 'POST', body: JSON.stringify(body) }),
   patchAction: (id: string, body: PatchActionBody) =>
     req<Action>(`/actions/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  envFileCandidates: (id: string) =>
+    req<{ candidates: string[] }>(`/actions/${id}/env-files`),
   actionRuns: (id: string) => req<Run[]>(`/actions/${id}/runs`),
   startAction: (id: string, force = false, env?: Record<string, string>) =>
     req<Run | { error: string; port: number }>(
@@ -116,6 +123,7 @@ export const api = {
     ),
 
   activeRuns: () => req<Run[]>('/runs'),
+  getRun: (id: string) => req<Run>(`/runs/${id}`),
   stopRun: (id: string, force = false) =>
     req<{ ok: boolean }>(`/runs/${id}/stop${force ? '?force=true' : ''}`, { method: 'POST' }),
   runLogs: (id: string, tail = 1000) =>

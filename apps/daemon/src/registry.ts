@@ -77,6 +77,7 @@ function toAction(r: ActionRow): Action {
     hidden: r.hidden,
     primary: r.primary,
     envOverrides: r.envOverrides ?? null,
+    envFiles: r.envFiles ?? null,
     portHint: r.portHint,
     healthUrl: r.healthUrl,
   }
@@ -289,7 +290,7 @@ export function rescanProject(projectId: string): void {
         .get()
       if (existing) {
         // Upsert ONLY the derived-from-source fields. Preserve favorite,
-        // hidden, a renamed name, envOverrides, healthUrl, portHint overrides.
+        // hidden, a renamed name, envOverrides, envFiles, healthUrl, portHint overrides.
         db.update(schema.actions)
           .set({ command: da.command, type: da.type, primary: da.primary, cwd: moduleCwd })
           .where(eq(schema.actions.id, existing.id))
@@ -309,6 +310,7 @@ export function rescanProject(projectId: string): void {
             hidden: false,
             primary: da.primary,
             envOverrides: null,
+            envFiles: null,
             portHint: da.portHint ?? null,
             healthUrl: null,
           })
@@ -561,6 +563,18 @@ function parseCreateActionBody(input: unknown): CreateActionBody {
     throw new HttpError(400, 'envOverrides must be an object')
   }
 
+  let envFiles: string[] | null | undefined
+  if (raw.envFiles === null || raw.envFiles === undefined) {
+    envFiles = raw.envFiles ?? undefined
+  } else if (Array.isArray(raw.envFiles)) {
+    envFiles = []
+    for (const item of raw.envFiles) {
+      if (typeof item === 'string' && item.length > 0) envFiles.push(item)
+    }
+  } else {
+    throw new HttpError(400, 'envFiles must be an array of strings')
+  }
+
   const cwd =
     raw.cwd === null || raw.cwd === undefined
       ? raw.cwd ?? undefined
@@ -578,6 +592,7 @@ function parseCreateActionBody(input: unknown): CreateActionBody {
     ...(portHint !== undefined ? { portHint } : {}),
     ...(healthUrl !== undefined ? { healthUrl } : {}),
     ...(envOverrides !== undefined ? { envOverrides } : {}),
+    ...(envFiles !== undefined ? { envFiles } : {}),
   }
 }
 
@@ -601,6 +616,7 @@ export function createAction(input: unknown): Action {
       hidden: false,
       primary: true,
       envOverrides: body.envOverrides ?? null,
+      envFiles: body.envFiles ?? null,
       portHint: body.portHint ?? null,
       healthUrl: body.healthUrl ?? null,
     })
@@ -620,6 +636,7 @@ export function patchAction(id: string, body: PatchActionBody): Action {
       ...(body.portHint !== undefined ? { portHint: body.portHint } : {}),
       ...(body.healthUrl !== undefined ? { healthUrl: body.healthUrl } : {}),
       ...(body.envOverrides !== undefined ? { envOverrides: body.envOverrides } : {}),
+      ...(body.envFiles !== undefined ? { envFiles: body.envFiles } : {}),
     })
     .where(eq(schema.actions.id, id))
     .run()

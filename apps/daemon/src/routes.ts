@@ -38,8 +38,10 @@ import {
   patchModule,
   patchProject,
   rescanProject,
+  resolveActionCwd,
   updateGroup,
 } from './registry.js'
+import { listEnvFileCandidates } from './envFile.js'
 import { supervisor } from './supervisor.js'
 import { startGroup, stopGroup } from './groupRunner.js'
 import { startProjectPower, stopProjectPower } from './projectPower.js'
@@ -171,6 +173,13 @@ api.patch('/actions/:id', async (c) => {
   return c.json(patchAction(c.req.param('id'), body))
 })
 
+api.get('/actions/:id/env-files', (c) => {
+  const action = getAction(c.req.param('id'))
+  if (!action) throw new HttpError(404, 'Action not found')
+  const cwd = resolveActionCwd(action)
+  return c.json({ candidates: cwd ? listEnvFileCandidates(cwd) : [] })
+})
+
 api.get('/actions/:id/runs', (c) => c.json(listRunsForAction(c.req.param('id'))))
 
 api.post('/actions/:id/start', async (c) => {
@@ -208,6 +217,12 @@ api.post('/actions/:id/start', async (c) => {
 api.get('/runs', (c) => {
   // active=true is the default and only mode in M1.
   return c.json(listActiveRuns())
+})
+
+api.get('/runs/:id', (c) => {
+  const run = getRun(c.req.param('id'))
+  if (!run) throw new HttpError(404, 'Run not found')
+  return c.json(run)
 })
 
 api.post('/runs/:id/stop', (c) => {

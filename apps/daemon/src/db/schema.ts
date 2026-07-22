@@ -58,6 +58,7 @@ export const actions = sqliteTable('actions', {
   envOverrides: text('env_overrides', { mode: 'json' }).$type<
     Record<string, string>
   >(),
+  envFiles: text('env_files', { mode: 'json' }).$type<string[]>(),
   portHint: integer('port_hint'),
   healthUrl: text('health_url'),
 })
@@ -134,6 +135,7 @@ CREATE TABLE IF NOT EXISTS actions (
   hidden INTEGER NOT NULL DEFAULT 0,
   "primary" INTEGER NOT NULL DEFAULT 0,
   env_overrides TEXT,
+  env_files TEXT,
   port_hint INTEGER,
   health_url TEXT
 );
