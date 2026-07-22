@@ -35,6 +35,7 @@ export function AddActionDialog({
         command: trimmedCommand,
         ...(portHint ? { portHint: Number(portHint) } : {}),
       })
+      qc.invalidateQueries({ queryKey: ['trees'] })
       qc.invalidateQueries({ queryKey: ['tree'] })
       qc.invalidateQueries({ queryKey: ['projects'] })
       onOpenChange(false)

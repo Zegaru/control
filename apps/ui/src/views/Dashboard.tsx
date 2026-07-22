@@ -1,5 +1,5 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {useQueries, useQuery, useQueryClient} from '@tanstack/react-query';
+import {useQuery, useQueryClient} from '@tanstack/react-query';
 import type {ActionWithRun, ContainerInfo, ProjectTree, RunStatus} from '@control/shared';
 import {isActiveStatus, resolveDashboardEnvironmentId} from '@control/shared';
 import {api} from '../api.js';
@@ -20,8 +20,8 @@ import {
 } from '../components/ControlStrip.js';
 import {LogPanel} from '../components/LogPanel.js';
 import {ProjectModule, type ProjectService} from '../components/ProjectModule.js';
-import {useSocket} from '../socket.js';
-import type {EventLogLevel} from '../useWs.js';
+import {useEventLog} from '../eventLogStore.js';
+import type {EventLogLevel} from '../eventLogStore.js';
 
 type LogFilter = 'all' | EventLogLevel;
 const LOG_FILTERS: LogFilter[] = ['all', 'info', 'warn', 'error'];
@@ -119,7 +119,7 @@ export function Dashboard({
   onOpenRun: (runId: string) => void;
 }) {
   const qc = useQueryClient();
-  const {events, clearEvents} = useSocket();
+  const {events, clearEvents} = useEventLog();
   const [adding, setAdding] = useState(false);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [logFilter, setLogFilter] = useState<LogFilter>('all');
@@ -152,31 +152,41 @@ export function Dashboard({
   const hostMetrics = useQuery({
     queryKey: ['host-metrics'],
     queryFn: api.hostMetrics,
-    refetchInterval: 1500,
+    refetchInterval: 4000,
   });
   const projectMetrics = useQuery({
     queryKey: ['project-metrics'],
     queryFn: api.projectMetrics,
-    refetchInterval: 2000,
+    refetchInterval: 4000,
   });
   const containersQ = useQuery({
     queryKey: ['containers'],
     queryFn: api.containers,
-    refetchInterval: 4000,
+    refetchInterval: 8000,
+    refetchIntervalInBackground: false,
   });
   const groupsQ = useQuery({queryKey: ['groups'], queryFn: api.listGroups});
   const groups = groupsQ.data ?? [];
   const containers = containersQ.data ?? [];
-  const portsQ = useQuery({queryKey: ['ports'], queryFn: api.ports, refetchInterval: 4000});
+  const portsQ = useQuery({
+    queryKey: ['ports'],
+    queryFn: api.ports,
+    refetchInterval: 8000,
+    refetchIntervalInBackground: false,
+  });
   const externalServices = (portsQ.data ?? []).filter((o) => o.owner === 'external' && o.projectId);
 
-  const trees = useQueries({
-    queries: (projects.data ?? []).map((p) => ({
-      queryKey: ['tree', p.id],
-      queryFn: () => api.projectTree(p.id),
-    })),
+  const treesQ = useQuery({
+    queryKey: ['trees'],
+    queryFn: async () => {
+      const trees = await api.projectTrees();
+      for (const tree of trees) {
+        qc.setQueryData(['tree', tree.id], tree);
+      }
+      return trees;
+    },
   });
-  const treeData = trees.map((t) => t.data).filter(Boolean) as ProjectTree[];
+  const treeData = treesQ.data ?? [];
 
   const allActions: {tree: ProjectTree; action: ActionWithRun}[] = [];
   for (const tree of treeData) {
@@ -220,14 +230,21 @@ export function Dashboard({
   useEffect(() => {
     const m = hostMetrics.data;
     if (!m) return;
-    setMetricHistory((h) => ({
-      cpu: [...h.cpu, m.cpu].slice(-16),
-      mem: [...h.mem, m.memory].slice(-16),
-      disk: [...h.disk, m.disk].slice(-16),
-    }));
+    setMetricHistory((h) => {
+      const lastCpu = h.cpu[h.cpu.length - 1];
+      const lastMem = h.mem[h.mem.length - 1];
+      const lastDisk = h.disk[h.disk.length - 1];
+      if (lastCpu === m.cpu && lastMem === m.memory && lastDisk === m.disk) return h;
+      return {
+        cpu: [...h.cpu, m.cpu].slice(-16),
+        mem: [...h.mem, m.memory].slice(-16),
+        disk: [...h.disk, m.disk].slice(-16),
+      };
+    });
   }, [hostMetrics.data]);
 
   const invalidate = useCallback(() => {
+    qc.invalidateQueries({queryKey: ['trees']});
     qc.invalidateQueries({queryKey: ['tree']});
     qc.invalidateQueries({queryKey: ['projects']});
     qc.invalidateQueries({queryKey: ['runs']});
@@ -668,6 +685,7 @@ export function Dashboard({
                     tree
                       ? (id) => {
                           void api.patchProject(p.id, {selectedEnvironmentId: id}).then(() => {
+                            qc.invalidateQueries({queryKey: ['trees']});
                             qc.invalidateQueries({queryKey: ['tree', p.id]});
                           });
                         }

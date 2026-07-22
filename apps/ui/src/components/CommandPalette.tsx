@@ -14,7 +14,7 @@ export function CommandPalette({
   onOpenChange: (open: boolean) => void
 }) {
   const qc = useQueryClient()
-  const { actions } = useAllActions()
+  const { actions } = useAllActions({ enabled: open })
   const [q, setQ] = useState('')
   const [sel, setSel] = useState(0)
 
@@ -51,6 +51,7 @@ export function CommandPalette({
     if (!fa) return
     if (fa.action.activeRun) await api.stopRun(fa.action.activeRun.id)
     else await api.startAction(fa.action.id)
+    qc.invalidateQueries({ queryKey: ['trees'] })
     qc.invalidateQueries({ queryKey: ['tree'] })
     qc.invalidateQueries({ queryKey: ['runs'] })
     onOpenChange(false)

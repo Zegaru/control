@@ -6,7 +6,6 @@
   "identifier": "dev.control.desktop",
   "build": {
     "frontendDist": "../frontend",
-    "beforeDevCommand": "pnpm --filter @control/ui build",
     "beforeBuildCommand": {
       "cwd": "../../..",
       "script": "node scripts/stage-runtime.mjs"

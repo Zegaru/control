@@ -328,62 +328,56 @@ struct TraySnapshot {
 
 #[tauri::command]
 fn tray_get_snapshot() -> TraySnapshot {
-    let online = fetch_daemon_json("/health")
-        .as_ref()
-        .and_then(|v| v.get("ok"))
-        .and_then(|v| v.as_bool())
-        .unwrap_or(false);
-
-    if !online {
+    if let Some(v) = fetch_daemon_json("/tray") {
+        let online = v.get("online").and_then(|x| x.as_bool()).unwrap_or(false);
+        if !online {
+            return TraySnapshot {
+                online: false,
+                cpu: 0,
+                memory: 0,
+                project_count: 0,
+                active_runs: 0,
+                docker_available: None,
+            };
+        }
+        let cpu = v
+            .get("cpu")
+            .and_then(|x| x.as_u64())
+            .unwrap_or(0)
+            .min(100) as u8;
+        let memory = v
+            .get("memory")
+            .and_then(|x| x.as_u64())
+            .unwrap_or(0)
+            .min(100) as u8;
+        let project_count = v
+            .get("projectCount")
+            .and_then(|x| x.as_u64())
+            .unwrap_or(0) as usize;
+        let active_runs = v
+            .get("activeRuns")
+            .and_then(|x| x.as_u64())
+            .unwrap_or(0) as usize;
+        let docker_available = v
+            .get("dockerAvailable")
+            .and_then(|x| x.as_bool());
         return TraySnapshot {
-            online: false,
-            cpu: 0,
-            memory: 0,
-            project_count: 0,
-            active_runs: 0,
-            docker_available: None,
+            online: true,
+            cpu,
+            memory,
+            project_count,
+            active_runs,
+            docker_available,
         };
     }
 
-    let metrics = fetch_daemon_json("/host/metrics");
-    let cpu = metrics
-        .as_ref()
-        .and_then(|v| v.get("cpu"))
-        .and_then(|v| v.as_f64())
-        .unwrap_or(0.0)
-        .round()
-        .clamp(0.0, 100.0) as u8;
-    let memory = metrics
-        .as_ref()
-        .and_then(|v| v.get("memory"))
-        .and_then(|v| v.as_f64())
-        .unwrap_or(0.0)
-        .round()
-        .clamp(0.0, 100.0) as u8;
-
-    let (project_count, active_runs) = fetch_daemon_json("/projects")
-        .and_then(|v| v.as_array().cloned())
-        .map(|projects| {
-            let active = projects
-                .iter()
-                .filter_map(|p| p.get("activeRunCount").and_then(|n| n.as_u64()))
-                .sum::<u64>() as usize;
-            (projects.len(), active)
-        })
-        .unwrap_or((0, 0));
-
-    let docker_available = fetch_daemon_json("/docker/status")
-        .as_ref()
-        .and_then(|v| v.get("available"))
-        .and_then(|v| v.as_bool());
-
     TraySnapshot {
-        online: true,
-        cpu,
-        memory,
-        project_count,
-        active_runs,
-        docker_available,
+        online: false,
+        cpu: 0,
+        memory: 0,
+        project_count: 0,
+        active_runs: 0,
+        docker_available: None,
     }
 }
 

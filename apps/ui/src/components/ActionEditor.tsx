@@ -49,6 +49,7 @@ export function ActionEditor({
         healthUrl: healthUrl.trim() || null,
         envOverrides: Object.keys(envOverrides).length ? envOverrides : null,
       })
+      qc.invalidateQueries({ queryKey: ['trees'] })
       qc.invalidateQueries({ queryKey: ['tree'] })
       onOpenChange(false)
     } finally {

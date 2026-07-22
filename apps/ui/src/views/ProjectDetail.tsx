@@ -32,14 +32,20 @@ export function ProjectDetail({
   const portsQ = useQuery({queryKey: ['ports'], queryFn: api.ports, refetchInterval: 4000});
   const groups = useQuery({queryKey: ['groups'], queryFn: api.listGroups});
 
+  const invalidateTree = () => {
+    qc.invalidateQueries({queryKey: ['trees']});
+    qc.invalidateQueries({queryKey: ['tree', projectId]});
+  };
+
   const rescan = useMutation({
     mutationFn: () => api.scanProject(projectId),
-    onSuccess: () => qc.invalidateQueries({queryKey: ['tree', projectId]}),
+    onSuccess: () => invalidateTree(),
   });
   const toggleFav = useMutation({
     mutationFn: (fav: boolean) => api.patchProject(projectId, {favorite: fav}),
     onSuccess: () => {
       qc.invalidateQueries({queryKey: ['tree', projectId]});
+      qc.invalidateQueries({queryKey: ['trees']});
       qc.invalidateQueries({queryKey: ['projects']});
     },
   });
@@ -54,6 +60,7 @@ export function ProjectDetail({
     mutationFn: (composeProjects: string[]) => api.patchProject(projectId, {composeProjects}),
     onSuccess: () => {
       qc.invalidateQueries({queryKey: ['tree', projectId]});
+      qc.invalidateQueries({queryKey: ['trees']});
       qc.invalidateQueries({queryKey: ['containers']});
       qc.invalidateQueries({queryKey: ['ports']});
     },
@@ -63,6 +70,7 @@ export function ProjectDetail({
     onSuccess: () => {
       setPortLabelError(null);
       qc.invalidateQueries({queryKey: ['tree', projectId]});
+      qc.invalidateQueries({queryKey: ['trees']});
       qc.invalidateQueries({queryKey: ['projects']});
       qc.invalidateQueries({queryKey: ['ports']});
     },
@@ -73,15 +81,14 @@ export function ProjectDetail({
       api.patchProject(projectId, {defaultEnvironmentId}),
     onSuccess: () => {
       qc.invalidateQueries({queryKey: ['tree', projectId]});
+      qc.invalidateQueries({queryKey: ['trees']});
       qc.invalidateQueries({queryKey: ['projects']});
     },
   });
   const removeEnv = useMutation({
     mutationFn: (id: string) => api.deleteEnvironment(id),
-    onSuccess: () => qc.invalidateQueries({queryKey: ['tree', projectId]}),
+    onSuccess: () => invalidateTree(),
   });
-
-  const invalidateTree = () => qc.invalidateQueries({queryKey: ['tree', projectId]});
 
   const unlabeledListeningPorts = useMemo(() => {
     const byPort = new Map<number, string>();

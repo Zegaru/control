@@ -249,10 +249,18 @@ export async function stopContainers(containerIds: string[]): Promise<void> {
 }
 
 /** One-shot resource usage for running containers (CPU % host-scale, RSS bytes). */
-export async function getContainerStatsBatch(
+const STATS_TTL_MS = 2000
+let statsCache: {
+  at: number
+  idsKey: string
+  stats: Map<string, { cpu: number; memBytes: number }>
+} | null = null
+let statsInFlight: Promise<Map<string, { cpu: number; memBytes: number }>> | null = null
+
+async function fetchContainerStatsBatch(
   containerIds: string[],
-): Promise<Map<string, {cpu: number; memBytes: number}>> {
-  const out = new Map<string, {cpu: number; memBytes: number}>()
+): Promise<Map<string, { cpu: number; memBytes: number }>> {
+  const out = new Map<string, { cpu: number; memBytes: number }>()
   if (containerIds.length === 0) return out
 
   const status = await getDockerStatus()
@@ -262,10 +270,10 @@ export async function getContainerStatsBatch(
     containerIds.map(async (id) => {
       try {
         const container = getClient().getContainer(id)
-        const stats = (await container.stats({stream: false})) as DockerStats
+        const stats = (await container.stats({ stream: false })) as DockerStats
         const cpu = calcCpuPercent(stats)
         const memBytes = stats.memory_stats.usage ?? 0
-        out.set(id, {cpu, memBytes})
+        out.set(id, { cpu, memBytes })
       } catch {
         /* container gone or stats unavailable */
       }
@@ -273,6 +281,41 @@ export async function getContainerStatsBatch(
   )
 
   return out
+}
+
+export async function getContainerStatsBatch(
+  containerIds: string[],
+): Promise<Map<string, { cpu: number; memBytes: number }>> {
+  if (containerIds.length === 0) return new Map()
+
+  const idsKey = [...containerIds].sort().join(',')
+  if (
+    statsCache &&
+    Date.now() - statsCache.at < STATS_TTL_MS &&
+    statsCache.idsKey === idsKey
+  ) {
+    return statsCache.stats
+  }
+  if (statsInFlight) return statsInFlight
+
+  statsInFlight = fetchContainerStatsBatch(containerIds)
+    .then((stats) => {
+      statsCache = { at: Date.now(), idsKey, stats }
+      statsInFlight = null
+      return stats
+    })
+    .catch((err) => {
+      statsInFlight = null
+      throw err
+    })
+
+  return statsInFlight
+}
+
+/** Test helper — reset stats cache between tests. */
+export function resetContainerStatsCacheForTests(): void {
+  statsCache = null
+  statsInFlight = null
 }
 
 /** Stream a container's logs (follow) to a callback. Returns a stop function. */

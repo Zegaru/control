@@ -1,4 +1,4 @@
-import { eq, inArray } from 'drizzle-orm'
+import { inArray } from 'drizzle-orm'
 import { ACTIVE_RUN_STATUSES, type ContainerInfo, type PortOwner } from '@control/shared'
 import { db, schema } from './db/index.js'
 import { buildComposeProjectMatcher, buildPathProjectMatcher } from './registry.js'
@@ -28,19 +28,23 @@ function runPorts(): PortOwner[] {
     .where(inArray(schema.runs.status, ACTIVE_RUN_STATUSES as string[]))
     .all()
 
+  const actionIds = [...new Set(runs.map((r) => r.actionId))]
+  const actionRows = actionIds.length
+    ? db.select().from(schema.actions).where(inArray(schema.actions.id, actionIds)).all()
+    : []
+  const actionsById = new Map(actionRows.map((a) => [a.id, a]))
+
+  const moduleIds = [...new Set(actionRows.map((a) => a.moduleId))]
+  const moduleRows = moduleIds.length
+    ? db.select().from(schema.modules).where(inArray(schema.modules.id, moduleIds)).all()
+    : []
+  const projectByModule = new Map(moduleRows.map((m) => [m.id, m.projectId]))
+
   const owners: PortOwner[] = []
   for (const run of runs) {
+    const action = actionsById.get(run.actionId)
+    const projectId = action ? (projectByModule.get(action.moduleId) ?? null) : null
     for (const port of run.ports ?? []) {
-      const action = db.select().from(schema.actions).where(eq(schema.actions.id, run.actionId)).get()
-      let projectId: string | null = null
-      if (action) {
-        const mod = db
-          .select()
-          .from(schema.modules)
-          .where(eq(schema.modules.id, action.moduleId))
-          .get()
-        projectId = mod?.projectId ?? null
-      }
       owners.push({
         port,
         owner: 'run',
@@ -120,5 +124,10 @@ export async function getPortMap(): Promise<PortOwner[]> {
 
 /** Ports currently claimed by managed runs or containers (conflict warnings, FR-14). */
 export async function claimedPorts(): Promise<Set<number>> {
-  return new Set((await getPortMap()).map((o) => o.port))
+  const claimed = new Set<number>()
+  for (const o of runPorts()) claimed.add(o.port)
+  const matcher = buildComposeProjectMatcher()
+  const containers = await listContainers(matcher)
+  for (const o of containerPorts(containers)) claimed.add(o.port)
+  return claimed
 }

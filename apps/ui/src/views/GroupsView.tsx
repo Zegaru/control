@@ -15,6 +15,7 @@ export function GroupsView() {
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ['groups'] })
     qc.invalidateQueries({ queryKey: ['runs'] })
+    qc.invalidateQueries({ queryKey: ['trees'] })
     qc.invalidateQueries({ queryKey: ['tree'] })
   }
 

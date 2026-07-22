@@ -1,4 +1,4 @@
-import {useEffect, useRef, useState} from 'react';
+import {lazy, Suspense, useEffect, useRef, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {api} from './api.js';
 import {SocketProvider} from './socket.js';
@@ -7,15 +7,26 @@ import {NavItem} from './components/kit.js';
 import {WindowChrome} from './components/WindowChrome.js';
 import {cn} from './lib/cn.js';
 import {isTauri} from './lib/tauri.js';
-import {Dashboard} from './views/Dashboard.js';
-import {ProjectDetail} from './views/ProjectDetail.js';
-import {PortsView} from './views/PortsView.js';
-import {DockerView} from './views/DockerView.js';
-import {GroupsView} from './views/GroupsView.js';
-import {SettingsView} from './views/SettingsView.js';
 import {RunDrawer} from './components/RunDrawer.js';
 import {ContainerDrawer} from './components/ContainerDrawer.js';
 import {CommandPalette} from './components/CommandPalette.js';
+
+const Dashboard = lazy(() =>
+  import('./views/Dashboard.js').then((m) => ({default: m.Dashboard})),
+);
+const ProjectDetail = lazy(() =>
+  import('./views/ProjectDetail.js').then((m) => ({default: m.ProjectDetail})),
+);
+const PortsView = lazy(() => import('./views/PortsView.js').then((m) => ({default: m.PortsView})));
+const DockerView = lazy(() => import('./views/DockerView.js').then((m) => ({default: m.DockerView})));
+const GroupsView = lazy(() => import('./views/GroupsView.js').then((m) => ({default: m.GroupsView})));
+const SettingsView = lazy(() =>
+  import('./views/SettingsView.js').then((m) => ({default: m.SettingsView})),
+);
+
+function ViewFallback() {
+  return <div className="p-4 font-ui text-sm text-ink-dim">Loading…</div>;
+}
 
 function DaemonBanner({show}: {show: boolean}) {
   const [mounted, setMounted] = useState(show);
@@ -183,23 +194,25 @@ export function App() {
           >
             <DaemonBanner show={!daemonUp} />
 
-            {view.kind === 'overview' && (
-              <Dashboard
-                onOpenProject={(projectId) => setView({kind: 'project', projectId})}
-                onOpenRun={openRun}
-              />
-            )}
-            {view.kind === 'project' && (
-              <ProjectDetail
-                projectId={view.projectId}
-                onBack={() => setView({kind: 'overview'})}
-                onOpenRun={openRun}
-              />
-            )}
-            {view.kind === 'groups' && <GroupsView />}
-            {view.kind === 'docker' && <DockerView onOpenContainer={openContainer} />}
-            {view.kind === 'ports' && <PortsView onOpenRun={openRun} />}
-            {view.kind === 'settings' && <SettingsView />}
+            <Suspense fallback={<ViewFallback />}>
+              {view.kind === 'overview' && (
+                <Dashboard
+                  onOpenProject={(projectId) => setView({kind: 'project', projectId})}
+                  onOpenRun={openRun}
+                />
+              )}
+              {view.kind === 'project' && (
+                <ProjectDetail
+                  projectId={view.projectId}
+                  onBack={() => setView({kind: 'overview'})}
+                  onOpenRun={openRun}
+                />
+              )}
+              {view.kind === 'groups' && <GroupsView />}
+              {view.kind === 'docker' && <DockerView onOpenContainer={openContainer} />}
+              {view.kind === 'ports' && <PortsView onOpenRun={openRun} />}
+              {view.kind === 'settings' && <SettingsView />}
+            </Suspense>
           </main>
 
           {openRunId && (

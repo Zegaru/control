@@ -1,6 +1,13 @@
 import { execa } from 'execa'
 
-export type HostProcRow = { id: number; parentId: number; ws: number; cpu: number }
+export type HostProcRow = {
+  id: number
+  parentId: number
+  ws: number
+  cpu: number
+  name: string | null
+  cmd: string | null
+}
 
 const PROC_CACHE_MS = 2000
 let procCache: { at: number; rows: HostProcRow[] } | null = null
@@ -14,7 +21,9 @@ async function fetchHostProcesses(): Promise<HostProcRow[]> {
       'Id=[int]$_.ProcessId;',
       'ParentId=[int]$_.ParentProcessId;',
       'WS=[int64]$_.WorkingSetSize;',
-      'Cpu=[int64]$_.KernelModeTime + [int64]$_.UserModeTime',
+      'Cpu=[int64]$_.KernelModeTime + [int64]$_.UserModeTime;',
+      'Cmd=$_.CommandLine;',
+      'Name=$_.Name',
       '}',
       '} | ConvertTo-Json -Compress',
     ].join(' ')
@@ -30,6 +39,8 @@ async function fetchHostProcesses(): Promise<HostProcRow[]> {
           parentId: r.ParentId ?? 0,
           ws: Number(r.WS) || 0,
           cpu: Number(r.Cpu) || 0,
+          name: typeof r.Name === 'string' ? r.Name : null,
+          cmd: typeof r.Cmd === 'string' ? r.Cmd : null,
         }))
     } catch {
       return []
@@ -37,7 +48,9 @@ async function fetchHostProcesses(): Promise<HostProcRow[]> {
   }
 
   try {
-    const { stdout } = await execa('ps', ['-eo', 'pid=', 'ppid=', 'rss=', 'pcpu='], { timeout: 5000 })
+    const { stdout } = await execa('ps', ['-eo', 'pid=', 'ppid=', 'rss=', 'pcpu=', 'comm='], {
+      timeout: 5000,
+    })
     const rows: HostProcRow[] = []
     for (const line of stdout.split('\n')) {
       const parts = line.trim().split(/\s+/)
@@ -47,7 +60,8 @@ async function fetchHostProcesses(): Promise<HostProcRow[]> {
       const ws = Number(parts[2]) * 1024
       const pcpu = Number(parts[3])
       if (!Number.isFinite(id)) continue
-      rows.push({ id, parentId, ws, cpu: pcpu })
+      const name = parts.length > 4 ? parts.slice(4).join(' ') : null
+      rows.push({ id, parentId, ws, cpu: pcpu, name, cmd: null })
     }
     return rows
   } catch {

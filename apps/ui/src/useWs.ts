@@ -1,33 +1,21 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import type { RunStatus, WsClientMessage, WsEvent } from '@control/shared'
+import type { WsClientMessage, WsEvent } from '@control/shared'
+import {
+  clearEventLog,
+  nextEventLogId,
+  pushEventLog,
+  type EventLogEntry,
+  type EventLogLevel,
+} from './eventLogStore.js'
 
 type LogListener = (runId: string, chunk: string) => void
 
-const MAX_EVENTS = 50
-
-export type EventLogLevel = 'info' | 'warn' | 'error'
-
-export type EventLogEntry = {
-  id: string
-  at: number
-  runId: string
-  actionId: string
-  project: string
-  name: string
-  status: RunStatus
-  exitCode?: number | null
-  ports: number[]
-  level: EventLogLevel
-}
-
-function eventLevel(status: RunStatus): EventLogLevel {
+function eventLevel(status: EventLogEntry['status']): EventLogLevel {
   if (status === 'failed' || status === 'unhealthy') return 'error'
   if (status === 'starting' || status === 'killed') return 'warn'
   return 'info'
 }
-
-let eventSeq = 0
 
 /**
  * Single shared WebSocket to the daemon. Status/scan/port events invalidate the
@@ -39,27 +27,35 @@ export function useDaemonSocket(): {
   subscribeContainer: (containerId: string, cb: LogListener) => () => void
   sendStdin: (runId: string, data: string) => void
   sendResize: (runId: string, cols: number, rows: number) => void
-  events: EventLogEntry[]
-  clearEvents: () => void
 } {
   const qc = useQueryClient()
   const socketRef = useRef<WebSocket | null>(null)
   const logListeners = useRef<Map<string, Set<LogListener>>>(new Map())
   const containerListeners = useRef<Map<string, Set<LogListener>>>(new Map())
-  const [events, setEvents] = useState<EventLogEntry[]>([])
+  const pendingProjectIds = useRef(new Set<string>())
   const invalidateTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const scheduleRunInvalidation = useCallback(() => {
-    if (invalidateTimer.current) clearTimeout(invalidateTimer.current)
-    invalidateTimer.current = setTimeout(() => {
-      qc.invalidateQueries({ queryKey: ['runs'] })
-      qc.invalidateQueries({ queryKey: ['tree'] })
-      qc.invalidateQueries({ queryKey: ['projects'] })
-      invalidateTimer.current = null
-    }, 150)
-  }, [qc])
-
-  const clearEvents = useCallback(() => setEvents([]), [])
+  const scheduleRunInvalidation = useCallback(
+    (projectId?: string) => {
+      if (projectId) pendingProjectIds.current.add(projectId)
+      if (invalidateTimer.current) clearTimeout(invalidateTimer.current)
+      invalidateTimer.current = setTimeout(() => {
+        const ids = [...pendingProjectIds.current]
+        pendingProjectIds.current.clear()
+        qc.invalidateQueries({ queryKey: ['runs'] })
+        qc.invalidateQueries({ queryKey: ['projects'] })
+        qc.invalidateQueries({ queryKey: ['trees'] })
+        for (const id of ids) {
+          qc.invalidateQueries({ queryKey: ['tree', id] })
+        }
+        if (ids.length === 0) {
+          qc.invalidateQueries({ queryKey: ['tree'] })
+        }
+        invalidateTimer.current = null
+      }, 150)
+    },
+    [qc],
+  )
 
   useEffect(() => {
     let closed = false
@@ -80,7 +76,7 @@ export function useDaemonSocket(): {
         switch (event.type) {
           case 'run.status': {
             const entry: EventLogEntry = {
-              id: `${event.runId}-${++eventSeq}`,
+              id: nextEventLogId(event.runId),
               at: Date.now(),
               runId: event.runId,
               actionId: event.actionId,
@@ -91,8 +87,8 @@ export function useDaemonSocket(): {
               ports: event.ports,
               level: eventLevel(event.status),
             }
-            setEvents((prev) => [entry, ...prev].slice(0, MAX_EVENTS))
-            scheduleRunInvalidation()
+            pushEventLog(entry)
+            scheduleRunInvalidation(event.projectId)
             break
           }
           case 'ports.changed':
@@ -103,7 +99,8 @@ export function useDaemonSocket(): {
             qc.invalidateQueries({ queryKey: ['ports'] })
             break
           case 'scan.done':
-            qc.invalidateQueries({ queryKey: ['tree'] })
+            qc.invalidateQueries({ queryKey: ['trees'] })
+            qc.invalidateQueries({ queryKey: ['tree', event.projectId] })
             qc.invalidateQueries({ queryKey: ['projects'] })
             break
           case 'run.log': {
@@ -128,6 +125,7 @@ export function useDaemonSocket(): {
     return () => {
       closed = true
       if (invalidateTimer.current) clearTimeout(invalidateTimer.current)
+      clearEventLog()
       ws?.close()
     }
   }, [qc, scheduleRunInvalidation])
@@ -151,41 +149,47 @@ export function useDaemonSocket(): {
     [send],
   )
 
-  const subscribeLogs = (runId: string, cb: LogListener) => {
-    let set = logListeners.current.get(runId)
-    if (!set) {
-      set = new Set()
-      logListeners.current.set(runId, set)
-    }
-    set.add(cb)
-    send({ type: 'subscribe.logs', runId })
-
-    return () => {
-      set!.delete(cb)
-      if (set!.size === 0) {
-        logListeners.current.delete(runId)
-        send({ type: 'unsubscribe.logs', runId })
+  const subscribeLogs = useCallback(
+    (runId: string, cb: LogListener) => {
+      let set = logListeners.current.get(runId)
+      if (!set) {
+        set = new Set()
+        logListeners.current.set(runId, set)
       }
-    }
-  }
+      set.add(cb)
+      send({ type: 'subscribe.logs', runId })
 
-  const subscribeContainer = (containerId: string, cb: LogListener) => {
-    let set = containerListeners.current.get(containerId)
-    if (!set) {
-      set = new Set()
-      containerListeners.current.set(containerId, set)
-    }
-    set.add(cb)
-    send({ type: 'subscribe.container', containerId })
-
-    return () => {
-      set!.delete(cb)
-      if (set!.size === 0) {
-        containerListeners.current.delete(containerId)
-        send({ type: 'unsubscribe.container', containerId })
+      return () => {
+        set!.delete(cb)
+        if (set!.size === 0) {
+          logListeners.current.delete(runId)
+          send({ type: 'unsubscribe.logs', runId })
+        }
       }
-    }
-  }
+    },
+    [send],
+  )
 
-  return { subscribeLogs, subscribeContainer, sendStdin, sendResize, events, clearEvents }
+  const subscribeContainer = useCallback(
+    (containerId: string, cb: LogListener) => {
+      let set = containerListeners.current.get(containerId)
+      if (!set) {
+        set = new Set()
+        containerListeners.current.set(containerId, set)
+      }
+      set.add(cb)
+      send({ type: 'subscribe.container', containerId })
+
+      return () => {
+        set!.delete(cb)
+        if (set!.size === 0) {
+          containerListeners.current.delete(containerId)
+          send({ type: 'unsubscribe.container', containerId })
+        }
+      }
+    },
+    [send],
+  )
+
+  return { subscribeLogs, subscribeContainer, sendStdin, sendResize }
 }

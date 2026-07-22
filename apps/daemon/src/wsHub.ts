@@ -54,7 +54,7 @@ export function attachWebSocket(server: Server): void {
 
       if (msg.type === 'subscribe.logs') {
         logSubs.get(ws)!.add(msg.runId)
-        const snapshot = supervisor.getLogSnapshot(msg.runId)
+        const snapshot = supervisor.getLogSnapshotTail(msg.runId, 1000)
         if (snapshot) {
           ws.send(JSON.stringify({ type: 'run.log', runId: msg.runId, chunk: snapshot }))
         }

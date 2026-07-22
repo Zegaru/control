@@ -1,4 +1,4 @@
-import { useQueries, useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import type { ActionWithRun, ProjectTree } from '@control/shared'
 import { api } from './api.js'
 
@@ -10,15 +10,17 @@ export interface FlatAction {
 }
 
 /** Every non-hidden action across all registered projects, flattened with labels. */
-export function useAllActions(): { actions: FlatAction[]; byId: Map<string, FlatAction> } {
-  const projects = useQuery({ queryKey: ['projects'], queryFn: api.listProjects })
-  const trees = useQueries({
-    queries: (projects.data ?? []).map((p) => ({
-      queryKey: ['tree', p.id],
-      queryFn: () => api.projectTree(p.id),
-    })),
+export function useAllActions(options?: { enabled?: boolean }): {
+  actions: FlatAction[]
+  byId: Map<string, FlatAction>
+} {
+  const enabled = options?.enabled ?? true
+  const treesQ = useQuery({
+    queryKey: ['trees'],
+    queryFn: api.projectTrees,
+    enabled,
   })
-  const treeData = trees.map((t) => t.data).filter(Boolean) as ProjectTree[]
+  const treeData = (treesQ.data ?? []) as ProjectTree[]
 
   const actions: FlatAction[] = []
   for (const tree of treeData) {

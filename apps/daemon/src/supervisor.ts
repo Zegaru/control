@@ -205,6 +205,11 @@ class Supervisor {
     return handle ? handle.buffer.snapshot() : null
   }
 
+  getLogSnapshotTail(runId: string, maxLines: number): string | null {
+    const handle = this.handles.get(runId)
+    return handle ? handle.buffer.snapshotTail(maxLines) : null
+  }
+
   isLive(runId: string): boolean {
     return this.handles.has(runId)
   }
@@ -230,7 +235,11 @@ class Supervisor {
     })
   }
 
-  private actionLabels(actionId: string): { projectName?: string; actionName?: string } {
+  private actionLabels(actionId: string): {
+    projectId?: string
+    projectName?: string
+    actionName?: string
+  } {
     const action = getAction(actionId)
     if (!action) return {}
     const mod = db
@@ -242,6 +251,7 @@ class Supervisor {
       ? db.select().from(schema.projects).where(eq(schema.projects.id, mod.projectId)).get()
       : undefined
     return {
+      projectId: proj?.id,
       projectName: proj?.name,
       actionName: action.name,
     }

@@ -1,4 +1,5 @@
 import { execa } from 'execa'
+import { loadHostProcesses } from './hostProcessSnapshot.js'
 
 export interface HostPort {
   port: number
@@ -15,17 +16,50 @@ const EPHEMERAL_FLOOR = 49152
 // polling and start-time conflict checks don't hammer it.
 const CACHE_TTL_MS = 2000
 let cache: { at: number; ports: HostPort[] } | null = null
+let portsInFlight: Promise<HostPort[]> | null = null
 
-// Resolve every listening TCP port to its owning process — name via Get-Process,
-// command line via Win32_Process (so we can match it to a project by path).
-const PS_COMMAND = [
-  '$names=@{}; Get-Process | ForEach-Object { $names[$_.Id]=$_.ProcessName };',
-  '$cmds=@{}; Get-CimInstance Win32_Process | ForEach-Object { $cmds[[int]$_.ProcessId]=$_.CommandLine };',
+const LISTEN_PORTS_PS = [
   'Get-NetTCPConnection -State Listen |',
   'Select-Object LocalPort,OwningProcess -Unique |',
-  'ForEach-Object { [pscustomobject]@{ port=$_.LocalPort; pid=$_.OwningProcess; name=$names[[int]$_.OwningProcess]; cmd=$cmds[[int]$_.OwningProcess] } } |',
+  'ForEach-Object { [pscustomobject]@{ port=$_.LocalPort; pid=$_.OwningProcess } } |',
   'ConvertTo-Json -Compress',
 ].join(' ')
+
+async function fetchHostListeningPorts(): Promise<HostPort[]> {
+  if (process.platform !== 'win32') return []
+
+  const processes = await loadHostProcesses()
+  const byPid = new Map(processes.map((p) => [p.id, p]))
+
+  try {
+    const { stdout } = await execa(
+      'powershell.exe',
+      ['-NoProfile', '-Command', LISTEN_PORTS_PS],
+      { timeout: 10000 },
+    )
+    const parsed = JSON.parse(stdout || '[]')
+    const rows: { port: number; pid: number }[] = Array.isArray(parsed) ? parsed : [parsed]
+
+    const byPort = new Map<number, HostPort>()
+    for (const r of rows) {
+      if (!r || typeof r.port !== 'number') continue
+      if (r.port >= EPHEMERAL_FLOOR) continue
+      if (r.pid === process.pid) continue
+      if (!byPort.has(r.port)) {
+        const proc = byPid.get(r.pid)
+        byPort.set(r.port, {
+          port: r.port,
+          pid: r.pid,
+          name: proc?.name ?? null,
+          cmd: proc?.cmd ?? null,
+        })
+      }
+    }
+    return [...byPort.values()]
+  } catch {
+    return []
+  }
+}
 
 /**
  * Host processes with listening TCP ports (Windows only). Used to attribute the
@@ -41,29 +75,24 @@ const PS_COMMAND = [
 export async function getHostListeningPorts(): Promise<HostPort[]> {
   if (process.platform !== 'win32') return []
   if (cache && Date.now() - cache.at < CACHE_TTL_MS) return cache.ports
+  if (portsInFlight) return portsInFlight
 
-  try {
-    const { stdout } = await execa('powershell.exe', ['-NoProfile', '-Command', PS_COMMAND], {
-      timeout: 10000,
+  portsInFlight = fetchHostListeningPorts()
+    .then((ports) => {
+      cache = { at: Date.now(), ports }
+      portsInFlight = null
+      return ports
     })
-    const parsed = JSON.parse(stdout || '[]')
-    const rows: { port: number; pid: number; name: string | null; cmd: string | null }[] =
-      Array.isArray(parsed) ? parsed : [parsed]
+    .catch(() => {
+      portsInFlight = null
+      return []
+    })
 
-    const byPort = new Map<number, HostPort>()
-    for (const r of rows) {
-      if (!r || typeof r.port !== 'number') continue
-      if (r.port >= EPHEMERAL_FLOOR) continue
-      // Don't report CONTROL's own daemon process as an external service.
-      if (r.pid === process.pid) continue
-      if (!byPort.has(r.port)) {
-        byPort.set(r.port, { port: r.port, pid: r.pid, name: r.name ?? null, cmd: r.cmd ?? null })
-      }
-    }
-    const ports = [...byPort.values()]
-    cache = { at: Date.now(), ports }
-    return ports
-  } catch {
-    return []
-  }
+  return portsInFlight
+}
+
+/** Test helper — reset module cache between tests. */
+export function resetHostListeningPortsForTests(): void {
+  cache = null
+  portsInFlight = null
 }

@@ -23,6 +23,7 @@ export function ActionRow({
   const busy = status === 'starting';
 
   const invalidate = () => {
+    qc.invalidateQueries({queryKey: ['trees']});
     qc.invalidateQueries({queryKey: ['tree']});
     qc.invalidateQueries({queryKey: ['projects']});
     qc.invalidateQueries({queryKey: ['runs']});

@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { closeSync, fstatSync, openSync, readSync } from 'node:fs'
 import { Hono } from 'hono'
 import {
   createGroupBodySchema,
@@ -29,8 +29,10 @@ import {
   listActiveRuns,
   listEnvironments,
   listGroups,
+  listProjectTrees,
   listProjects,
   listRunsForAction,
+  getTrayCounts,
   patchAction,
   patchEnvironment,
   patchModule,
@@ -54,11 +56,21 @@ import { version } from './version.js'
 import { getHostMetrics } from './hostMetrics.js'
 import { getProjectMetrics } from './projectMetrics.js'
 
+const TAIL_READ_MAX = 256 * 1024
+
 function tailFile(path: string, lines: number): string {
   try {
-    const content = readFileSync(path, 'utf8')
-    const parts = content.split('\n')
-    return parts.slice(Math.max(0, parts.length - lines)).join('\n')
+    const fd = openSync(path, 'r')
+    try {
+      const { size } = fstatSync(fd)
+      const readSize = Math.min(size, TAIL_READ_MAX)
+      const buf = Buffer.alloc(readSize)
+      readSync(fd, buf, 0, readSize, Math.max(0, size - readSize))
+      const parts = buf.toString('utf8').split('\n')
+      return parts.slice(Math.max(0, parts.length - lines)).join('\n')
+    } finally {
+      closeSync(fd)
+    }
   } catch {
     return ''
   }
@@ -68,11 +80,27 @@ export const api = new Hono()
 
 api.get('/health', (c) => c.json({ ok: true, version }))
 
+api.get('/tray', async (c) => {
+  const host = getHostMetrics()
+  const { projectCount, activeRunCount } = getTrayCounts()
+  const docker = await getDockerStatus()
+  return c.json({
+    online: true,
+    cpu: Math.round(host.cpu),
+    memory: Math.round(host.memory),
+    projectCount,
+    activeRuns: activeRunCount,
+    dockerAvailable: docker.available,
+  })
+})
+
 api.get('/host/metrics', (c) => c.json(getHostMetrics()))
 
 // --- projects --------------------------------------------------------------
 
 api.get('/projects', (c) => c.json(listProjects()))
+
+api.get('/projects/trees', (c) => c.json(listProjectTrees()))
 
 api.get('/projects/metrics', (c) => c.json(getProjectMetrics()))
 
@@ -192,7 +220,7 @@ api.post('/runs/:id/stop', (c) => {
 api.get('/runs/:id/logs', (c) => {
   const id = c.req.param('id')
   const tail = Number(c.req.query('tail') ?? 1000)
-  const live = supervisor.getLogSnapshot(id)
+  const live = supervisor.getLogSnapshotTail(id, tail)
   if (live !== null) return c.json({ live: true, logs: live })
   const run = getRun(id)
   if (!run) throw new HttpError(404, 'Run not found')

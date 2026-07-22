@@ -1,6 +1,6 @@
 import { basename, join } from 'node:path'
 import { existsSync } from 'node:fs'
-import { and, desc, eq, inArray } from 'drizzle-orm'
+import { and, count, desc, eq, inArray } from 'drizzle-orm'
 import {
   ACTIVE_RUN_STATUSES,
   type Action,
@@ -101,26 +101,59 @@ function toRun(r: RunRow): Run {
 export function listProjects(): ProjectSummary[] {
   const activeRuns = buildActiveRunMap()
   const rows = db.select().from(schema.projects).all()
-  return rows.map((p) => {
-    const moduleIds = db
-      .select({ id: schema.modules.id })
-      .from(schema.modules)
-      .where(eq(schema.modules.projectId, p.id))
-      .all()
-      .map((m) => m.id)
-    const actionRows = moduleIds.length
+  const projectIds = rows.map((p) => p.id)
+
+  const allModules =
+    projectIds.length > 0
+      ? db
+          .select()
+          .from(schema.modules)
+          .where(inArray(schema.modules.projectId, projectIds))
+          .all()
+      : []
+  const moduleIds = allModules.map((m) => m.id)
+  const allActions =
+    moduleIds.length > 0
       ? db.select().from(schema.actions).where(inArray(schema.actions.moduleId, moduleIds)).all()
       : []
-    const activeRunCount = actionRows.filter((a) => activeRuns.has(a.id)).length
-    return {
-      ...toProject(p),
-      actionCount: actionRows.length,
-      activeRunCount,
-    }
-  }).sort((a, b) => {
-    if (a.favorite !== b.favorite) return a.favorite ? -1 : 1
-    return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
-  })
+
+  const modulesByProject = new Map<string, typeof allModules>()
+  for (const m of allModules) {
+    const list = modulesByProject.get(m.projectId) ?? []
+    list.push(m)
+    modulesByProject.set(m.projectId, list)
+  }
+  const actionsByModule = new Map<string, typeof allActions>()
+  for (const a of allActions) {
+    const list = actionsByModule.get(a.moduleId) ?? []
+    list.push(a)
+    actionsByModule.set(a.moduleId, list)
+  }
+
+  return rows
+    .map((p) => {
+      const mods = modulesByProject.get(p.id) ?? []
+      const actionRows = mods.flatMap((m) => actionsByModule.get(m.id) ?? [])
+      const activeRunCount = actionRows.filter((a) => activeRuns.has(a.id)).length
+      return {
+        ...toProject(p),
+        actionCount: actionRows.length,
+        activeRunCount,
+      }
+    })
+    .sort((a, b) => {
+      if (a.favorite !== b.favorite) return a.favorite ? -1 : 1
+      return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+    })
+}
+
+/** Cheap tray counters — no per-project module/action fan-out. */
+export function getTrayCounts(): { projectCount: number; activeRunCount: number } {
+  const row = db.select({ value: count() }).from(schema.projects).get()
+  return {
+    projectCount: row?.value ?? 0,
+    activeRunCount: buildActiveRunMap().size,
+  }
 }
 
 export function createProject(rootPath: string, name?: string): Project {
@@ -181,6 +214,7 @@ export function patchProject(id: string, body: PatchProjectBody): Project {
     throw new HttpError(400, 'No fields to update — restart the daemon if you just upgraded')
   }
   db.update(schema.projects).set(updates).where(eq(schema.projects.id, id)).run()
+  if (body.composeProjects !== undefined) clearComposeProjectMatcherCache()
   return toProject(db.select().from(schema.projects).where(eq(schema.projects.id, id)).get()!)
 }
 
@@ -198,6 +232,7 @@ export function deleteProject(id: string): void {
   db.delete(schema.groups).where(eq(schema.groups.projectId, id)).run()
   db.delete(schema.environments).where(eq(schema.environments.projectId, id)).run()
   db.delete(schema.projects).where(eq(schema.projects.id, id)).run()
+  clearComposeProjectMatcherCache()
 }
 
 // --- scanning (override-preserving upsert, FR-3) ---------------------------
@@ -310,19 +345,23 @@ export function rescanProject(projectId: string): void {
   }
 
   db.update(schema.projects).set({ lastScanAt: Date.now() }).where(eq(schema.projects.id, projectId)).run()
+  clearComposeProjectMatcherCache()
   bus.emitEvent({ type: 'scan.done', projectId })
 }
 
 // --- tree ------------------------------------------------------------------
 
-export function getProjectTree(projectId: string): ProjectTree {
-  const project = db.select().from(schema.projects).where(eq(schema.projects.id, projectId)).get()
-  if (!project) throw new HttpError(404, 'Project not found')
+type ModuleRow = typeof schema.modules.$inferSelect
 
-  const activeRuns = buildActiveRunMap()
-  const moduleRows = db.select().from(schema.modules).where(eq(schema.modules.projectId, projectId)).all()
+function assembleProjectTree(
+  project: ProjectRow,
+  moduleRows: ModuleRow[],
+  environmentRows: EnvironmentRow[],
+  actionsByModule: Map<string, ActionRow[]>,
+  activeRuns: Map<string, Run>,
+): ProjectTree {
   const modules: ModuleWithActions[] = moduleRows.map((m) => {
-    const actionRows = db.select().from(schema.actions).where(eq(schema.actions.moduleId, m.id)).all()
+    const actionRows = actionsByModule.get(m.id) ?? []
     const actions: ActionWithRun[] = actionRows.map((a) => ({
       ...toAction(a),
       activeRun: activeRuns.get(a.id) ?? null,
@@ -338,17 +377,90 @@ export function getProjectTree(projectId: string): ProjectTree {
     return { ...mod, actions }
   })
 
+  return {
+    ...toProject(project),
+    modules,
+    environments: environmentRows.map(toEnvironment),
+  }
+}
+
+export function getProjectTree(projectId: string): ProjectTree {
+  const project = db.select().from(schema.projects).where(eq(schema.projects.id, projectId)).get()
+  if (!project) throw new HttpError(404, 'Project not found')
+
+  const activeRuns = buildActiveRunMap()
+  const moduleRows = db.select().from(schema.modules).where(eq(schema.modules.projectId, projectId)).all()
+  const moduleIds = moduleRows.map((m) => m.id)
+  const allActionRows =
+    moduleIds.length > 0
+      ? db.select().from(schema.actions).where(inArray(schema.actions.moduleId, moduleIds)).all()
+      : []
+  const actionsByModule = new Map<string, typeof allActionRows>()
+  for (const a of allActionRows) {
+    const list = actionsByModule.get(a.moduleId) ?? []
+    list.push(a)
+    actionsByModule.set(a.moduleId, list)
+  }
+
   const environmentRows = db
     .select()
     .from(schema.environments)
     .where(eq(schema.environments.projectId, projectId))
     .all()
 
-  return {
-    ...toProject(project),
-    modules,
-    environments: environmentRows.map(toEnvironment),
+  return assembleProjectTree(project, moduleRows, environmentRows, actionsByModule, activeRuns)
+}
+
+export function listProjectTrees(): ProjectTree[] {
+  const activeRuns = buildActiveRunMap()
+  const projectRows = db.select().from(schema.projects).all()
+  const projectIds = projectRows.map((p) => p.id)
+  if (projectIds.length === 0) return []
+
+  const allModules = db
+    .select()
+    .from(schema.modules)
+    .where(inArray(schema.modules.projectId, projectIds))
+    .all()
+  const moduleIds = allModules.map((m) => m.id)
+  const allActions =
+    moduleIds.length > 0
+      ? db.select().from(schema.actions).where(inArray(schema.actions.moduleId, moduleIds)).all()
+      : []
+  const allEnvironments = db
+    .select()
+    .from(schema.environments)
+    .where(inArray(schema.environments.projectId, projectIds))
+    .all()
+
+  const modulesByProject = new Map<string, ModuleRow[]>()
+  for (const m of allModules) {
+    const list = modulesByProject.get(m.projectId) ?? []
+    list.push(m)
+    modulesByProject.set(m.projectId, list)
   }
+  const actionsByModule = new Map<string, ActionRow[]>()
+  for (const a of allActions) {
+    const list = actionsByModule.get(a.moduleId) ?? []
+    list.push(a)
+    actionsByModule.set(a.moduleId, list)
+  }
+  const environmentsByProject = new Map<string, EnvironmentRow[]>()
+  for (const e of allEnvironments) {
+    const list = environmentsByProject.get(e.projectId) ?? []
+    list.push(e)
+    environmentsByProject.set(e.projectId, list)
+  }
+
+  return projectRows.map((p) =>
+    assembleProjectTree(
+      p,
+      modulesByProject.get(p.id) ?? [],
+      environmentsByProject.get(p.id) ?? [],
+      actionsByModule,
+      activeRuns,
+    ),
+  )
 }
 
 // --- modules & actions -----------------------------------------------------
@@ -363,6 +475,7 @@ export function patchModule(id: string, body: PatchModuleBody): Module {
     })
     .where(eq(schema.modules.id, id))
     .run()
+  clearComposeProjectMatcherCache()
   const updated = db.select().from(schema.modules).where(eq(schema.modules.id, id)).get()!
   return {
     id: updated.id,
@@ -751,20 +864,32 @@ export function projectPowerTargets(tree: ProjectTree): ActionWithRun[] {
 
 // --- docker <-> project mapping --------------------------------------------
 
+const COMPOSE_MATCHER_TTL_MS = 2000
+let composeMatcherCache: {
+  at: number
+  matcher: (composeProject: string | null) => string | null
+} | null = null
+
+/** Invalidate cached compose matcher after project/module/scan mutations. */
+export function clearComposeProjectMatcherCache(): void {
+  composeMatcherCache = null
+}
+
 /** Docker Compose default project name: lowercased basename, non-[a-z0-9_-] stripped. */
 function composeSanitize(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9_-]/g, '')
 }
 
-/**
- * Build a matcher from a container's `com.docker.compose.project` label to a
- * registered project id. Candidates per project: its name, its root folder
- * basename, and the basename of any module directory that has a compose stack —
- * all compose-sanitized. Best-effort; unmatched labels resolve to null.
- */
-export function buildComposeProjectMatcher(): (composeProject: string | null) => string | null {
+function buildComposeProjectMatcherUncached(): (composeProject: string | null) => string | null {
   const table = new Map<string, string>()
   const projects = db.select().from(schema.projects).all()
+  const allModules = db.select().from(schema.modules).all()
+  const modulesByProject = new Map<string, typeof allModules>()
+  for (const m of allModules) {
+    const list = modulesByProject.get(m.projectId) ?? []
+    list.push(m)
+    modulesByProject.set(m.projectId, list)
+  }
   // Explicit claims win, so seed them first (a later inference can't overwrite).
   for (const p of projects) {
     for (const claim of p.composeProjects ?? []) {
@@ -779,7 +904,7 @@ export function buildComposeProjectMatcher(): (composeProject: string | null) =>
     }
     add(p.name)
     add(basename(p.rootPath))
-    const mods = db.select().from(schema.modules).where(eq(schema.modules.projectId, p.id)).all()
+    const mods = modulesByProject.get(p.id) ?? []
     for (const m of mods) {
       const hasCompose = (m.detectedStacks ?? []).some((s) => s.kind === 'compose')
       if (hasCompose) add(basename(m.relPath || p.rootPath))
@@ -789,6 +914,21 @@ export function buildComposeProjectMatcher(): (composeProject: string | null) =>
     if (!composeProject) return null
     return table.get(composeSanitize(composeProject)) ?? null
   }
+}
+
+/**
+ * Build a matcher from a container's `com.docker.compose.project` label to a
+ * registered project id. Candidates per project: its name, its root folder
+ * basename, and the basename of any module directory that has a compose stack —
+ * all compose-sanitized. Best-effort; unmatched labels resolve to null.
+ */
+export function buildComposeProjectMatcher(): (composeProject: string | null) => string | null {
+  if (composeMatcherCache && Date.now() - composeMatcherCache.at < COMPOSE_MATCHER_TTL_MS) {
+    return composeMatcherCache.matcher
+  }
+  const matcher = buildComposeProjectMatcherUncached()
+  composeMatcherCache = { at: Date.now(), matcher }
+  return matcher
 }
 
 /**

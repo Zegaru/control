@@ -1,3 +1,4 @@
+import '@xterm/xterm/css/xterm.css';
 import {useEffect, useRef, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {Terminal} from '@xterm/xterm';
@@ -25,6 +26,8 @@ export function LogPanel({runId, containerId}: {runId?: string; containerId?: st
   const sendStdinRef = useRef<(runId: string, data: string) => void>(() => {});
   const sanitizeCarryRef = useRef('');
   const {subscribeLogs, subscribeContainer, sendStdin} = useSocket();
+  const subscribeLogsRef = useRef(subscribeLogs);
+  const subscribeContainerRef = useRef(subscribeContainer);
   const [attached, setAttached] = useState(false);
 
   const runs = useQuery({
@@ -39,6 +42,8 @@ export function LogPanel({runId, containerId}: {runId?: string; containerId?: st
   runIdRef.current = runId;
   sendStdinRef.current = sendStdin;
   attachedRef.current = attached;
+  subscribeLogsRef.current = subscribeLogs;
+  subscribeContainerRef.current = subscribeContainer;
 
   useEffect(() => {
     if (!canAttach && attached) setAttached(false);
@@ -128,7 +133,7 @@ export function LogPanel({runId, containerId}: {runId?: string; containerId?: st
     let disposed = false;
     let unsub = () => {};
     if (runId) {
-      unsub = subscribeLogs(runId, (_id, chunk) => writeSanitized(chunk));
+      unsub = subscribeLogsRef.current(runId, (_id, chunk) => writeSanitized(chunk));
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           if (disposed) return;
@@ -139,7 +144,7 @@ export function LogPanel({runId, containerId}: {runId?: string; containerId?: st
         });
       });
     } else if (containerId) {
-      unsub = subscribeContainer(containerId, (_id, chunk) => writeSanitized(chunk));
+      unsub = subscribeContainerRef.current(containerId, (_id, chunk) => writeSanitized(chunk));
       requestAnimationFrame(() => requestAnimationFrame(scheduleSync));
     }
 
@@ -153,7 +158,7 @@ export function LogPanel({runId, containerId}: {runId?: string; containerId?: st
       termRef.current = null;
       term.dispose();
     };
-  }, [runId, containerId, subscribeLogs, subscribeContainer]);
+  }, [runId, containerId]);
 
   useEffect(() => {
     requestAnimationFrame(() => fitRef.current?.fit());

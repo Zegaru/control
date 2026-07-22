@@ -87,6 +87,7 @@ export const api = {
   deleteProject: (id: string) => req<void>(`/projects/${id}`, { method: 'DELETE' }),
   scanProject: (id: string) => req<ProjectTree>(`/projects/${id}/scan`, { method: 'POST' }),
   projectTree: (id: string) => req<ProjectTree>(`/projects/${id}/tree`),
+  projectTrees: () => req<ProjectTree[]>('/projects/trees'),
   startProjectPower: (id: string) =>
     req<{ ok: boolean }>(`/projects/${id}/power/start`, { method: 'POST' }),
   stopProjectPower: (id: string) =>

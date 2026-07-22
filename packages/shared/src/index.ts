@@ -412,6 +412,7 @@ export const wsEventSchema = z.discriminatedUnion('type', [
     ports: z.array(z.number().int()),
     pid: z.number().int().nullable().optional(),
     exitCode: z.number().int().nullable().optional(),
+    projectId: z.string().optional(),
     projectName: z.string().optional(),
     actionName: z.string().optional(),
   }),

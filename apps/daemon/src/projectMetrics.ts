@@ -1,8 +1,8 @@
 import os from 'node:os'
-import {eq} from 'drizzle-orm'
+import {inArray} from 'drizzle-orm'
 import type {ProjectMetricsSnapshot} from '@control/shared'
 import {db, schema} from './db/index.js'
-import {buildComposeProjectMatcher, getAction, listActiveRuns} from './registry.js'
+import {buildComposeProjectMatcher, listActiveRuns} from './registry.js'
 import {getContainerStatsBatch, listContainers} from './docker.js'
 import {loadHostProcesses, type HostProcRow} from './hostProcessSnapshot.js'
 import {pidAlive} from './pid.js'
@@ -15,6 +15,7 @@ let latest: ProjectMetricsSnapshot = {at: Date.now(), projects: {}}
 let timer: NodeJS.Timeout | null = null
 let prevCpuByPid: Map<number, number> | null = null
 let prevSampleAt = 0
+let sampleInFlight: Promise<ProjectMetricsSnapshot> | null = null
 
 function clampPct(n: number): number {
   return Math.round(Math.min(100, Math.max(0, n)))
@@ -73,11 +74,25 @@ function memBytesForTree(pids: Set<number>, byId: Map<number, ProcRow>): number 
   return sum
 }
 
-function projectIdForAction(actionId: string): string | null {
-  const action = getAction(actionId)
-  if (!action) return null
-  const mod = db.select().from(schema.modules).where(eq(schema.modules.id, action.moduleId)).get()
-  return mod?.projectId ?? null
+function buildActionProjectMap(actionIds: string[]): Map<string, string> {
+  if (actionIds.length === 0) return new Map()
+  const actions = db
+    .select()
+    .from(schema.actions)
+    .where(inArray(schema.actions.id, actionIds))
+    .all()
+  const moduleIds = [...new Set(actions.map((a) => a.moduleId))]
+  const modules =
+    moduleIds.length > 0
+      ? db.select().from(schema.modules).where(inArray(schema.modules.id, moduleIds)).all()
+      : []
+  const projectByModule = new Map(modules.map((m) => [m.id, m.projectId]))
+  const out = new Map<string, string>()
+  for (const a of actions) {
+    const projectId = projectByModule.get(a.moduleId)
+    if (projectId) out.set(a.id, projectId)
+  }
+  return out
 }
 
 async function sample(): Promise<ProjectMetricsSnapshot> {
@@ -100,9 +115,12 @@ async function sample(): Promise<ProjectMetricsSnapshot> {
     totals.set(projectId, cur)
   }
 
-  for (const run of listActiveRuns()) {
+  const active = listActiveRuns()
+  const actionProject = buildActionProjectMap(active.map((r) => r.actionId))
+
+  for (const run of active) {
     if (!run.pid || !pidAlive(run.pid)) continue
-    const projectId = projectIdForAction(run.actionId)
+    const projectId = actionProject.get(run.actionId)
     if (!projectId) continue
     const tree = collectTree(run.pid, childrenOf)
     bump(projectId, cpuPercentForTree(tree, byId, wallMs), memBytesForTree(tree, byId))
@@ -140,13 +158,20 @@ export function startProjectMetrics(intervalMs = SAMPLE_MS): void {
   if (timer) return
   void sample()
   timer = setInterval(() => {
-    void sample()
+    if (sampleInFlight) return
+    sampleInFlight = sample().finally(() => {
+      sampleInFlight = null
+    })
   }, intervalMs)
   timer.unref?.()
 }
 
 export async function sampleProjectMetricsNow(): Promise<ProjectMetricsSnapshot> {
-  return sample()
+  if (sampleInFlight) return sampleInFlight
+  sampleInFlight = sample().finally(() => {
+    sampleInFlight = null
+  })
+  return sampleInFlight
 }
 
 export function getProjectMetrics(): ProjectMetricsSnapshot {
