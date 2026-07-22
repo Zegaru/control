@@ -28,6 +28,24 @@ pnpm dev
 Open http://localhost:5173, click **Add Project**, and point it at a repo
 folder.
 
+## Dev loop
+
+Prefer **`pnpm dev`** for day-to-day work — it starts the daemon and UI together
+with port sync.
+
+| Area | What happens on save |
+|------|----------------------|
+| **UI** (`apps/ui`) | Vite HMR — instant in-browser updates |
+| **Daemon** (`apps/daemon`) | `tsx watch` auto-restarts the process; SQLite under `~/.control` persists; supervised runs may die with the restart or be re-adopted on boot |
+| **Shared** (`packages/shared`) | Source exports; UI picks up changes via Vite; daemon picks them up on the next watch restart |
+
+**Tests:** use `pnpm test:watch` for TDD during development; run `pnpm test`
+before opening a PR.
+
+**Split terminals:** if you run `pnpm dev:daemon` and `pnpm dev:ui` separately,
+keep them in sync via `CONTROL_PORT`, `CONTROL_DAEMON_URL`, or the
+`.control-dev-port` file written when the daemon starts — see [AGENTS.md](./AGENTS.md).
+
 ## Checks before a PR
 
 These must pass:
@@ -38,9 +56,13 @@ pnpm test
 pnpm lint
 ```
 
+Optional during development: `pnpm test:watch` (Vitest watch) and
+`pnpm lint:fix` (Biome safe fixes).
+
 ## Pull request expectations
 
-- Keep diffs focused; match existing style (Biome formats/lints the tree)
+- Keep diffs focused; match existing style — Biome lints the tree (formatter is
+  currently off; use `pnpm lint:fix` for safe auto-fixes)
 - No drive-by refactors unrelated to the change
 - Do not commit `.env` files, secrets, or daemon state from `~/.control`
 - Note which OS you tested on (Windows primary)

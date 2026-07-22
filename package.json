@@ -17,7 +17,9 @@
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
+    "test:watch": "vitest",
     "lint": "biome check .",
+    "lint:fix": "biome check --write .",
     "start": "pnpm --filter @control/daemon start"
   },
   "devDependencies": {

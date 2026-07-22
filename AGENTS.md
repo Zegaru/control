@@ -23,7 +23,9 @@ CONTROL is a local-first dev command center: run and track every local service w
 pnpm install
 pnpm typecheck    # all workspace packages
 pnpm test         # Vitest characterization suite
+pnpm test:watch   # Vitest watch mode
 pnpm lint         # Biome check
+pnpm lint:fix     # Biome check --write (safe fixes; formatter still off)
 pnpm dev          # daemon + UI — do not start unless the user asks
 pnpm dev:daemon   # tsx watch — auto-restart on daemon/shared src changes
 pnpm kill:daemon  # free CONTROL_PORT only if a CONTROL daemon owns it

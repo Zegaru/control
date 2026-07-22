@@ -54,6 +54,7 @@ pnpm kill:daemon      # free CONTROL_PORT only if a CONTROL daemon owns it
 pnpm dev:ui           # UI only; proxies via CONTROL_DAEMON_URL, CONTROL_PORT, .control-dev-port, else :4400
 pnpm typecheck        # all packages
 pnpm test             # vitest characterization suite
+pnpm test:watch       # vitest watch mode (TDD)
 pnpm lint             # biome check
 ```
 
