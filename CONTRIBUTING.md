@@ -12,15 +12,21 @@ By participating, you agree to follow the
 
 ## Prerequisites
 
-- Node.js ≥22
-- pnpm 11.5.3 (see root `packageManager`)
+- Node.js ≥22 on `PATH`
+- pnpm 11.5.3 — run `corepack enable` once (see root `packageManager`)
 - Native build tools for `better-sqlite3` and `node-pty` (see README
-  Prerequisites)
+  Prerequisites and **If `pnpm install` fails**)
+- Optional: Docker Engine/Desktop for compose features
 - Optional desktop shell: see [`apps/shell/README.md`](./apps/shell/README.md)
 
 ## Setup
 
+From a fresh clone (same sequence as the README **Get running** section):
+
 ```bash
+git clone <repo-url> control
+cd control
+corepack enable
 pnpm install
 pnpm dev
 ```

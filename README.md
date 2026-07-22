@@ -29,51 +29,82 @@ CI runs `typecheck` / `test` / `lint` on `ubuntu-latest` and `windows-latest`.
 ## Prerequisites
 
 - **Node.js ≥22** on `PATH`
-- **pnpm** 11.x (repo pins `packageManager: pnpm@11.5.3`)
+- **pnpm** 11.x — the repo pins `packageManager: pnpm@11.5.3`; run `corepack enable`
+  once so `pnpm` matches that version
 - A C/C++ toolchain for native modules on first `pnpm install`
   (`better-sqlite3`, `node-pty`) — on Windows: Visual Studio Build Tools with
   “Desktop development with C++”; on Unix: build-essential / Xcode CLT
-- Optional: Docker Engine/Desktop for compose features
-- **Desktop shell (optional):** Rust, WebView2, and MSVC — see
+- **Optional:** Docker Engine/Desktop for compose features
+- **Optional (native Windows app only):** Rust, WebView2, and MSVC — see
   [`apps/shell/README.md`](./apps/shell/README.md)
 
-## Quick start
+## Get running
+
+Contributor setup from a fresh clone:
 
 ```bash
-pnpm install          # native modules (node-pty, better-sqlite3) build here
-pnpm dev              # daemon (:4400) + UI dev server (:5173) together
+git clone <repo-url> control
+cd control
+corepack enable
+pnpm install          # compiles native modules (node-pty, better-sqlite3)
+pnpm dev              # daemon (:4400) + UI dev server (:5173)
 ```
 
 Open http://localhost:5173, click **Add Project**, and point it at a repo folder.
 
-Run pieces individually (prefer `pnpm dev` above for automatic port sync):
+Use **`pnpm dev`** for day-to-day work — it starts the daemon and UI with matching
+ports. Contributor commands, hot-reload behavior, and split-terminal setup:
+[CONTRIBUTING.md](./CONTRIBUTING.md).
+
+## Other ways to run
+
+### Contributor / day-to-day (recommended)
+
+Use **Get running** above: `pnpm dev` → http://localhost:5173. The Vite dev
+server proxies `/api` and `/ws` to the daemon.
+
+### Production single-origin
+
+**When to use:** you want one process and one URL (no Vite dev server) — e.g.
+smoke-testing a production-like build locally.
 
 ```bash
-pnpm dev:daemon       # daemon only (clear stale CONTROL, or bump past busy ports)
-pnpm kill:daemon      # free CONTROL_PORT only if a CONTROL daemon owns it
-pnpm dev:ui           # UI only; proxies via CONTROL_DAEMON_URL, CONTROL_PORT, .control-dev-port, else :4400
-pnpm typecheck        # all packages
-pnpm test             # vitest characterization suite
-pnpm test:watch       # vitest watch mode (TDD)
-pnpm lint             # biome check
+pnpm install
+pnpm --filter @control/ui build
+pnpm start
 ```
 
-Daemon `dev` uses `tsx watch` — edits under `apps/daemon` and `packages/shared`
-restart the daemon process. Restart drops in-memory daemon state; SQLite under
-`~/.control` persists; supervised host processes may die with the daemon or be
-re-adopted on boot.
+Open http://127.0.0.1:4400 — the daemon serves the built SPA from `apps/ui/dist`.
 
-## Install paths
+### Native Windows app (NSIS installer)
 
-- **Dev (recommended for contributors):** `pnpm install` → `pnpm dev` →
-  http://localhost:5173
-- **Production single-origin:** `pnpm --filter @control/ui build` then
-  `pnpm start` — the daemon serves the built SPA from `apps/ui/dist` at
-  http://127.0.0.1:4400
-- **Native Windows app:** `pnpm --filter @control/shell build` produces an
-  NSIS installer under `apps/shell/src-tauri/target/release/bundle/`.
-  Node ≥22 is still required on `PATH` at runtime. Unsigned builds may trigger
-  SmartScreen — that is expected until signed releases exist.
+**When to use:** you want a launchable desktop app with tray icon and autostart,
+not a browser tab.
+
+```bash
+pnpm install
+pnpm --filter @control/shell build
+```
+
+Produces an installer under
+`apps/shell/src-tauri/target/release/bundle/`. Prerequisites (Rust, WebView2,
+MSVC) and dev workflow: [`apps/shell/README.md`](./apps/shell/README.md).
+Node ≥22 must stay on `PATH` at runtime. Unsigned builds may trigger SmartScreen
+until signed releases exist.
+
+## If `pnpm install` fails
+
+Native modules (`better-sqlite3`, `node-pty`) compile during install. On
+Windows, install **Visual Studio Build Tools** with the **Desktop development
+with C++** workload, then retry:
+
+```bash
+pnpm rebuild better-sqlite3 node-pty
+```
+
+Build scripts for those packages are allowlisted in `pnpm-workspace.yaml`
+(`allowBuilds`). If install still fails, see [CONTRIBUTING.md](./CONTRIBUTING.md)
+and the README Prerequisites section above.
 
 ## Screenshots
 
@@ -118,8 +149,6 @@ packages/shared/ Zod schemas + types shared across the API boundary
 
 Daemon state lives in `~/.control/` (SQLite db + per-run log files). For local
 overrides see [AGENTS.md](./AGENTS.md) and [`.env.example`](./.env.example).
-Split terminals (`dev:daemon` then `dev:ui`) stay in sync via `.control-dev-port`
-written when the daemon starts; `pnpm dev` sets env for both processes.
 
 ## Contributing
 
