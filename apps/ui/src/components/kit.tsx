@@ -1204,36 +1204,142 @@ export type ControlStripNotification = {
   time?: string;
 };
 
-/** Decorative radial vent grille for the branding plate. */
-function VentGrill({className = ''}: {className?: string}) {
-  const gradId = useId();
+/** Decorative vent: fixed grille over an impeller that spins with master power. */
+function VentGrill({
+  spinning = false,
+  className = '',
+}: {
+  spinning?: boolean;
+  className?: string;
+}) {
+  const faceId = useId();
+  const rimId = useId();
+  const cavityId = useId();
+
   return (
     <svg viewBox="0 0 48 48" className={cn('h-11 w-11 shrink-0', className)} aria-hidden="true">
       <defs>
-        <radialGradient id={gradId} cx="42%" cy="38%" r="62%">
+        <radialGradient id={cavityId} cx="50%" cy="50%" r="50%">
           <stop offset="0%" stopColor="#1a1a1a" />
-          <stop offset="55%" stopColor="#0c0c0c" />
           <stop offset="100%" stopColor="#050505" />
         </radialGradient>
+        <radialGradient id={faceId} cx="38%" cy="32%" r="68%">
+          <stop offset="0%" stopColor="#3a3a3a" />
+          <stop offset="45%" stopColor="#242424" />
+          <stop offset="100%" stopColor="#121212" />
+        </radialGradient>
+        <linearGradient id={rimId} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#5a5a5a" />
+          <stop offset="40%" stopColor="#2a2a2a" />
+          <stop offset="100%" stopColor="#0a0a0a" />
+        </linearGradient>
       </defs>
-      <circle cx="24" cy="24" r="22" fill={`url(#${gradId})`} stroke="#000" strokeWidth="1" />
+
+      <circle cx="24" cy="24" r="22.5" fill={`url(#${rimId})`} />
+      <circle cx="24" cy="24" r="19.5" fill={`url(#${cavityId})`} />
+
+      <g className={cn('vent-impeller', spinning && 'vent-impeller-on')}>
+        {Array.from({length: 5}, (_, i) => (
+          <path
+            key={i}
+            d="M24 24 L28.2 9.2 Q24 7.4 19.8 9.2 Z"
+            fill="#2e2e2e"
+            stroke="rgba(255,255,255,0.16)"
+            strokeWidth="0.5"
+            transform={`rotate(${i * 72} 24 24)`}
+          />
+        ))}
+        <circle cx="24" cy="24" r="5.5" fill="#222" stroke="rgba(255,255,255,0.14)" strokeWidth="0.75" />
+        <circle cx="24" cy="24" r="2.2" fill="#101010" stroke="rgba(255,255,255,0.08)" strokeWidth="0.4" />
+      </g>
+
+      <circle cx="24" cy="24" r="20" fill="none" stroke={`url(#${faceId})`} strokeWidth="3.5" />
       {Array.from({length: 12}, (_, i) => (
         <rect
           key={i}
-          x="21.5"
-          y="5"
-          width="5"
-          height="11"
-          rx="2.5"
-          fill="#030303"
-          stroke="rgba(255,255,255,0.04)"
-          strokeWidth="0.5"
+          x="22.25"
+          y="5.25"
+          width="3.5"
+          height="12.5"
+          rx="1.75"
+          fill="rgba(8,8,8,0.72)"
+          stroke="rgba(255,255,255,0.12)"
+          strokeWidth="0.45"
           transform={`rotate(${i * 30} 24 24)`}
         />
       ))}
-      <circle cx="24" cy="24" r="6" fill="#141414" stroke="#000" strokeWidth="1" />
-      <circle cx="24" cy="24" r="2.5" fill="#0a0a0a" />
+      <circle cx="24" cy="24" r="22.5" fill="none" stroke="#000" strokeWidth="1" />
+      <circle cx="24" cy="24" r="1.1" fill="#0a0a0a" stroke="rgba(255,255,255,0.18)" strokeWidth="0.4" />
     </svg>
+  );
+}
+
+const BRAND_TAGLINES = [
+  'Stay in control.',
+  'All systems nominal.',
+  'Processes accounted for.',
+  'Nothing unsupervised.',
+  'Hold the line.',
+  'Daemon standing by.',
+  'Keep the lights green.',
+  'Stack under watch.',
+  "Quiet until it isn't.",
+  'Local-first. Always.',
+  'No orphaned PIDs.',
+  'Watching the stack.',
+] as const;
+
+const LONGEST_TAGLINE = BRAND_TAGLINES.reduce((a, b) => (a.length >= b.length ? a : b));
+
+function pickTagline(exclude?: string): string {
+  if (BRAND_TAGLINES.length === 1) return BRAND_TAGLINES[0];
+  const pool = exclude
+    ? BRAND_TAGLINES.filter((line) => line !== exclude)
+    : [...BRAND_TAGLINES];
+  return pool[Math.floor(Math.random() * pool.length)] ?? BRAND_TAGLINES[0];
+}
+
+/** Rotating brand tagline for the ControlStrip plate. */
+function BrandTagline() {
+  const [line, setLine] = useState(() => pickTagline());
+  const [visible, setVisible] = useState(true);
+  const lineRef = useRef(line);
+  lineRef.current = line;
+
+  useEffect(() => {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) return;
+
+    let fadeOut: ReturnType<typeof setTimeout> | undefined;
+    const tick = () => {
+      setVisible(false);
+      fadeOut = setTimeout(() => {
+        setLine(pickTagline(lineRef.current));
+        setVisible(true);
+      }, 200);
+    };
+
+    const id = window.setInterval(tick, 14_000);
+    return () => {
+      window.clearInterval(id);
+      if (fadeOut) clearTimeout(fadeOut);
+    };
+  }, []);
+
+  return (
+    <div className="relative mt-0.5 inline-grid text-[10px] text-ink-dim" aria-live="polite">
+      <span className="invisible col-start-1 row-start-1 whitespace-nowrap" aria-hidden="true">
+        {LONGEST_TAGLINE}
+      </span>
+      <span
+        className={cn(
+          'col-start-1 row-start-1 whitespace-nowrap transition-opacity duration-200 ease-out motion-reduce:transition-none',
+          visible ? 'opacity-100' : 'opacity-0'
+        )}
+      >
+        {line}
+      </span>
+    </div>
   );
 }
 
@@ -1332,12 +1438,12 @@ export function ControlStrip({
                 <Screw className="top-1.5 right-1.5" />
                 <Screw className="bottom-1.5 left-1.5" />
                 <Screw className="bottom-1.5 right-1.5" />
-                <VentGrill className="h-18 w-18" />
+                <VentGrill spinning={masterOn} className="h-18 w-18" />
                 <div className="pr-1">
                   <div className="font-ui text-[11px] font-semibold tracking-[0.12em] text-ink">
                     CONTROL{version ? ` v${version}` : ''}
                   </div>
-                  <div className="mt-0.5 text-[10px] text-ink-dim">Stay in control.</div>
+                  <BrandTagline />
                 </div>
               </div>
             </div>
