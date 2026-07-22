@@ -219,6 +219,12 @@ api.get('/runs', (c) => {
   return c.json(listActiveRuns())
 })
 
+api.get('/runs/:id', (c) => {
+  const run = getRun(c.req.param('id'))
+  if (!run) throw new HttpError(404, 'Run not found')
+  return c.json(run)
+})
+
 api.post('/runs/:id/stop', (c) => {
   const force = c.req.query('force') === 'true'
   const ok = supervisor.stop(c.req.param('id'), force)

@@ -14,10 +14,12 @@ export function ActionEditor({
   open,
   onOpenChange,
   action,
+  onOpenRun,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   action: ActionWithRun
+  onOpenRun?: (runId: string) => void
 }) {
   const qc = useQueryClient()
   const [name, setName] = useState(action.name)
@@ -165,16 +167,35 @@ export function ActionEditor({
         </h3>
         {history.data && history.data.length > 0 ? (
           <div className="space-y-1">
-            {history.data.map((r) => (
-              <div key={r.id} className="flex items-center gap-3 text-[12px] text-ink-dim">
-                <span className="w-16 uppercase" style={{ color: statusColor(r.status) }}>
-                  {statusLabel(r.status)}
-                </span>
-                <span>{new Date(r.startedAt).toLocaleTimeString()}</span>
-                {r.exitedAt && <span>· {Math.round((r.exitedAt - r.startedAt) / 1000)}s</span>}
-                {r.exitCode != null && <span>· exit {r.exitCode}</span>}
-              </div>
-            ))}
+            {history.data.map((r) => {
+              const row = (
+                <>
+                  <span className="w-16 uppercase" style={{ color: statusColor(r.status) }}>
+                    {statusLabel(r.status)}
+                  </span>
+                  <span>{new Date(r.startedAt).toLocaleTimeString()}</span>
+                  {r.exitedAt && <span>· {Math.round((r.exitedAt - r.startedAt) / 1000)}s</span>}
+                  {r.exitCode != null && <span>· exit {r.exitCode}</span>}
+                </>
+              )
+              return onOpenRun ? (
+                <Button
+                  key={r.id}
+                  variant="ghost"
+                  className="flex w-full items-center justify-start gap-3 px-0 py-0 text-[12px] text-ink-dim"
+                  onClick={() => {
+                    onOpenRun(r.id)
+                    onOpenChange(false)
+                  }}
+                >
+                  {row}
+                </Button>
+              ) : (
+                <div key={r.id} className="flex items-center gap-3 text-[12px] text-ink-dim">
+                  {row}
+                </div>
+              )
+            })}
           </div>
         ) : (
           <p className="text-[12px] text-ink-faint">No runs yet.</p>

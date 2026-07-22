@@ -123,6 +123,7 @@ export const api = {
     ),
 
   activeRuns: () => req<Run[]>('/runs'),
+  getRun: (id: string) => req<Run>(`/runs/${id}`),
   stopRun: (id: string, force = false) =>
     req<{ ok: boolean }>(`/runs/${id}/stop${force ? '?force=true' : ''}`, { method: 'POST' }),
   runLogs: (id: string, tail = 1000) =>
