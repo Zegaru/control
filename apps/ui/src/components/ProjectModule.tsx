@@ -1,13 +1,7 @@
 import type {ReactNode} from 'react';
 import {isActiveStatus, type RunStatus} from '@control/shared';
-import {
-  Button,
-  Chip,
-  CircularGauge,
-  Led,
-  RockerToggle,
-  RotaryKnob,
-} from './kit.js';
+import {cn} from '../lib/cn.js';
+import {Button, Chip, CircularGauge, Led, RockerToggle, RotaryKnob} from './kit.js';
 
 export type ProjectService = {
   key: string;
@@ -44,14 +38,14 @@ function EnvironmentToggleBank({
   const resolvedId = favoritesActive && showFavorites ? null : activeId;
   const value = Math.max(
     0,
-    options.findIndex((o) => o.id === resolvedId),
+    options.findIndex((o) => o.id === resolvedId)
   );
 
   if (options.length === 0) return null;
 
   return (
     <div
-      className="flex justify-center border-b border-panel-edge px-4 py-2.5"
+      className="flex justify-center border-b border-panel-edge px-4 py-1.5"
       onClick={(e) => e.stopPropagation()}
     >
       <RotaryKnob
@@ -82,11 +76,13 @@ export function ProjectModule({
   onSelectEnvironment,
   onOpenRun,
   onToggleService,
+  stacks = [],
   children,
 }: {
   variant?: 'default' | 'add';
   name?: string;
   path?: string;
+  stacks?: string[];
   on?: boolean;
   busy?: boolean;
   onToggle?: () => void;
@@ -122,25 +118,39 @@ export function ProjectModule({
   return (
     <div className="bezel-raised flex h-full min-h-0 flex-col overflow-visible rounded-lg p-1.5">
       <div className="bezel-recessed flex min-h-0 flex-1 flex-col overflow-visible rounded-md bg-bezel">
-        <div className="flex shrink-0 items-start justify-between gap-3 overflow-visible border-b border-panel-edge px-4 py-3">
+        <div className="flex shrink-0 items-start justify-between gap-2 overflow-visible border-b border-panel-edge px-2 py-2">
           <Button
             variant="ghost"
             onClick={onClick}
-            className="flex min-w-0 flex-1 items-start justify-start px-0 py-0 text-left hover:not-data-disabled:text-ink"
+            aria-label={name ? `Open ${name}` : 'Open project'}
+            className={cn(
+              'group/header -my-0.5 min-h-0 min-w-0 flex-1 items-start justify-start rounded-sm px-2 py-2 text-left',
+              'transition-[background-color,box-shadow,transform] duration-150 ease-out',
+              'hover:not-data-disabled:bg-phosphor/6 hover:not-data-disabled:shadow-[inset_0_0_0_1px_rgba(125,252,154,0.14),inset_0_0_16px_rgba(125,252,154,0.05)]',
+              'active:not-data-disabled:bg-phosphor/10 active:not-data-disabled:shadow-[inset_0_2px_10px_rgba(0,0,0,0.45)]'
+            )}
           >
             <div className="min-w-0">
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2">
                 <Led status={projectStatus} pulse={busy} ring={!!on || !!busy} />
                 <div className="flex min-w-0 items-center gap-2">
-                  <span className="font-ui text-[15px] font-semibold uppercase tracking-[0.08em] leading-none text-ink">
+                  {favorite && <span className="text-amber">★</span>}
+                  <span className="font-ui text-[15px] font-semibold uppercase tracking-[0.08em] leading-none text-ink transition-colors duration-150 group-hover/header:text-phosphor group-active/header:text-phosphor-dim">
                     {name}
                   </span>
-                  {favorite && <span className="text-amber">★</span>}
                 </div>
               </div>
               {path && (
-                <div className="mt-1.5 truncate pl-5 text-[10px] leading-tight text-ink-faint">
+                <div className="mt-1.5 truncate pl-5 text-[10px] leading-tight text-ink-faint transition-colors duration-150 group-hover/header:text-ink-dim group-active/header:text-ink-dim">
                   {path}
+                </div>
+              )}
+              {stacks.length > 0 && (
+                <div className="mt-1.5 flex flex-wrap gap-1 pl-5">
+                  {stacks.slice(0, 2).map((stack) => (
+                    <Chip key={stack}>{stack}</Chip>
+                  ))}
+                  {stacks.length > 2 && <Chip>+{stacks.length - 2}</Chip>}
                 </div>
               )}
             </div>

@@ -39,6 +39,26 @@ function projectActions(tree: ProjectTree): ActionWithRun[] {
   return tree.modules.flatMap((m) => m.actions).filter((a) => !a.hidden);
 }
 
+function projectStackKinds(tree: ProjectTree | undefined): string[] {
+  if (!tree) return [];
+  const kinds: string[] = [];
+  const seen = new Set<string>();
+  const modules = [...tree.modules].sort((a, b) => {
+    if (a.relPath === '') return -1;
+    if (b.relPath === '') return 1;
+    return a.relPath.localeCompare(b.relPath);
+  });
+  for (const mod of modules) {
+    for (const s of mod.detectedStacks) {
+      if (!seen.has(s.kind)) {
+        seen.add(s.kind);
+        kinds.push(s.kind);
+      }
+    }
+  }
+  return kinds;
+}
+
 function buildPowerItems(tree: ProjectTree, recentRuns: Record<string, string>): ProjectService[] {
   return projectActions(tree)
     .filter((a) => a.favorite)
@@ -635,6 +655,7 @@ export function Dashboard({
                 <ProjectModule
                   name={p.name}
                   path={p.rootPath}
+                  stacks={projectStackKinds(tree)}
                   favorite={p.favorite}
                   on={activeCount > 0}
                   busy={busy}

@@ -1,141 +1,137 @@
-import { useMemo, useState } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { Environment } from '@control/shared'
-import { api, formatApiError } from '../api.js'
-import { Chip, Panel, Button, TextInput } from '../components/kit.js'
-import { cn } from '../lib/cn.js'
-import { ActionRow } from '../components/ActionRow.js'
-import { AddActionDialog } from '../components/AddActionDialog.js'
-import { EnvironmentEditor } from '../components/EnvironmentEditor.js'
+import {useMemo, useState} from 'react';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import type {Environment} from '@control/shared';
+import {api, formatApiError} from '../api.js';
+import {Chip, Panel, Button, TextInput} from '../components/kit.js';
+import {cn} from '../lib/cn.js';
+import {ActionRow} from '../components/ActionRow.js';
+import {AddActionDialog} from '../components/AddActionDialog.js';
+import {EnvironmentEditor} from '../components/EnvironmentEditor.js';
 
 export function ProjectDetail({
   projectId,
   onBack,
   onOpenRun,
 }: {
-  projectId: string
-  onBack: () => void
-  onOpenRun: (runId: string) => void
+  projectId: string;
+  onBack: () => void;
+  onOpenRun: (runId: string) => void;
 }) {
-  const qc = useQueryClient()
-  const [showSecondary, setShowSecondary] = useState(false)
-  const [claimInput, setClaimInput] = useState('')
-  const [portLabelPort, setPortLabelPort] = useState('')
-  const [portLabelName, setPortLabelName] = useState('')
-  const [portLabelError, setPortLabelError] = useState<string | null>(null)
-  const portLabelNameId = `port-label-name-${projectId}`
+  const qc = useQueryClient();
+  const [showSecondary, setShowSecondary] = useState(false);
+  const [claimInput, setClaimInput] = useState('');
+  const [portLabelPort, setPortLabelPort] = useState('');
+  const [portLabelName, setPortLabelName] = useState('');
+  const [portLabelError, setPortLabelError] = useState<string | null>(null);
+  const portLabelNameId = `port-label-name-${projectId}`;
   const [addingCommand, setAddingCommand] = useState<
-    { moduleId: string } | { projectId: string } | null
-  >(null)
-  const [editingEnv, setEditingEnv] = useState<Environment | null | 'new'>(null)
-  const tree = useQuery({ queryKey: ['tree', projectId], queryFn: () => api.projectTree(projectId) })
-  const portsQ = useQuery({ queryKey: ['ports'], queryFn: api.ports, refetchInterval: 4000 })
-  const groups = useQuery({ queryKey: ['groups'], queryFn: api.listGroups })
+    {moduleId: string} | {projectId: string} | null
+  >(null);
+  const [editingEnv, setEditingEnv] = useState<Environment | null | 'new'>(null);
+  const tree = useQuery({queryKey: ['tree', projectId], queryFn: () => api.projectTree(projectId)});
+  const portsQ = useQuery({queryKey: ['ports'], queryFn: api.ports, refetchInterval: 4000});
+  const groups = useQuery({queryKey: ['groups'], queryFn: api.listGroups});
 
   const rescan = useMutation({
     mutationFn: () => api.scanProject(projectId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tree', projectId] }),
-  })
+    onSuccess: () => qc.invalidateQueries({queryKey: ['tree', projectId]}),
+  });
   const toggleFav = useMutation({
-    mutationFn: (fav: boolean) => api.patchProject(projectId, { favorite: fav }),
+    mutationFn: (fav: boolean) => api.patchProject(projectId, {favorite: fav}),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['tree', projectId] })
-      qc.invalidateQueries({ queryKey: ['projects'] })
+      qc.invalidateQueries({queryKey: ['tree', projectId]});
+      qc.invalidateQueries({queryKey: ['projects']});
     },
-  })
+  });
   const remove = useMutation({
     mutationFn: () => api.deleteProject(projectId),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['projects'] })
-      onBack()
+      qc.invalidateQueries({queryKey: ['projects']});
+      onBack();
     },
-  })
+  });
   const setClaims = useMutation({
-    mutationFn: (composeProjects: string[]) => api.patchProject(projectId, { composeProjects }),
+    mutationFn: (composeProjects: string[]) => api.patchProject(projectId, {composeProjects}),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['tree', projectId] })
-      qc.invalidateQueries({ queryKey: ['containers'] })
-      qc.invalidateQueries({ queryKey: ['ports'] })
+      qc.invalidateQueries({queryKey: ['tree', projectId]});
+      qc.invalidateQueries({queryKey: ['containers']});
+      qc.invalidateQueries({queryKey: ['ports']});
     },
-  })
+  });
   const setPortLabels = useMutation({
-    mutationFn: (portLabels: Record<string, string>) => api.patchProject(projectId, { portLabels }),
+    mutationFn: (portLabels: Record<string, string>) => api.patchProject(projectId, {portLabels}),
     onSuccess: () => {
-      setPortLabelError(null)
-      qc.invalidateQueries({ queryKey: ['tree', projectId] })
-      qc.invalidateQueries({ queryKey: ['projects'] })
-      qc.invalidateQueries({ queryKey: ['ports'] })
+      setPortLabelError(null);
+      qc.invalidateQueries({queryKey: ['tree', projectId]});
+      qc.invalidateQueries({queryKey: ['projects']});
+      qc.invalidateQueries({queryKey: ['ports']});
     },
     onError: (err) => setPortLabelError(formatApiError(err)),
-  })
+  });
   const setDefaultEnv = useMutation({
     mutationFn: (defaultEnvironmentId: string | null) =>
-      api.patchProject(projectId, { defaultEnvironmentId }),
+      api.patchProject(projectId, {defaultEnvironmentId}),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['tree', projectId] })
-      qc.invalidateQueries({ queryKey: ['projects'] })
+      qc.invalidateQueries({queryKey: ['tree', projectId]});
+      qc.invalidateQueries({queryKey: ['projects']});
     },
-  })
+  });
   const removeEnv = useMutation({
     mutationFn: (id: string) => api.deleteEnvironment(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tree', projectId] }),
-  })
+    onSuccess: () => qc.invalidateQueries({queryKey: ['tree', projectId]}),
+  });
 
-  const invalidateTree = () => qc.invalidateQueries({ queryKey: ['tree', projectId] })
+  const invalidateTree = () => qc.invalidateQueries({queryKey: ['tree', projectId]});
 
   const unlabeledListeningPorts = useMemo(() => {
-    const byPort = new Map<number, string>()
+    const byPort = new Map<number, string>();
     for (const o of portsQ.data ?? []) {
-      if (o.projectId !== projectId) continue
-      const hint = o.label ?? o.processName ?? o.owner
-      if (!byPort.has(o.port)) byPort.set(o.port, hint)
+      if (o.projectId !== projectId) continue;
+      const hint = o.label ?? o.processName ?? o.owner;
+      if (!byPort.has(o.port)) byPort.set(o.port, hint);
     }
-    const saved = tree.data?.portLabels ?? {}
-    return [...byPort.entries()]
-      .filter(([port]) => !saved[String(port)])
-      .sort(([a], [b]) => a - b)
-  }, [portsQ.data, projectId, tree.data?.portLabels])
+    const saved = tree.data?.portLabels ?? {};
+    return [...byPort.entries()].filter(([port]) => !saved[String(port)]).sort(([a], [b]) => a - b);
+  }, [portsQ.data, projectId, tree.data?.portLabels]);
 
-  if (!tree.data) return <div className="text-sm text-ink-dim">Loading…</div>
-  const p = tree.data
+  if (!tree.data) return <div className="text-sm text-ink-dim">Loading…</div>;
+  const p = tree.data;
 
   const singleRootModule =
-    p.modules.length === 1 && p.modules[0]!.relPath === '' ? p.modules[0]! : null
-  const commandsTitle = singleRootModule
-    ? `${singleRootModule.name} (root)`
-    : 'Commands'
+    p.modules.length === 1 && p.modules[0]!.relPath === '' ? p.modules[0]! : null;
+  const commandsTitle = singleRootModule ? `${singleRootModule.name} (root)` : 'Commands';
 
   const portLabelEntries = Object.entries(p.portLabels ?? {}).sort(
-    ([a], [b]) => Number(a) - Number(b),
-  )
+    ([a], [b]) => Number(a) - Number(b)
+  );
 
   const pickListeningPort = (port: number) => {
-    setPortLabelPort(String(port))
-    setPortLabelName('')
-    if (portLabelError) setPortLabelError(null)
-    document.getElementById(portLabelNameId)?.focus()
-  }
+    setPortLabelPort(String(port));
+    setPortLabelName('');
+    if (portLabelError) setPortLabelError(null);
+    document.getElementById(portLabelNameId)?.focus();
+  };
 
   const addPortLabel = async () => {
-    const port = portLabelPort.trim()
-    const label = portLabelName.trim()
+    const port = portLabelPort.trim();
+    const label = portLabelName.trim();
     if (!/^\d+$/.test(port)) {
-      setPortLabelError('Port must be a positive number.')
-      return
+      setPortLabelError('Port must be a positive number.');
+      return;
     }
     if (!label) {
-      document.getElementById(portLabelNameId)?.focus()
-      return
+      document.getElementById(portLabelNameId)?.focus();
+      return;
     }
-    const next = { ...(p.portLabels ?? {}), [port]: label }
+    const next = {...(p.portLabels ?? {}), [port]: label};
     try {
-      await setPortLabels.mutateAsync(next)
-      setPortLabelPort('')
-      setPortLabelName('')
+      await setPortLabels.mutateAsync(next);
+      setPortLabelPort('');
+      setPortLabelName('');
     } catch {
       /* onError sets portLabelError */
     }
-  }
+  };
 
   return (
     <div className="flex h-full flex-col gap-2 overflow-hidden">
@@ -175,7 +171,7 @@ export function ProjectDetail({
               variant="ghost"
               onClick={() => {
                 if (confirm(`Remove "${p.name}" from CONTROL? This does not touch the folder.`))
-                  remove.mutate()
+                  remove.mutate();
               }}
               className="rounded border border-panel-edge px-3 py-1.5 text-danger hover:not-data-disabled:text-danger"
             >
@@ -216,9 +212,9 @@ export function ProjectDetail({
                 onChange={(e) => setClaimInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && claimInput.trim()) {
-                    const next = [...new Set([...(p.composeProjects ?? []), claimInput.trim()])]
-                    setClaims.mutate(next)
-                    setClaimInput('')
+                    const next = [...new Set([...(p.composeProjects ?? []), claimInput.trim()])];
+                    setClaims.mutate(next);
+                    setClaimInput('');
                   }
                 }}
                 placeholder="add label + Enter"
@@ -232,9 +228,7 @@ export function ProjectDetail({
               Rename how listening ports appear on Overview and Port Map for this project (e.g.{' '}
               <code>3000 → frontend</code>).
             </p>
-            {portLabelError && (
-              <p className="mb-2 text-[11px] text-danger">{portLabelError}</p>
-            )}
+            {portLabelError && <p className="mb-2 text-[11px] text-danger">{portLabelError}</p>}
             {unlabeledListeningPorts.length > 0 && (
               <div className="mb-2">
                 <p className="mb-1.5 font-ui text-[10px] uppercase tracking-wider text-ink-faint">
@@ -267,9 +261,9 @@ export function ProjectDetail({
                   <Button
                     variant="icon"
                     onClick={() => {
-                      const next = { ...(p.portLabels ?? {}) }
-                      delete next[port]
-                      setPortLabels.mutate(next)
+                      const next = {...(p.portLabels ?? {})};
+                      delete next[port];
+                      setPortLabels.mutate(next);
                     }}
                     className="text-ink-faint hover:not-data-disabled:text-danger"
                   >
@@ -280,17 +274,17 @@ export function ProjectDetail({
               <TextInput
                 value={portLabelPort}
                 onChange={(e) => {
-                  setPortLabelPort(e.target.value)
-                  if (portLabelError) setPortLabelError(null)
+                  setPortLabelPort(e.target.value);
+                  if (portLabelError) setPortLabelError(null);
                 }}
                 onKeyDown={(e) => {
-                  if (e.key !== 'Enter') return
-                  e.preventDefault()
+                  if (e.key !== 'Enter') return;
+                  e.preventDefault();
                   if (!portLabelName.trim()) {
-                    document.getElementById(portLabelNameId)?.focus()
-                    return
+                    document.getElementById(portLabelNameId)?.focus();
+                    return;
                   }
-                  void addPortLabel()
+                  void addPortLabel();
                 }}
                 placeholder="port"
                 inputMode="numeric"
@@ -300,13 +294,13 @@ export function ProjectDetail({
                 id={portLabelNameId}
                 value={portLabelName}
                 onChange={(e) => {
-                  setPortLabelName(e.target.value)
-                  if (portLabelError) setPortLabelError(null)
+                  setPortLabelName(e.target.value);
+                  if (portLabelError) setPortLabelError(null);
                 }}
                 onKeyDown={(e) => {
-                  if (e.key !== 'Enter') return
-                  e.preventDefault()
-                  void addPortLabel()
+                  if (e.key !== 'Enter') return;
+                  e.preventDefault();
+                  void addPortLabel();
                 }}
                 placeholder="label + Enter"
                 className="w-32 px-2 py-1 text-xs"
@@ -326,10 +320,10 @@ export function ProjectDetail({
                 {p.environments.map((env) => {
                   const targetLabel =
                     env.targetType === 'group'
-                      ? (groups.data?.find((g) => g.id === env.targetId)?.name ?? 'launch group')
+                      ? groups.data?.find((g) => g.id === env.targetId)?.name ?? 'launch group'
                       : p.modules.flatMap((m) => m.actions).find((a) => a.id === env.targetId)
-                          ?.name ?? 'command'
-                  const isDefault = p.defaultEnvironmentId === env.id
+                          ?.name ?? 'command';
+                  const isDefault = p.defaultEnvironmentId === env.id;
                   return (
                     <div
                       key={env.id}
@@ -360,14 +354,15 @@ export function ProjectDetail({
                       <Button
                         variant="ghost"
                         onClick={() => {
-                          if (confirm(`Delete environment "${env.name}"?`)) removeEnv.mutate(env.id)
+                          if (confirm(`Delete environment "${env.name}"?`))
+                            removeEnv.mutate(env.id);
                         }}
                         className="px-2 py-1 text-xs text-danger hover:not-data-disabled:text-danger"
                       >
                         Delete
                       </Button>
                     </div>
-                  )
+                  );
                 })}
               </div>
             )}
@@ -402,7 +397,7 @@ export function ProjectDetail({
                 </p>
                 <Button
                   variant="ghost"
-                  onClick={() => setAddingCommand({ projectId })}
+                  onClick={() => setAddingCommand({projectId})}
                   className="rounded border border-panel-edge px-3 py-1.5"
                 >
                   + Add command
@@ -411,9 +406,9 @@ export function ProjectDetail({
             ) : (
               <div className="space-y-6">
                 {p.modules.map((mod) => {
-                  const primary = mod.actions.filter((a) => !a.hidden && a.primary)
-                  const secondary = mod.actions.filter((a) => !a.hidden && !a.primary)
-                  const showModuleHeader = p.modules.length > 1
+                  const primary = mod.actions.filter((a) => !a.hidden && a.primary);
+                  const secondary = mod.actions.filter((a) => !a.hidden && !a.primary);
+                  const showModuleHeader = p.modules.length > 1;
 
                   return (
                     <section key={mod.id}>
@@ -448,7 +443,7 @@ export function ProjectDetail({
                               <span
                                 className={cn(
                                   'mr-1 inline-block transition-transform duration-160 ease-out motion-reduce:transition-none',
-                                  showSecondary && 'rotate-90',
+                                  showSecondary && 'rotate-90'
                                 )}
                                 aria-hidden
                               >
@@ -461,7 +456,7 @@ export function ProjectDetail({
                                 'grid transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:duration-120 motion-reduce:transition-opacity',
                                 showSecondary
                                   ? 'grid-rows-[1fr] opacity-100'
-                                  : 'pointer-events-none grid-rows-[0fr] opacity-0',
+                                  : 'pointer-events-none grid-rows-[0fr] opacity-0'
                               )}
                             >
                               <div className="min-h-0 space-y-2 overflow-hidden">
@@ -475,14 +470,14 @@ export function ProjectDetail({
 
                         <Button
                           variant="ghost"
-                          onClick={() => setAddingCommand({ moduleId: mod.id })}
+                          onClick={() => setAddingCommand({moduleId: mod.id})}
                           className="mt-2 block px-0 py-0 text-left text-[11px] uppercase tracking-wider text-ink-faint hover:not-data-disabled:text-phosphor"
                         >
                           + Add command
                         </Button>
                       </div>
                     </section>
-                  )
+                  );
                 })}
               </div>
             )}
@@ -497,11 +492,11 @@ export function ProjectDetail({
           tree={p}
           environment={editingEnv === 'new' ? null : editingEnv}
           onOpenChange={(open) => {
-            if (!open) setEditingEnv(null)
+            if (!open) setEditingEnv(null);
           }}
           onSaved={() => {
-            setEditingEnv(null)
-            invalidateTree()
+            setEditingEnv(null);
+            invalidateTree();
           }}
         />
       )}
@@ -510,13 +505,13 @@ export function ProjectDetail({
         <AddActionDialog
           open
           {...('moduleId' in addingCommand
-            ? { moduleId: addingCommand.moduleId }
-            : { projectId: addingCommand.projectId })}
+            ? {moduleId: addingCommand.moduleId}
+            : {projectId: addingCommand.projectId})}
           onOpenChange={(open) => {
-            if (!open) setAddingCommand(null)
+            if (!open) setAddingCommand(null);
           }}
         />
       )}
     </div>
-  )
+  );
 }

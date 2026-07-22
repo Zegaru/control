@@ -117,6 +117,9 @@ export function listProjects(): ProjectSummary[] {
       actionCount: actionRows.length,
       activeRunCount,
     }
+  }).sort((a, b) => {
+    if (a.favorite !== b.favorite) return a.favorite ? -1 : 1
+    return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
   })
 }
 

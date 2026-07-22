@@ -82,7 +82,7 @@ export function isActiveStatus(status: RunStatus): boolean {
 // ---------------------------------------------------------------------------
 
 export const detectedStackSchema = z.object({
-  kind: z.string(), // e.g. 'node', 'compose', 'rust', 'go', 'python', 'expo'
+  kind: z.string(), // e.g. node, compose, rust, go, python, dotnet, deno, maven, flutter
   packageManager: z.string().nullable().optional(),
   confidence: z.number().min(0).max(1).default(1),
 })

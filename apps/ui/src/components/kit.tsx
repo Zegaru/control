@@ -106,7 +106,9 @@ export function Panel({
           <div className="bezel-recessed h-full min-h-0 rounded-2xl border-0! bg-bezel p-4">
             <div
               className={
-                crt ? 'crt bezel-recessed h-full min-h-0 rounded-xl border-0! p-4' : 'h-full min-h-0'
+                crt
+                  ? 'crt bezel-recessed h-full min-h-0 rounded-xl border-0! p-4'
+                  : 'h-full min-h-0'
               }
             >
               <div className="relative z-10 flex h-full min-h-0 flex-col overflow-visible">
@@ -486,7 +488,7 @@ export function BacklitButton({
     () => () => {
       if (timerRef.current != null) window.clearTimeout(timerRef.current);
     },
-    [],
+    []
   );
 
   if (holdMs == null || holdMs <= 0) {
@@ -586,8 +588,8 @@ export function RotaryKnob({
     displayStep < 0
       ? cappedRubberband(displayStep, maxOvershoot)
       : displayStep > steps - 1
-        ? steps - 1 + cappedRubberband(displayStep - (steps - 1), maxOvershoot)
-        : displayStep;
+      ? steps - 1 + cappedRubberband(displayStep - (steps - 1), maxOvershoot)
+      : displayStep;
   const angle = stepAngle(visualStep);
 
   const setFromDelta = (deltaY: number) => {
@@ -612,7 +614,11 @@ export function RotaryKnob({
     <div className={cn('flex flex-col items-center', disabled && 'opacity-40')}>
       <div className="knob-wrap relative shrink-0" style={{width: ring, height: ring}}>
         {/* Travel arc −120°…+120° (CSS angles from top); dead zone at bottom stays open */}
-        <svg className="knob-arc pointer-events-none absolute inset-0" viewBox="0 0 40 40" aria-hidden>
+        <svg
+          className="knob-arc pointer-events-none absolute inset-0"
+          viewBox="0 0 40 40"
+          aria-hidden
+        >
           <path className="knob-arc-path" d="M 4.41 29 A 18 18 0 1 1 35.59 29" fill="none" />
         </svg>
         <div className="knob-marks pointer-events-none absolute inset-0" aria-hidden>
@@ -706,9 +712,7 @@ export function MasterPower({
       onClick={(e) => e.stopPropagation()}
       className={cn(
         'rocker-housing rocker-danger font-ui relative flex flex-col rounded-md font-bold tracking-wide data-disabled:opacity-40',
-        compact
-          ? 'h-12 w-14 p-1 text-[8px]'
-          : 'h-18 w-21 p-1.5 text-[10px]',
+        compact ? 'h-12 w-14 p-1 text-[8px]' : 'h-18 w-21 p-1.5 text-[10px]',
         on ? 'rocker-on' : 'rocker-off'
       )}
     >
