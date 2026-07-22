@@ -7,6 +7,7 @@ import type { Action, Run, RunStatus } from '@control/shared'
 import { isActiveStatus } from '@control/shared'
 import { db, schema } from './db/index.js'
 import { getAction, getRun, resolveActionCwd } from './registry.js'
+import { loadActionEnvFiles } from './envFile.js'
 import { LOGS_DIR } from './config.js'
 import { bus } from './events.js'
 import { newId } from './ids.js'
@@ -261,6 +262,19 @@ class Supervisor {
     const env: Record<string, string> = {}
     for (const [k, v] of Object.entries(process.env)) {
       if (v !== undefined) env[k] = v
+    }
+    const cwd = resolveActionCwd(action)
+    const mod = db.select().from(schema.modules).where(eq(schema.modules.id, action.moduleId)).get()
+    const project = mod
+      ? db.select().from(schema.projects).where(eq(schema.projects.id, mod.projectId)).get()
+      : undefined
+    if (cwd && project?.rootPath) {
+      try {
+        const fileEnv = loadActionEnvFiles(project.rootPath, cwd, action.envFiles ?? [])
+        Object.assign(env, fileEnv)
+      } catch {
+        // Path errors should not fail spawn; skip file load.
+      }
     }
     if (runtimeEnv) Object.assign(env, runtimeEnv)
     if (action.envOverrides) Object.assign(env, action.envOverrides)
