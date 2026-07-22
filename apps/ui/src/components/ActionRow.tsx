@@ -1,6 +1,6 @@
 import {useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
-import {GearSix, Star} from '@phosphor-icons/react';
+import {Eye, EyeSlash, GearSix, Star} from '@phosphor-icons/react';
 import type {ActionWithRun} from '@control/shared';
 import {api} from '../api.js';
 import {Chip, Led, statusColor, statusLabel} from './kit.js';
@@ -11,10 +11,12 @@ export function ActionRow({
   action,
   onOpenRun,
   compact,
+  variant = 'default',
 }: {
   action: ActionWithRun;
   onOpenRun: (runId: string) => void;
   compact?: boolean;
+  variant?: 'default' | 'hidden';
 }) {
   const qc = useQueryClient();
   const [editing, setEditing] = useState(false);
@@ -22,6 +24,7 @@ export function ActionRow({
   const active = !!run;
   const status = run?.status ?? 'idle';
   const busy = status === 'starting';
+  const isHiddenVariant = variant === 'hidden';
 
   const invalidate = () => {
     qc.invalidateQueries({queryKey: ['trees']});
@@ -49,6 +52,12 @@ export function ActionRow({
   const toggleFav = async (e: React.MouseEvent) => {
     e.stopPropagation();
     await api.patchAction(action.id, {favorite: !action.favorite});
+    invalidate();
+  };
+
+  const toggleHidden = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    await api.patchAction(action.id, {hidden: !isHiddenVariant});
     invalidate();
   };
 
@@ -83,6 +92,19 @@ export function ActionRow({
           weight={action.favorite ? 'fill' : 'regular'}
           className={action.favorite ? 'text-amber' : 'text-ink-faint'}
         />
+      </Button>
+
+      <Button
+        variant="icon"
+        onClick={toggleHidden}
+        title={isHiddenVariant ? 'Show action' : 'Hide action'}
+        className="text-sm"
+      >
+        {isHiddenVariant ? (
+          <Eye size={16} className="text-ink-faint" />
+        ) : (
+          <EyeSlash size={16} className="text-ink-faint" />
+        )}
       </Button>
 
       {!compact && (
