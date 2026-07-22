@@ -46,12 +46,12 @@ pnpm dev              # daemon (:4400) + UI dev server (:5173) together
 
 Open http://localhost:5173, click **Add Project**, and point it at a repo folder.
 
-Run pieces individually:
+Run pieces individually (prefer `pnpm dev` above for automatic port sync):
 
 ```bash
 pnpm dev:daemon       # daemon only (clear stale CONTROL, or bump past busy ports)
 pnpm kill:daemon      # free CONTROL_PORT only if a CONTROL daemon owns it
-pnpm dev:ui           # UI dev server only (proxies /api + /ws to daemon port)
+pnpm dev:ui           # UI only; proxies via CONTROL_DAEMON_URL, CONTROL_PORT, .control-dev-port, else :4400
 pnpm typecheck        # all packages
 pnpm test             # vitest characterization suite
 pnpm lint             # biome check
