@@ -161,22 +161,23 @@ export function patchProject(id: string, body: PatchProjectBody): Project {
       .get()
     if (!env) throw new HttpError(400, 'Environment not found for this project')
   }
-  db.update(schema.projects)
-    .set({
-      ...(body.name !== undefined ? { name: body.name } : {}),
-      ...(body.favorite !== undefined ? { favorite: body.favorite } : {}),
-      ...(body.icon !== undefined ? { icon: body.icon } : {}),
-      ...(body.composeProjects !== undefined ? { composeProjects: body.composeProjects } : {}),
-      ...(body.portLabels !== undefined ? { portLabels: body.portLabels } : {}),
-      ...(body.selectedEnvironmentId !== undefined
-        ? { selectedEnvironmentId: body.selectedEnvironmentId }
-        : {}),
-      ...(body.defaultEnvironmentId !== undefined
-        ? { defaultEnvironmentId: body.defaultEnvironmentId }
-        : {}),
-    })
-    .where(eq(schema.projects.id, id))
-    .run()
+  const updates = {
+    ...(body.name !== undefined ? { name: body.name } : {}),
+    ...(body.favorite !== undefined ? { favorite: body.favorite } : {}),
+    ...(body.icon !== undefined ? { icon: body.icon } : {}),
+    ...(body.composeProjects !== undefined ? { composeProjects: body.composeProjects } : {}),
+    ...(body.portLabels !== undefined ? { portLabels: body.portLabels } : {}),
+    ...(body.selectedEnvironmentId !== undefined
+      ? { selectedEnvironmentId: body.selectedEnvironmentId }
+      : {}),
+    ...(body.defaultEnvironmentId !== undefined
+      ? { defaultEnvironmentId: body.defaultEnvironmentId }
+      : {}),
+  }
+  if (Object.keys(updates).length === 0) {
+    throw new HttpError(400, 'No fields to update — restart the daemon if you just upgraded')
+  }
+  db.update(schema.projects).set(updates).where(eq(schema.projects.id, id)).run()
   return toProject(db.select().from(schema.projects).where(eq(schema.projects.id, id)).get()!)
 }
 

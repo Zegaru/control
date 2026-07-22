@@ -114,7 +114,12 @@ fn spawn_daemon(home: &Path) -> std::io::Result<Child> {
 
     let mut cmd = Command::new(node_program());
     let entry_label: String;
-    if dist_entry.is_file() {
+    // Dev shell builds: run TypeScript sources so daemon changes apply without
+    // rebuilding dist/ (stale dist caused empty PATCH updates for new fields).
+    if cfg!(debug_assertions) && src_entry.is_file() {
+        cmd.arg("--import").arg("tsx").arg("src/index.ts");
+        entry_label = format!("src/index.ts via tsx (home={})", home.display());
+    } else if dist_entry.is_file() {
         cmd.arg("dist/index.js");
         entry_label = format!("dist/index.js (home={})", home.display());
     } else if src_entry.is_file() {

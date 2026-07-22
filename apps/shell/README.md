@@ -52,7 +52,7 @@ pnpm --filter @control/shell tauri icon icon-source.png
 
 The NSIS installer ships:
 
-- `control-shell.exe`
+- `Control.exe`
 - `apps/daemon/dist/index.js` (bundled daemon)
 - `apps/daemon/node_modules/` (`better-sqlite3`, `node-pty`)
 - `apps/ui/dist/` (SPA)
@@ -61,5 +61,5 @@ At runtime the shell sets `resource_dir` (install dir on Windows) as
 CONTROL_HOME and spawns the staged daemon — no git checkout required.
 
 Override discovery with `CONTROL_HOME` if you need to point at a custom tree.
-From-repo `target/release/control-shell.exe` still walks up to the monorepo and
+From-repo `target/release/Control.exe` still walks up to the monorepo and
 uses the TypeScript sources when no staged `dist/index.js` is present.

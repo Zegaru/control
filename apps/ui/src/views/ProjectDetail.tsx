@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { Environment } from '@control/shared'
-import { api } from '../api.js'
+import { api, formatApiError } from '../api.js'
 import { Chip, Panel, Button, TextInput } from '../components/kit.js'
 import { cn } from '../lib/cn.js'
 import { ActionRow } from '../components/ActionRow.js'
@@ -22,11 +22,14 @@ export function ProjectDetail({
   const [claimInput, setClaimInput] = useState('')
   const [portLabelPort, setPortLabelPort] = useState('')
   const [portLabelName, setPortLabelName] = useState('')
+  const [portLabelError, setPortLabelError] = useState<string | null>(null)
+  const portLabelNameId = `port-label-name-${projectId}`
   const [addingCommand, setAddingCommand] = useState<
     { moduleId: string } | { projectId: string } | null
   >(null)
   const [editingEnv, setEditingEnv] = useState<Environment | null | 'new'>(null)
   const tree = useQuery({ queryKey: ['tree', projectId], queryFn: () => api.projectTree(projectId) })
+  const portsQ = useQuery({ queryKey: ['ports'], queryFn: api.ports, refetchInterval: 4000 })
   const groups = useQuery({ queryKey: ['groups'], queryFn: api.listGroups })
 
   const rescan = useMutation({
@@ -58,10 +61,12 @@ export function ProjectDetail({
   const setPortLabels = useMutation({
     mutationFn: (portLabels: Record<string, string>) => api.patchProject(projectId, { portLabels }),
     onSuccess: () => {
+      setPortLabelError(null)
       qc.invalidateQueries({ queryKey: ['tree', projectId] })
       qc.invalidateQueries({ queryKey: ['projects'] })
       qc.invalidateQueries({ queryKey: ['ports'] })
     },
+    onError: (err) => setPortLabelError(formatApiError(err)),
   })
   const setDefaultEnv = useMutation({
     mutationFn: (defaultEnvironmentId: string | null) =>
@@ -78,6 +83,19 @@ export function ProjectDetail({
 
   const invalidateTree = () => qc.invalidateQueries({ queryKey: ['tree', projectId] })
 
+  const unlabeledListeningPorts = useMemo(() => {
+    const byPort = new Map<number, string>()
+    for (const o of portsQ.data ?? []) {
+      if (o.projectId !== projectId) continue
+      const hint = o.label ?? o.processName ?? o.owner
+      if (!byPort.has(o.port)) byPort.set(o.port, hint)
+    }
+    const saved = tree.data?.portLabels ?? {}
+    return [...byPort.entries()]
+      .filter(([port]) => !saved[String(port)])
+      .sort(([a], [b]) => a - b)
+  }, [portsQ.data, projectId, tree.data?.portLabels])
+
   if (!tree.data) return <div className="text-sm text-ink-dim">Loading…</div>
   const p = tree.data
 
@@ -91,14 +109,32 @@ export function ProjectDetail({
     ([a], [b]) => Number(a) - Number(b),
   )
 
-  const addPortLabel = () => {
+  const pickListeningPort = (port: number) => {
+    setPortLabelPort(String(port))
+    setPortLabelName('')
+    if (portLabelError) setPortLabelError(null)
+    document.getElementById(portLabelNameId)?.focus()
+  }
+
+  const addPortLabel = async () => {
     const port = portLabelPort.trim()
     const label = portLabelName.trim()
-    if (!/^\d+$/.test(port) || !label) return
+    if (!/^\d+$/.test(port)) {
+      setPortLabelError('Port must be a positive number.')
+      return
+    }
+    if (!label) {
+      document.getElementById(portLabelNameId)?.focus()
+      return
+    }
     const next = { ...(p.portLabels ?? {}), [port]: label }
-    setPortLabels.mutate(next)
-    setPortLabelPort('')
-    setPortLabelName('')
+    try {
+      await setPortLabels.mutateAsync(next)
+      setPortLabelPort('')
+      setPortLabelName('')
+    } catch {
+      /* onError sets portLabelError */
+    }
   }
 
   return (
@@ -196,6 +232,31 @@ export function ProjectDetail({
               Rename how listening ports appear on Overview and Port Map for this project (e.g.{' '}
               <code>3000 → frontend</code>).
             </p>
+            {portLabelError && (
+              <p className="mb-2 text-[11px] text-danger">{portLabelError}</p>
+            )}
+            {unlabeledListeningPorts.length > 0 && (
+              <div className="mb-2">
+                <p className="mb-1.5 font-ui text-[10px] uppercase tracking-wider text-ink-faint">
+                  Listening now
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {unlabeledListeningPorts.map(([port, hint]) => (
+                    <Button
+                      key={port}
+                      variant="ghost"
+                      type="button"
+                      onClick={() => pickListeningPort(port)}
+                      className="rounded border border-dashed border-panel-edge px-2 py-0.5 text-[11px] text-ink-dim hover:not-data-disabled:border-phosphor-dim hover:not-data-disabled:text-phosphor"
+                      title={`Label port ${port}`}
+                    >
+                      :{port}
+                      <span className="ml-1 text-ink-faint">{hint}</span>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="flex flex-wrap items-center gap-2">
               {portLabelEntries.map(([port, label]) => (
                 <span
@@ -218,19 +279,34 @@ export function ProjectDetail({
               ))}
               <TextInput
                 value={portLabelPort}
-                onChange={(e) => setPortLabelPort(e.target.value)}
+                onChange={(e) => {
+                  setPortLabelPort(e.target.value)
+                  if (portLabelError) setPortLabelError(null)
+                }}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') addPortLabel()
+                  if (e.key !== 'Enter') return
+                  e.preventDefault()
+                  if (!portLabelName.trim()) {
+                    document.getElementById(portLabelNameId)?.focus()
+                    return
+                  }
+                  void addPortLabel()
                 }}
                 placeholder="port"
                 inputMode="numeric"
                 className="w-16 px-2 py-1 text-xs"
               />
               <TextInput
+                id={portLabelNameId}
                 value={portLabelName}
-                onChange={(e) => setPortLabelName(e.target.value)}
+                onChange={(e) => {
+                  setPortLabelName(e.target.value)
+                  if (portLabelError) setPortLabelError(null)
+                }}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') addPortLabel()
+                  if (e.key !== 'Enter') return
+                  e.preventDefault()
+                  void addPortLabel()
                 }}
                 placeholder="label + Enter"
                 className="w-32 px-2 py-1 text-xs"
