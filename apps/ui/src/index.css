@@ -280,6 +280,7 @@ textarea,
 }
 
 .rocker-housing.rocker-busy:active:not(:disabled, [data-disabled]) .rocker-face-off.rocker-segment-lit {
+  animation-play-state: paused;
   filter: brightness(0.88);
 }
 
@@ -422,6 +423,25 @@ textarea,
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), inset 0 -2px 4px rgba(0, 0, 0, 0.25),
     0 -3px 6px rgba(0, 0, 0, 0.45), 0 0 12px 2px var(--color-amber),
     0 0 28px 4px color-mix(in srgb, var(--color-amber) 50%, transparent);
+  /* Soft luminance breathe — in-progress, quieter than Led pulse */
+  animation: rocker-busy-breathe 1.55s ease-in-out infinite;
+}
+
+@keyframes rocker-busy-breathe {
+  0%,
+  100% {
+    filter: brightness(0.94);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), inset 0 -2px 4px rgba(0, 0, 0, 0.25),
+      0 -3px 6px rgba(0, 0, 0, 0.45),
+      0 0 8px 1px color-mix(in srgb, var(--color-amber) 55%, transparent),
+      0 0 16px 2px color-mix(in srgb, var(--color-amber) 28%, transparent);
+  }
+  50% {
+    filter: brightness(1.1);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48), inset 0 -2px 4px rgba(0, 0, 0, 0.25),
+      0 -3px 6px rgba(0, 0, 0, 0.45), 0 0 16px 3px var(--color-amber),
+      0 0 36px 7px color-mix(in srgb, var(--color-amber) 55%, transparent);
+  }
 }
 
 .rocker-off .rocker-face-on.rocker-segment-raised {
@@ -1043,6 +1063,11 @@ textarea,
 
   .animate-pulse {
     animation: none !important;
+  }
+
+  .rocker-busy .rocker-face-off.rocker-segment-lit {
+    animation: none !important;
+    filter: none;
   }
 
   .waveform-track {
