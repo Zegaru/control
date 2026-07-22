@@ -96,11 +96,11 @@ Produces an installer under
 `apps/shell/src-tauri/target/release/bundle/nsis/`
 (e.g. `Control_0.1.0_x64-setup.exe`). Prerequisites (Rust, WebView2, MSVC) and
 dev workflow: [`apps/shell/README.md`](./apps/shell/README.md).
-Node ≥22 must stay on `PATH` at runtime. Unsigned builds may trigger SmartScreen
-until signed releases exist.
+The installer and portable zip **bundle Node** — no system Node install required.
+Unsigned builds may trigger SmartScreen until signed releases exist.
 
-Tagged releases (`v*`) build that installer on GitHub Actions and attach it to
-the [GitHub Release](https://github.com/Zegaru/control/releases). See
+Tagged releases (`v*`) publish the NSIS installer and a portable zip on
+[GitHub Releases](https://github.com/Zegaru/control/releases). See
 [CONTRIBUTING.md](./CONTRIBUTING.md#cutting-a-release).
 
 ## If `pnpm install` fails

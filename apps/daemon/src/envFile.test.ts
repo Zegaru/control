@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { HttpError } from './registry.js'
+import { HttpError } from './httpError.js'
 import { listEnvFileCandidates, loadActionEnvFiles, parseDotEnv } from './envFile.js'
 
 describe('parseDotEnv', () => {

@@ -45,6 +45,9 @@ jobs:
       - name: Build shell + NSIS installer
         run: pnpm --filter @control/shell build
 
+      - name: Assemble portable zip
+        run: node scripts/make-portable.mjs
+
       - name: Collect artifacts
         shell: pwsh
         run: |
@@ -56,7 +59,7 @@ jobs:
             exit 1
           }
           Copy-Item $files.FullName -Destination dist-release/
-          Get-ChildItem dist-release/*.exe | ForEach-Object {
+          Get-ChildItem dist-release/*.exe, dist-release/*.zip | ForEach-Object {
             $hash = (Get-FileHash -Algorithm SHA256 $_.FullName).Hash.ToLower()
             "$hash  $($_.Name)"
           } | Set-Content -Encoding ascii dist-release/SHA256SUMS
