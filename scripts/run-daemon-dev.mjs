@@ -50,7 +50,9 @@ const child = spawn(
       CONTROL_PORT: String(port),
       CONTROL_DAEMON_URL: `http://127.0.0.1:${port}`,
     },
-    stdio: 'inherit',
+    // Ignore stdin: under `pnpm dev` concurrently pipes stdin, and inheriting
+    // that pipe hangs `tsx watch` on Windows before the daemon binds.
+    stdio: ['ignore', 'inherit', 'inherit'],
   },
 )
 
