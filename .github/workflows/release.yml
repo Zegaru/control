@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Existing tag to build and publish (e.g. v0.1.0). Leave empty to build main without publishing.'
+        description: 'Tag to publish under (e.g. v0.1.1). Builds the selected branch, not the tag commit. Leave empty to build without publishing.'
         required: false
         default: ''
 
@@ -18,9 +18,10 @@ jobs:
   windows-nsis:
     runs-on: windows-latest
     steps:
+      # Tag pushes: github.ref is the tag. Manual "Run workflow": github.ref is
+      # the selected branch (usually main), so rebuilds pick up hotfixes without
+      # moving the tag. Publish still uses inputs.tag when set.
       - uses: actions/checkout@v7
-        with:
-          ref: ${{ inputs.tag != '' && inputs.tag || github.ref }}
 
       - uses: pnpm/action-setup@v6
         with:

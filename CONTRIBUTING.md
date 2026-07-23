@@ -93,17 +93,23 @@ from GitHub Actions. Both bundle Node — end users do not need Node on PATH.
    If you change the vendored Node pin in `scripts/stage-runtime.mjs`
    (`BUNDLED_NODE_VERSION`), note it in the changelog — natives must be
    re-staged on Windows.
-3. Commit on `main` (include the changelog + bump).
-4. Tag and push:
+3. Commit on `main` via PR if the branch is protected (changelog + bump).
+4. After merge, tag and push the tag:
    ```bash
+   git checkout main && git pull
    git tag -a vx.y.z -m "vx.y.z"
-   git push origin main --tags
+   git push origin vx.y.z
    ```
 5. The [Release](https://github.com/Zegaru/control/actions/workflows/release.yml)
    workflow builds on `windows-latest` and publishes:
    - `Control_*_x64-setup.exe` (NSIS installer)
    - `Control-*-portable-win-x64.zip` (unzip and run `Control.exe`)
    - `SHA256SUMS` for both
+
+If a release build fails and you fix it on `main` afterward, re-run the
+workflow with **Use workflow from: `main`** and the existing tag (e.g.
+`v0.1.1`). Manual runs build the selected branch, then attach artifacts to
+that tag — they do not check out the old tag commit.
 
 Installers are **unsigned** for now — SmartScreen may warn until Authenticode
 signing is added.
