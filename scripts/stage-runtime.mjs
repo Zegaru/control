@@ -23,7 +23,6 @@ import {
   mkdirSync,
   readFileSync,
   readdirSync,
-  renameSync,
   rmSync,
   writeFileSync,
 } from 'node:fs'
@@ -104,10 +103,12 @@ async function stageBundledNode() {
     process.exit(1)
   }
 
+  // Copy, don't rename — GitHub Actions puts TEMP on C: and the workspace
+  // on D:, so renameSync fails with EXDEV (cross-device link not permitted).
   for (const name of readdirSync(extractedRoot)) {
     const from = join(extractedRoot, name)
     const to = join(nodeDir, name)
-    renameSync(from, to)
+    cpSync(from, to, { recursive: true })
   }
 
   writeFileSync(join(nodeDir, 'VERSION.txt'), `${BUNDLED_NODE_VERSION}\n`)
